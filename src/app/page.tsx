@@ -3,6 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { ArrowRight, Info, ShieldCheck, GraduationCap } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 import Navbar from '@/components/Navbar';
 import FlowchartDiagram from '@/components/FlowchartDiagram';
@@ -32,21 +33,36 @@ export default function LandingPage() {
         <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 flex flex-col items-start text-left">
 
           {/* Title */}
-          <h1 className="text-5xl sm:text-7xl lg:text-[5.5rem] font-black text-white tracking-tighter leading-[1] mb-8 max-w-4xl uppercase">
+          <motion.h1 
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, ease: "easeOut" }}
+            className="text-5xl sm:text-7xl lg:text-[5.5rem] font-black text-white tracking-tighter leading-[1] mb-8 max-w-4xl uppercase"
+          >
             Wujudkan <br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400">
               Masa Depan
             </span> <br />
             Sultra.
-          </h1>
+          </motion.h1>
 
           {/* Subtitle */}
-          <p className="text-lg sm:text-xl text-slate-300 max-w-2xl mb-12 leading-relaxed font-light">
+          <motion.p 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, ease: "easeOut", delay: 0.2 }}
+            className="text-lg sm:text-xl text-slate-300 max-w-2xl mb-12 leading-relaxed font-light"
+          >
             Program bantuan operasional pendidikan APBD Pemprov Sultra bagi mahasiswa aktif berprestasi jenjang S1/D4, S2, dan S3 yang memiliki dedikasi tinggi membangun daerah.
-          </p>
+          </motion.p>
 
           {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, ease: "easeOut", delay: 0.4 }}
+            className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto"
+          >
             <Link
               href="/login"
               className="w-full sm:w-auto px-8 py-4 text-sm font-bold text-white bg-blue-600 hover:bg-blue-500 transition-colors flex items-center justify-center gap-3 border border-blue-500 rounded-xl shadow-lg hover:shadow-xl group"
@@ -61,16 +77,26 @@ export default function LandingPage() {
               JADWAL SELEKSI
               <ArrowRight className="w-4 h-4 opacity-70 transition-transform group-hover:translate-x-1" />
             </Link>
-          </div>
+          </motion.div>
         </div>
       </section>
 
       {/* Informative Sections */}
-      <FlowchartDiagram />
-      <PriorityPrograms />
-      <TimelineSection />
-      <FaqSection />
-      <EligibilityChecker />
+      <motion.div initial={{ opacity: 0, y: 50 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} viewport={{ once: true, amount: 0.1 }}>
+        <FlowchartDiagram />
+      </motion.div>
+      <motion.div initial={{ opacity: 0, y: 50 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} viewport={{ once: true, amount: 0.1 }}>
+        <PriorityPrograms />
+      </motion.div>
+      <motion.div initial={{ opacity: 0, y: 50 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} viewport={{ once: true, amount: 0.1 }}>
+        <TimelineSection />
+      </motion.div>
+      <motion.div initial={{ opacity: 0, y: 50 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} viewport={{ once: true, amount: 0.1 }}>
+        <FaqSection />
+      </motion.div>
+      <motion.div initial={{ opacity: 0, y: 50 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} viewport={{ once: true, amount: 0.1 }}>
+        <EligibilityChecker />
+      </motion.div>
       <Footer />
     </main>
   );
