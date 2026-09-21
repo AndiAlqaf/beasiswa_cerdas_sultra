@@ -192,8 +192,8 @@ export default function RegistrationPage() {
               {currentStep === 1 && (
                 <div className="space-y-6 max-w-3xl mx-auto">
                   <div className="border-b border-slate-100 pb-4">
-                    <h2 className="text-xl font-bold text-slate-900">Tahap 1: Pilih Jenjang Studi</h2>
-                    <p className="text-xs text-slate-500">Pilih tingkat pendidikan yang sedang Anda tempuh saat ini.</p>
+                    <h2 className="text-xl font-bold text-slate-900">Tahap 1: Kategori Jenjang Studi</h2>
+                    <p className="text-xs text-slate-500">Jenjang studi dikunci sesuai dengan pilihan saat pendaftaran akun.</p>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -204,11 +204,10 @@ export default function RegistrationPage() {
                     ].map((item) => (
                       <div
                         key={item.id}
-                        onClick={() => handleInputChange('jenjang', item.id)}
-                        className={`p-5 rounded-2xl border-2 cursor-pointer transition-all space-y-3 ${
+                        className={`p-5 rounded-2xl border-2 transition-all space-y-3 ${
                           formData.jenjang === item.id
                             ? 'bg-blue-50/70 border-blue-900 shadow-sm'
-                            : 'bg-white border-slate-200 hover:border-slate-300'
+                            : 'bg-slate-50 border-slate-200 opacity-60 cursor-not-allowed'
                         }`}
                       >
                         <div className="flex items-center justify-between">
