@@ -1,7 +1,13 @@
-import React from 'react';
-import { Search, Filter, Download, MoreVertical, Eye, Edit, Trash2 } from 'lucide-react';
+'use client';
+
+import React, { useState } from 'react';
+import { Search, Filter, Download, Eye, Edit, Trash2 } from 'lucide-react';
 
 export default function PendaftarPage() {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [jenjangFilter, setJenjangFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+
   const dummyData = [
     { id: 'REG-2026-001', name: 'Ahmad Dani', univ: 'Universitas Halu Oleo', prodi: 'Pendidikan Matematika', jenjang: 'S1/D4', ipk: '3.85', status: 'Menunggu', date: '20 Sep 2026' },
     { id: 'REG-2026-002', name: 'Siti Aminah', univ: 'Universitas Muhammadiyah Kendari', prodi: 'Manajemen', jenjang: 'S1/D4', ipk: '3.90', status: 'Lolos', date: '19 Sep 2026' },
@@ -13,6 +19,32 @@ export default function PendaftarPage() {
     { id: 'REG-2026-008', name: 'Dewi Lestari', univ: 'Universitas Halu Oleo', prodi: 'Kedokteran', jenjang: 'S3', ipk: '3.95', status: 'Lolos', date: '16 Sep 2026' },
   ];
 
+  const filteredData = dummyData.filter(user => {
+    const matchSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                        user.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                        user.univ.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchJenjang = jenjangFilter === '' || user.jenjang === jenjangFilter;
+    const matchStatus = statusFilter === '' || user.status === statusFilter;
+    
+    return matchSearch && matchJenjang && matchStatus;
+  });
+
+  const handleExport = () => {
+    const headers = ['No. Registrasi', 'Nama', 'Prodi', 'Universitas', 'Jenjang', 'IPK', 'Status', 'Tanggal'];
+    const csvContent = [
+      headers.join(','),
+      ...filteredData.map(u => `"${u.id}","${u.name}","${u.prodi}","${u.univ}","${u.jenjang}","${u.ipk}","${u.status}","${u.date}"`)
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `data_pendaftar_${jenjangFilter || 'semua'}_${statusFilter || 'semua'}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -20,9 +52,9 @@ export default function PendaftarPage() {
           <h2 className="text-2xl font-bold text-slate-900">Data Pendaftar</h2>
           <p className="text-slate-500">Kelola dan pantau seluruh data pendaftar beasiswa.</p>
         </div>
-        <button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-sm font-semibold transition-colors shadow-sm">
+        <button onClick={handleExport} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-sm font-semibold transition-colors shadow-sm">
           <Download className="w-4 h-4" />
-          Export Data
+          Export Data ({filteredData.length})
         </button>
       </div>
 
@@ -33,20 +65,36 @@ export default function PendaftarPage() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
             <input 
               type="text" 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Cari nama, No. Registrasi, atau Universitas..." 
               className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-colors"
             />
           </div>
           <div className="flex gap-2 flex-wrap sm:flex-nowrap">
-            <select className="px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-xl text-sm font-semibold hover:bg-slate-50 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <select 
+              value={jenjangFilter}
+              onChange={(e) => setJenjangFilter(e.target.value)}
+              className="px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-xl text-sm font-semibold hover:bg-slate-50 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
               <option value="">Semua Jenjang</option>
-              <option value="S1">S1 / D4</option>
+              <option value="S1/D4">S1 / D4</option>
               <option value="S2">S2</option>
               <option value="S3">S3</option>
             </select>
-            <button className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-xl text-sm font-semibold hover:bg-slate-50 transition-colors">
+            <select 
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-xl text-sm font-semibold hover:bg-slate-50 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">Semua Status</option>
+              <option value="Lolos">Lolos</option>
+              <option value="Menunggu">Menunggu</option>
+              <option value="Ditolak">Ditolak</option>
+            </select>
+            <button className="flex items-center gap-2 px-4 py-2 bg-blue-50 border border-blue-200 text-blue-700 rounded-xl text-sm font-semibold hover:bg-blue-100 transition-colors">
               <Filter className="w-4 h-4" />
-              Filter
+              Terapkan
             </button>
           </div>
         </div>
@@ -67,7 +115,7 @@ export default function PendaftarPage() {
               </tr>
             </thead>
             <tbody className="text-sm">
-              {dummyData.map((user, idx) => (
+              {filteredData.map((user, idx) => (
                 <tr key={idx} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
                   <td className="p-4 text-slate-600 font-mono text-xs">{user.id}</td>
                   <td className="p-4">
@@ -110,7 +158,7 @@ export default function PendaftarPage() {
 
         {/* Pagination */}
         <div className="p-4 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-slate-600">
-          <p>Menampilkan 1 hingga 8 dari 1,245 entri</p>
+          <p>Menampilkan {filteredData.length} entri (Terfilter)</p>
           <div className="flex gap-1">
             <button className="px-3 py-1 border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-50">Sebelumnya</button>
             <button className="px-3 py-1 bg-blue-600 text-white rounded-lg">1</button>
