@@ -3,21 +3,46 @@
 import React, { useState } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import { MOCK_APPLICATIONS } from '@/data/bsscData';
 import { Search, CheckCircle2, Clock, AlertCircle, ShieldCheck, ArrowRight, UserCheck } from 'lucide-react';
+import { fetchAPI } from '@/lib/api';
 
 export default function CheckStatusPage() {
-  const [searchKey, setSearchKey] = useState<string>('3401020304050001');
-  const [searchedApp, setSearchedApp] = useState<typeof MOCK_APPLICATIONS[string] | null>(
-    MOCK_APPLICATIONS['3401020304050001']
-  );
-  const [hasSearched, setHasSearched] = useState<boolean>(true);
+  const [searchKey, setSearchKey] = useState<string>('');
+  const [searchedApp, setSearchedApp] = useState<any>(null);
+  const [hasSearched, setHasSearched] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const handleSearch = (e: React.FormEvent) => {
+  const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
-    const found = MOCK_APPLICATIONS[searchKey.trim()] || null;
-    setSearchedApp(found);
-    setHasSearched(true);
+    if (!searchKey.trim()) return;
+
+    setLoading(true);
+    setErrorMsg(null);
+    try {
+      const res = await fetchAPI(`/public/cek-status/${encodeURIComponent(searchKey.trim())}`, {
+        skipAuth: true,
+      });
+
+      if (res.success && res.data) {
+        setSearchedApp({
+          registrationNo: res.data.registrationNo,
+          name: res.data.namaLengkap,
+          jenjang: res.data.jenjangTarget,
+          status: res.data.status,
+          dateSubmitted: res.data.submittedAt ? new Date(res.data.submittedAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : '-',
+          notes: res.data.notes || 'Berkas telah diterima di sistem dan sedang dalam antrean verifikasi.',
+        });
+      } else {
+        setSearchedApp(null);
+      }
+    } catch (err: any) {
+      setSearchedApp(null);
+      setErrorMsg(err.message || 'Data pendaftaran tidak ditemukan.');
+    } finally {
+      setHasSearched(true);
+      setLoading(false);
+    }
   };
 
   const statusSteps = [
@@ -46,7 +71,7 @@ export default function CheckStatusPage() {
             Cek Status Pendaftaran Beasiswa Sultra Cerdas
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 max-w-lg mx-auto">
-            Masukkan NIK 16 digit atau Nomor Registrasi pendaftaran Anda untuk memantau progres verifikasi dan pencairan.
+            Masukkan NIK 16 digit Anda untuk memantau status validasi dan progres seleksi beasiswa.
           </p>
         </div>
 
@@ -59,40 +84,18 @@ export default function CheckStatusPage() {
                 type="text"
                 value={searchKey}
                 onChange={(e) => setSearchKey(e.target.value)}
-                placeholder="Masukkan NIK (Contoh: 3401020304050001)"
+                placeholder="Masukkan NIK 16 digit Anda (Contoh: 7401...)"
                 className="w-full pl-11 pr-4 py-3.5 rounded-2xl border border-slate-300 text-sm font-medium focus:ring-2 focus:ring-blue-900 focus:outline-none"
               />
             </div>
             <button
               type="submit"
-              className="px-7 py-3.5 rounded-2xl bg-blue-900 hover:bg-blue-950 text-white font-bold text-xs uppercase tracking-wider shadow-sm transition-all"
+              disabled={loading}
+              className="px-7 py-3.5 rounded-2xl bg-blue-900 hover:bg-blue-950 text-white font-bold text-xs uppercase tracking-wider shadow-sm transition-all disabled:opacity-50"
             >
-              Cari Status
+              {loading ? 'Memeriksa...' : 'Cari Status'}
             </button>
           </form>
-
-          {/* Quick Demo Shortcuts */}
-          <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100 text-xs">
-            <span className="text-slate-400 font-medium">Contoh Demo NIK:</span>
-            <button
-              onClick={() => {
-                setSearchKey('3401020304050001');
-                setSearchedApp(MOCK_APPLICATIONS['3401020304050001']);
-              }}
-              className="px-2.5 py-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-mono text-[11px]"
-            >
-              3401020304050001 (Pencairan Termin I)
-            </button>
-            <button
-              onClick={() => {
-                setSearchKey('3401020304050002');
-                setSearchedApp(MOCK_APPLICATIONS['3401020304050002']);
-              }}
-              className="px-2.5 py-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-mono text-[11px]"
-            >
-              3401020304050002 (Verifikasi Berkas)
-            </button>
-          </div>
         </div>
 
         {/* Status Result Details */}
@@ -107,8 +110,8 @@ export default function CheckStatusPage() {
                       {searchedApp.registrationNo}
                     </span>
                     <h2 className="text-2xl font-bold text-slate-900 mt-1">{searchedApp.name}</h2>
-                    <p className="text-xs text-slate-500">
-                      {searchedApp.univ} • {searchedApp.prodi} ({searchedApp.jenjang})
+                    <p className="text-xs text-slate-500 font-medium mt-0.5">
+                      Kategori: <strong className="text-slate-800">Jenjang {searchedApp.jenjang}</strong>
                     </p>
                   </div>
 

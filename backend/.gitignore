@@ -1,0 +1,20 @@
+# Dependencies
+node_modules/
+
+# Environment (NEVER commit secrets)
+.env
+
+# Uploaded files
+uploads/selfies/*
+uploads/ktm/*
+uploads/pendukung/*
+!uploads/selfies/.gitkeep
+!uploads/ktm/.gitkeep
+!uploads/pendukung/.gitkeep
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db

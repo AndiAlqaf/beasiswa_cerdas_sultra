@@ -1,13 +1,33 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { LayoutDashboard, Users, FileCheck, Settings, LogOut, Menu, X, Bell } from 'lucide-react';
+import { getUser, clearTokens } from '@/lib/api';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
+  const [user, setUser] = useState<any>(null);
+
+  useEffect(() => {
+    setUser(getUser());
+  }, []);
+
+  const handleLogout = () => {
+    clearTokens();
+    window.location.href = '/login';
+  };
+
+  const adminName = user?.namaLengkap || user?.email || 'Administrator';
+  const adminInitials = adminName
+    .split(' ')
+    .map((n: string) => n[0])
+    .filter(Boolean)
+    .join('')
+    .substring(0, 2)
+    .toUpperCase() || 'AD';
 
   const navItems = [
     { name: 'Dashboard Admin', href: '/admin', icon: LayoutDashboard },
@@ -61,10 +81,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </nav>
 
         <div className="absolute bottom-0 left-0 w-full p-4 border-t border-[#134983]">
-          <Link href="/login" className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-rose-200 hover:bg-white/10 transition-colors">
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-rose-200 hover:bg-white/10 transition-colors text-left"
+          >
             <LogOut className="w-5 h-5" />
             Keluar (Admin)
-          </Link>
+          </button>
         </div>
       </aside>
 
@@ -89,11 +112,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </button>
             <div className="flex items-center gap-3 pl-4 border-l border-slate-200">
               <div className="w-9 h-9 rounded-full bg-blue-100 text-blue-900 flex items-center justify-center font-bold text-sm">
-                SA
+                {adminInitials}
               </div>
               <div className="hidden sm:block text-sm">
-                <p className="font-bold text-slate-900 leading-none">Super Admin</p>
-                <p className="text-xs text-slate-500 mt-1">Administrator</p>
+                <p className="font-bold text-slate-900 leading-none">{adminName}</p>
+                <p className="text-xs text-slate-500 mt-1">Administrator Sistem</p>
               </div>
             </div>
           </div>

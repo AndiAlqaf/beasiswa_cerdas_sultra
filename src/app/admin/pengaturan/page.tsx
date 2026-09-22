@@ -1,29 +1,65 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Settings, Users, Bell, Shield, Save, Calendar, FileText } from 'lucide-react';
+import { Settings, Users, Bell, Shield, Save, Calendar, FileText, CheckCircle2 } from 'lucide-react';
 
 export default function PengaturanPage() {
   const [activeTab, setActiveTab] = useState('umum');
+  const [savedSuccess, setSavedSuccess] = useState(false);
+
+  const [generalConfig, setGeneralConfig] = useState({
+    programName: 'Beasiswa Sultra Cerdas 2026',
+    academicYear: '2026/2027',
+    status: 'Dibuka',
+  });
+
+  const [scheduleConfig, setScheduleConfig] = useState({
+    openDate: '2026-09-13',
+    closeDate: '2026-09-30',
+    selectionStart: '2026-10-01',
+    announcementDate: '2026-10-16',
+  });
+
+  const [reqConfig, setReqConfig] = useState({
+    minIpkS1: '3.25',
+    minIpkS2: '3.50',
+    minIpkS3: '3.50',
+    allowDoubleFunding: false,
+  });
+
+  const handleSave = (e: React.FormEvent) => {
+    e.preventDefault();
+    setSavedSuccess(true);
+    setTimeout(() => setSavedSuccess(false), 3000);
+  };
 
   const tabs = [
     { id: 'umum', label: 'Pengaturan Umum', icon: Settings },
     { id: 'jadwal', label: 'Jadwal Pendaftaran', icon: Calendar },
-    { id: 'persyaratan', label: 'Persyaratan', icon: FileText },
-    { id: 'admin', label: 'Kelola Admin', icon: Shield },
+    { id: 'persyaratan', label: 'Standar Persyaratan', icon: FileText },
+    { id: 'admin', label: 'Hak Akses & Keamanan', icon: Shield },
   ];
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold text-slate-900">Pengaturan Sistem</h2>
-        <p className="text-slate-500">Konfigurasi portal beasiswa, jadwal, dan preferensi sistem.</p>
+    <div className="space-y-6 max-w-7xl mx-auto">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold text-slate-900">Pengaturan Portal</h2>
+          <p className="text-slate-500 text-sm">Konfigurasi parameter program, periode jadwal seleksi, dan standar kelulusan.</p>
+        </div>
+
+        {savedSuccess && (
+          <div className="flex items-center gap-2 bg-emerald-50 text-emerald-800 border border-emerald-200 px-4 py-2 rounded-xl text-xs font-bold animate-in fade-in">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+            Pengaturan berhasil disimpan!
+          </div>
+        )}
       </div>
 
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col md:flex-row min-h-[600px]">
+      <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden flex flex-col md:flex-row min-h-[550px]">
         {/* Sidebar Tabs */}
         <div className="w-full md:w-64 bg-slate-50 border-r border-slate-200 p-4 shrink-0">
-          <nav className="flex flex-col gap-1">
+          <nav className="flex flex-col gap-1.5">
             {tabs.map((tab) => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.id;
@@ -31,13 +67,13 @@ export default function PengaturanPage() {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-colors text-left ${
+                  className={`flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-semibold transition-all text-left ${
                     isActive 
-                      ? 'bg-blue-100 text-blue-900' 
-                      : 'text-slate-600 hover:bg-slate-200/50 hover:text-slate-900'
+                      ? 'bg-blue-900 text-white shadow-sm' 
+                      : 'text-slate-600 hover:bg-slate-200/60 hover:text-slate-900'
                   }`}
                 >
-                  <Icon className={`w-5 h-5 ${isActive ? 'text-blue-600' : 'text-slate-400'}`} />
+                  <Icon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-slate-400'}`} />
                   {tab.label}
                 </button>
               );
@@ -46,97 +82,203 @@ export default function PengaturanPage() {
         </div>
 
         {/* Content Area */}
-        <div className="flex-1 p-6 sm:p-8">
+        <div className="flex-1 p-6 sm:p-10">
           {activeTab === 'umum' && (
-            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <form onSubmit={handleSave} className="space-y-6 max-w-2xl animate-in fade-in duration-200">
               <div className="space-y-1">
                 <h3 className="text-lg font-bold text-slate-900">Pengaturan Umum</h3>
-                <p className="text-sm text-slate-500">Atur informasi dasar tentang program beasiswa tahun ini.</p>
+                <p className="text-xs text-slate-500">Atur parameter dasar identitas program beasiswa Pemprov Sultra.</p>
               </div>
 
-              <div className="space-y-5 max-w-2xl">
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-slate-900 block">Nama Program</label>
-                  <input type="text" defaultValue="Beasiswa Sultra Cerdas 2026" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              <div className="space-y-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-700 block">Nama Program</label>
+                  <input
+                    type="text"
+                    value={generalConfig.programName}
+                    onChange={(e) => setGeneralConfig({ ...generalConfig, programName: e.target.value })}
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-900"
+                  />
                 </div>
                 
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-slate-900 block">Tahun Akademik</label>
-                  <input type="text" defaultValue="2026/2027" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-700 block">Tahun Anggaran & Akademik</label>
+                  <input
+                    type="text"
+                    value={generalConfig.academicYear}
+                    onChange={(e) => setGeneralConfig({ ...generalConfig, academicYear: e.target.value })}
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-900"
+                  />
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-slate-900 block">Status Pendaftaran</label>
+                <div className="space-y-2 pt-2">
+                  <label className="text-xs font-bold text-slate-700 block">Status Pendaftaran Portal</label>
                   <div className="flex gap-4">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input type="radio" name="status" defaultChecked className="w-4 h-4 text-blue-600 focus:ring-blue-500" />
-                      <span className="text-sm font-medium text-slate-700">Dibuka</span>
+                    <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-slate-700">
+                      <input
+                        type="radio"
+                        name="status"
+                        checked={generalConfig.status === 'Dibuka'}
+                        onChange={() => setGeneralConfig({ ...generalConfig, status: 'Dibuka' })}
+                        className="w-4 h-4 text-blue-900 focus:ring-blue-900"
+                      />
+                      <span>Dibuka (Pendaftaran Aktif)</span>
                     </label>
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input type="radio" name="status" className="w-4 h-4 text-blue-600 focus:ring-blue-500" />
-                      <span className="text-sm font-medium text-slate-700">Ditutup</span>
+                    <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-slate-700">
+                      <input
+                        type="radio"
+                        name="status"
+                        checked={generalConfig.status === 'Ditutup'}
+                        onChange={() => setGeneralConfig({ ...generalConfig, status: 'Ditutup' })}
+                        className="w-4 h-4 text-blue-900 focus:ring-blue-900"
+                      />
+                      <span>Ditutup (Maintenance / Selesai)</span>
                     </label>
                   </div>
                 </div>
-
-                <div className="pt-4 flex justify-end">
-                  <button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl font-bold transition-colors shadow-sm">
-                    <Save className="w-4 h-4" />
-                    Simpan Perubahan
-                  </button>
-                </div>
               </div>
-            </div>
+
+              <div className="pt-4 flex justify-end">
+                <button type="submit" className="flex items-center gap-2 bg-blue-900 hover:bg-blue-950 text-white px-6 py-2.5 rounded-xl font-bold text-xs transition-colors shadow-sm">
+                  <Save className="w-4 h-4" />
+                  Simpan Perubahan
+                </button>
+              </div>
+            </form>
           )}
 
           {activeTab === 'jadwal' && (
-            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <form onSubmit={handleSave} className="space-y-6 max-w-2xl animate-in fade-in duration-200">
               <div className="space-y-1">
-                <h3 className="text-lg font-bold text-slate-900">Jadwal Pendaftaran</h3>
-                <p className="text-sm text-slate-500">Tentukan periode pembukaan dan penutupan beasiswa.</p>
+                <h3 className="text-lg font-bold text-slate-900">Jadwal Pelaksanaan Seleksi</h3>
+                <p className="text-xs text-slate-500">Tentukan periode pembukaan, masa verifikasi berkas, dan pengumuman.</p>
               </div>
 
-              <div className="space-y-5 max-w-2xl">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label className="text-sm font-semibold text-slate-900 block">Tanggal Buka</label>
-                    <input type="date" defaultValue="2026-09-01" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-semibold text-slate-900 block">Tanggal Tutup</label>
-                    <input type="date" defaultValue="2026-10-31" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                  </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-700 block">Tanggal Mulai Pendaftaran</label>
+                  <input
+                    type="date"
+                    value={scheduleConfig.openDate}
+                    onChange={(e) => setScheduleConfig({ ...scheduleConfig, openDate: e.target.value })}
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-900"
+                  />
                 </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label className="text-sm font-semibold text-slate-900 block">Mulai Seleksi</label>
-                    <input type="date" defaultValue="2026-11-01" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-semibold text-slate-900 block">Pengumuman Hasil</label>
-                    <input type="date" defaultValue="2026-11-15" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                  </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-700 block">Batas Akhir Pendaftaran</label>
+                  <input
+                    type="date"
+                    value={scheduleConfig.closeDate}
+                    onChange={(e) => setScheduleConfig({ ...scheduleConfig, closeDate: e.target.value })}
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-900"
+                  />
                 </div>
-
-                <div className="pt-4 flex justify-end">
-                  <button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl font-bold transition-colors shadow-sm">
-                    <Save className="w-4 h-4" />
-                    Simpan Jadwal
-                  </button>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-700 block">Masa Verifikasi & Seleksi</label>
+                  <input
+                    type="date"
+                    value={scheduleConfig.selectionStart}
+                    onChange={(e) => setScheduleConfig({ ...scheduleConfig, selectionStart: e.target.value })}
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-900"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-700 block">Pengumuman Kelulusan</label>
+                  <input
+                    type="date"
+                    value={scheduleConfig.announcementDate}
+                    onChange={(e) => setScheduleConfig({ ...scheduleConfig, announcementDate: e.target.value })}
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-900"
+                  />
                 </div>
               </div>
-            </div>
+
+              <div className="pt-4 flex justify-end">
+                <button type="submit" className="flex items-center gap-2 bg-blue-900 hover:bg-blue-950 text-white px-6 py-2.5 rounded-xl font-bold text-xs transition-colors shadow-sm">
+                  <Save className="w-4 h-4" />
+                  Simpan Jadwal
+                </button>
+              </div>
+            </form>
           )}
 
-          {activeTab !== 'umum' && activeTab !== 'jadwal' && (
-            <div className="h-full flex flex-col items-center justify-center text-center p-8 space-y-4 animate-in fade-in">
-              <div className="w-16 h-16 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center">
-                <Settings className="w-8 h-8" />
+          {activeTab === 'persyaratan' && (
+            <form onSubmit={handleSave} className="space-y-6 max-w-2xl animate-in fade-in duration-200">
+              <div className="space-y-1">
+                <h3 className="text-lg font-bold text-slate-900">Standar Persyaratan Akademik</h3>
+                <p className="text-xs text-slate-500">Konfigurasi batas minimal nilai IPK dan syarat administrasi bagi pendaftar.</p>
               </div>
-              <div>
-                <h3 className="text-lg font-bold text-slate-900">Modul Belum Tersedia</h3>
-                <p className="text-slate-500 max-w-md mx-auto mt-2">Halaman pengaturan ini masih dalam tahap pengembangan (dummy).</p>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-700 block">Min IPK S1 / D4</label>
+                  <input
+                    type="text"
+                    value={reqConfig.minIpkS1}
+                    onChange={(e) => setReqConfig({ ...reqConfig, minIpkS1: e.target.value })}
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-900"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-700 block">Min IPK S2 (Magister)</label>
+                  <input
+                    type="text"
+                    value={reqConfig.minIpkS2}
+                    onChange={(e) => setReqConfig({ ...reqConfig, minIpkS2: e.target.value })}
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-900"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-700 block">Min IPK S3 (Doktor)</label>
+                  <input
+                    type="text"
+                    value={reqConfig.minIpkS3}
+                    onChange={(e) => setReqConfig({ ...reqConfig, minIpkS3: e.target.value })}
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-900"
+                  />
+                </div>
+              </div>
+
+              <div className="pt-4 flex justify-end">
+                <button type="submit" className="flex items-center gap-2 bg-blue-900 hover:bg-blue-950 text-white px-6 py-2.5 rounded-xl font-bold text-xs transition-colors shadow-sm">
+                  <Save className="w-4 h-4" />
+                  Simpan Persyaratan
+                </button>
+              </div>
+            </form>
+          )}
+
+          {activeTab === 'admin' && (
+            <div className="space-y-6 max-w-2xl animate-in fade-in duration-200">
+              <div className="space-y-1">
+                <h3 className="text-lg font-bold text-slate-900">Hak Akses & Keamanan Sistem</h3>
+                <p className="text-xs text-slate-500">Konfigurasi keamanan 5-Layer Defense dan akun administrator portal.</p>
+              </div>
+
+              <div className="space-y-3 text-xs">
+                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between">
+                  <div>
+                    <span className="font-bold text-slate-900 block">Rate Limiting Protection</span>
+                    <span className="text-slate-500">Membatasi frekuensi request untuk mencegah brute force dan DDoS.</span>
+                  </div>
+                  <span className="px-2.5 py-1 bg-emerald-100 text-emerald-800 font-bold rounded-md">Aktif</span>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between">
+                  <div>
+                    <span className="font-bold text-slate-900 block">Magic Bytes File Validation</span>
+                    <span className="text-slate-500">Validasi struktur header biner file PDF, JPG, PNG pada unggahan berkas.</span>
+                  </div>
+                  <span className="px-2.5 py-1 bg-emerald-100 text-emerald-800 font-bold rounded-md">Aktif</span>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between">
+                  <div>
+                    <span className="font-bold text-slate-900 block">JWT Token HS512 & Audit Logging</span>
+                    <span className="text-slate-500">Audit trail pencatatan IP address dan aktivitas verifikasi administrator.</span>
+                  </div>
+                  <span className="px-2.5 py-1 bg-emerald-100 text-emerald-800 font-bold rounded-md">Aktif</span>
+                </div>
               </div>
             </div>
           )}

@@ -2,10 +2,46 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, ShieldCheck, Mail, Lock, Eye, EyeOff, ArrowRight } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { ArrowLeft, ShieldCheck, Mail, Lock, Eye, EyeOff, ArrowRight, AlertCircle, Loader2 } from 'lucide-react';
+import { fetchAPI, setTokens } from '@/lib/api';
 
 export default function LoginPage() {
+  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
+  const [identifier, setIdentifier] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+
+    try {
+      const res = await fetchAPI('/auth/login', {
+        method: 'POST',
+        skipAuth: true,
+        body: JSON.stringify({ identifier, password }),
+      });
+
+      if (res.success && res.data) {
+        const { accessToken, refreshToken, user } = res.data;
+        setTokens(accessToken, refreshToken, user);
+
+        if (user.role === 'admin') {
+          router.push('/admin');
+        } else {
+          router.push('/dashboard');
+        }
+      }
+    } catch (err: any) {
+      setError(err.message || 'Gagal masuk. Periksa kembali kredensial Anda.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-white flex">
@@ -62,7 +98,17 @@ export default function LoginPage() {
             <p className="text-slate-500">Silakan masuk ke akun Anda untuk melanjutkan.</p>
           </div>
 
-          <form className="space-y-5" onSubmit={(e) => { e.preventDefault(); window.location.href = '/dashboard'; }}>
+          {error && (
+            <div className="p-4 bg-rose-50 border border-rose-200 rounded-2xl flex items-start gap-3 text-xs text-rose-800 animate-in fade-in">
+              <AlertCircle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+              <div>
+                <span className="font-bold block">Gagal Masuk</span>
+                <span>{error}</span>
+              </div>
+            </div>
+          )}
+
+          <form className="space-y-5" onSubmit={handleLogin}>
             <div className="space-y-4">
               {/* Email/NIK Input */}
               <div className="space-y-1.5">
@@ -74,6 +120,8 @@ export default function LoginPage() {
                   <input
                     type="text"
                     required
+                    value={identifier}
+                    onChange={(e) => setIdentifier(e.target.value)}
                     className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all text-slate-900"
                     placeholder="Masukkan Email atau NIK Anda"
                   />
@@ -95,6 +143,8 @@ export default function LoginPage() {
                   <input
                     type={showPassword ? 'text' : 'password'}
                     required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
                     className="w-full pl-11 pr-12 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all text-slate-900"
                     placeholder="Masukkan kata sandi Anda"
                   />
@@ -121,23 +171,23 @@ export default function LoginPage() {
               </label>
             </div>
 
-            {/* Submit Buttons */}
-            <div className="space-y-3">
+            {/* Submit Button */}
+            <div className="space-y-3 pt-2">
               <button
                 type="submit"
-                className="w-full py-3.5 px-4 bg-blue-900 hover:bg-blue-950 text-white font-bold rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 group"
+                disabled={loading}
+                className="w-full py-3.5 px-4 bg-blue-900 hover:bg-blue-950 text-white font-bold rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 group disabled:opacity-50"
               >
-                Masuk sebagai Mahasiswa (Dummy)
-                <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
-              </button>
-
-              <button
-                type="button"
-                onClick={() => window.location.href = '/admin'}
-                className="w-full py-3.5 px-4 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 group"
-              >
-                Masuk sebagai Admin (Dummy)
-                <ShieldCheck className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                {loading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" /> Memproses...
+                  </>
+                ) : (
+                  <>
+                    Masuk ke Akun
+                    <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                  </>
+                )}
               </button>
             </div>
           </form>

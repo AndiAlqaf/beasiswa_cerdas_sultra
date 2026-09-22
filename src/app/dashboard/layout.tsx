@@ -1,13 +1,48 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { LayoutDashboard, FileText, Bell, LogOut, User, Menu, X, ShieldCheck, Download } from 'lucide-react';
+import { getUser, fetchAPI, clearTokens } from '@/lib/api';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
+  const [user, setUser] = useState<any>(null);
+
+  useEffect(() => {
+    const cachedUser = getUser();
+    if (cachedUser) {
+      setUser(cachedUser);
+    }
+    
+    // Fetch latest user profile directly from API
+    fetchAPI('/applicant/profile')
+      .then((res) => {
+        if (res.success && res.data?.user) {
+          setUser({
+            ...cachedUser,
+            ...res.data.user,
+            ...(res.data.profile || {}),
+          });
+        }
+      })
+      .catch((err) => {
+        console.warn('DashboardLayout profile load error:', err.message);
+      });
+  }, []);
+
+  const handleLogout = () => {
+    clearTokens();
+    window.location.href = '/login';
+  };
+
+  const userName = user?.namaLengkap || user?.email || 'Memuat...';
+  const userInitials = userName !== 'Memuat...' 
+    ? userName.split(' ').map((n: string) => n[0]).filter(Boolean).join('').substring(0, 2).toUpperCase()
+    : 'U';
+  const userJenjang = user?.jenjangTarget ? `Jenjang ${user.jenjangTarget}` : 'Peserta Beasiswa';
 
   const navItems = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
@@ -61,10 +96,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </nav>
 
         <div className="absolute bottom-0 left-0 w-full p-4 border-t border-[#134983]">
-          <Link href="/login" className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-rose-200 hover:bg-white/10 transition-colors">
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-rose-200 hover:bg-white/10 transition-colors text-left"
+          >
             <LogOut className="w-5 h-5" />
             Keluar Akun
-          </Link>
+          </button>
         </div>
       </aside>
 
@@ -89,11 +127,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </button>
             <div className="flex items-center gap-3 pl-4 border-l border-slate-200">
               <div className="w-9 h-9 rounded-full bg-blue-100 text-blue-900 flex items-center justify-center font-bold text-sm">
-                AD
+                {userInitials}
               </div>
               <div className="hidden sm:block text-sm">
-                <p className="font-bold text-slate-900 leading-none">Ahmad Dani</p>
-                <p className="text-xs text-slate-500 mt-1">S1 - Pendidikan</p>
+                <p className="font-bold text-slate-900 leading-none">{userName}</p>
+                <p className="text-xs text-slate-500 mt-1">{userJenjang}</p>
               </div>
             </div>
           </div>

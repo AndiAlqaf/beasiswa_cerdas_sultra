@@ -1,39 +1,57 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Search, Filter, Download, Eye, Edit, Trash2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Search, Filter, Download, Eye, Edit, Trash2, Loader2, AlertCircle } from 'lucide-react';
+import { fetchAPI } from '@/lib/api';
 
 export default function PendaftarPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [jenjangFilter, setJenjangFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [page, setPage] = useState(1);
+  const [applicants, setApplicants] = useState<any[]>([]);
+  const [pagination, setPagination] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const dummyData = [
-    { id: 'REG-2026-001', name: 'Ahmad Dani', univ: 'Universitas Halu Oleo', prodi: 'Pendidikan Matematika', jenjang: 'S1/D4', ipk: '3.85', status: 'Menunggu', date: '20 Sep 2026' },
-    { id: 'REG-2026-002', name: 'Siti Aminah', univ: 'Universitas Muhammadiyah Kendari', prodi: 'Manajemen', jenjang: 'S1/D4', ipk: '3.90', status: 'Lolos', date: '19 Sep 2026' },
-    { id: 'REG-2026-003', name: 'Budi Santoso', univ: 'IAIN Kendari', prodi: 'Ekonomi Syariah', jenjang: 'S2', ipk: '3.75', status: 'Ditolak', date: '19 Sep 2026' },
-    { id: 'REG-2026-004', name: 'Rina Marlina', univ: 'Universitas Halu Oleo', prodi: 'Ilmu Hukum', jenjang: 'S1/D4', ipk: '3.88', status: 'Lolos', date: '18 Sep 2026' },
-    { id: 'REG-2026-005', name: 'Andi Saputra', univ: 'Universitas Sulawesi Tenggara', prodi: 'Teknik Sipil', jenjang: 'S1/D4', ipk: '3.65', status: 'Menunggu', date: '18 Sep 2026' },
-    { id: 'REG-2026-006', name: 'Nurul Hidayah', univ: 'Universitas Halu Oleo', prodi: 'Pendidikan Bahasa Inggris', jenjang: 'S2', ipk: '3.92', status: 'Menunggu', date: '17 Sep 2026' },
-    { id: 'REG-2026-007', name: 'Kaharuddin', univ: 'USN Kolaka', prodi: 'Agribisnis', jenjang: 'S1/D4', ipk: '3.70', status: 'Ditolak', date: '17 Sep 2026' },
-    { id: 'REG-2026-008', name: 'Dewi Lestari', univ: 'Universitas Halu Oleo', prodi: 'Kedokteran', jenjang: 'S3', ipk: '3.95', status: 'Lolos', date: '16 Sep 2026' },
-  ];
+  const loadData = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const params = new URLSearchParams();
+      params.set('page', String(page));
+      params.set('limit', '10');
+      if (searchTerm.trim()) params.set('search', searchTerm.trim());
+      if (jenjangFilter) params.set('jenjang', jenjangFilter);
+      if (statusFilter) params.set('status', statusFilter);
 
-  const filteredData = dummyData.filter(user => {
-    const matchSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                        user.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                        user.univ.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchJenjang = jenjangFilter === '' || user.jenjang === jenjangFilter;
-    const matchStatus = statusFilter === '' || user.status === statusFilter;
-    
-    return matchSearch && matchJenjang && matchStatus;
-  });
+      const res = await fetchAPI(`/admin/applicants?${params.toString()}`);
+      if (res.success && res.data) {
+        setApplicants(res.data.applicants || []);
+        setPagination(res.data.pagination || null);
+      }
+    } catch (err: any) {
+      setError(err.message || 'Gagal memuat data pendaftar.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
+  }, [page, jenjangFilter, statusFilter]);
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setPage(1);
+    loadData();
+  };
 
   const handleExport = () => {
-    const headers = ['No. Registrasi', 'Nama', 'Prodi', 'Universitas', 'Jenjang', 'IPK', 'Status', 'Tanggal'];
+    const headers = ['No. Registrasi', 'Nama', 'Email', 'NIK', 'Jenjang', 'Status', 'Tanggal'];
     const csvContent = [
       headers.join(','),
-      ...filteredData.map(u => `"${u.id}","${u.name}","${u.prodi}","${u.univ}","${u.jenjang}","${u.ipk}","${u.status}","${u.date}"`)
+      ...applicants.map((u: any) => `"${u.registrationNo}","${u.namaLengkap}","${u.email}","${u.nik}","${u.jenjangTarget}","${u.status}","${u.submittedAt}"`)
     ].join('\n');
 
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -54,7 +72,7 @@ export default function PendaftarPage() {
         </div>
         <button onClick={handleExport} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-sm font-semibold transition-colors shadow-sm">
           <Download className="w-4 h-4" />
-          Export Data ({filteredData.length})
+          Export Data ({applicants.length})
         </button>
       </div>
 
@@ -115,57 +133,76 @@ export default function PendaftarPage() {
               </tr>
             </thead>
             <tbody className="text-sm">
-              {filteredData.map((user, idx) => (
-                <tr key={idx} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
-                  <td className="p-4 text-slate-600 font-mono text-xs">{user.id}</td>
-                  <td className="p-4">
-                    <p className="font-bold text-slate-900">{user.name}</p>
-                    <p className="text-xs text-slate-500 mt-0.5">{user.prodi}</p>
-                  </td>
-                  <td className="p-4 text-slate-600">{user.univ}</td>
-                  <td className="p-4">
-                    <span className="bg-slate-100 text-slate-700 px-2.5 py-1 rounded-md text-xs font-bold border border-slate-200 whitespace-nowrap">{user.jenjang}</span>
-                  </td>
-                  <td className="p-4 text-slate-900 font-semibold">{user.ipk}</td>
-                  <td className="p-4 text-slate-500 text-xs">{user.date}</td>
-                  <td className="p-4">
-                    <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
-                      user.status === 'Lolos' ? 'bg-emerald-100 text-emerald-700' :
-                      user.status === 'Ditolak' ? 'bg-rose-100 text-rose-700' :
-                      'bg-amber-100 text-amber-700'
-                    }`}>
-                      {user.status}
-                    </span>
-                  </td>
-                  <td className="p-4 text-center">
-                    <div className="flex items-center justify-center gap-2">
-                      <button className="p-1.5 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors" title="Lihat Detail">
-                        <Eye className="w-4 h-4" />
-                      </button>
-                      <button className="p-1.5 text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors" title="Edit Data">
-                        <Edit className="w-4 h-4" />
-                      </button>
-                      <button className="p-1.5 text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-lg transition-colors" title="Hapus">
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
+              {loading ? (
+                <tr>
+                  <td colSpan={8} className="p-8 text-center text-slate-500">
+                    <Loader2 className="w-6 h-6 animate-spin mx-auto text-blue-900 mb-2" />
+                    Memuat data pendaftar...
                   </td>
                 </tr>
-              ))}
+              ) : applicants.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="p-8 text-center text-slate-500">
+                    Tidak ada pendaftar yang sesuai dengan kriteria filter.
+                  </td>
+                </tr>
+              ) : (
+                applicants.map((user, idx) => (
+                  <tr key={idx} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+                    <td className="p-4 text-slate-600 font-mono text-xs">{user.registrationNo}</td>
+                    <td className="p-4">
+                      <p className="font-bold text-slate-900">{user.namaLengkap}</p>
+                      <p className="text-xs text-slate-500 mt-0.5">{user.email}</p>
+                    </td>
+                    <td className="p-4 text-slate-600">NIK: {user.nik}</td>
+                    <td className="p-4">
+                      <span className="bg-slate-100 text-slate-700 px-2.5 py-1 rounded-md text-xs font-bold border border-slate-200 whitespace-nowrap">{user.jenjangTarget}</span>
+                    </td>
+                    <td className="p-4 text-slate-900 font-semibold">-</td>
+                    <td className="p-4 text-slate-500 text-xs">
+                      {user.submittedAt ? new Date(user.submittedAt).toLocaleDateString('id-ID') : '-'}
+                    </td>
+                    <td className="p-4">
+                      <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
+                        user.status === 'DITERIMA' ? 'bg-emerald-100 text-emerald-700' :
+                        user.status === 'DITOLAK' ? 'bg-rose-100 text-rose-700' :
+                        'bg-amber-100 text-amber-700'
+                      }`}>
+                        {user.status}
+                      </span>
+                    </td>
+                    <td className="p-4 text-center">
+                      <div className="flex items-center justify-center gap-2">
+                        <button className="p-1.5 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors" title="Lihat Detail">
+                          <Eye className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
 
         {/* Pagination */}
         <div className="p-4 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-slate-600">
-          <p>Menampilkan {filteredData.length} entri (Terfilter)</p>
+          <p>Total {pagination?.totalItems || applicants.length} pendaftar (Halaman {pagination?.currentPage || 1} dari {pagination?.totalPages || 1})</p>
           <div className="flex gap-1">
-            <button className="px-3 py-1 border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-50">Sebelumnya</button>
-            <button className="px-3 py-1 bg-blue-600 text-white rounded-lg">1</button>
-            <button className="px-3 py-1 border border-slate-200 rounded-lg hover:bg-slate-50">2</button>
-            <button className="px-3 py-1 border border-slate-200 rounded-lg hover:bg-slate-50">3</button>
-            <span className="px-2 py-1">...</span>
-            <button className="px-3 py-1 border border-slate-200 rounded-lg hover:bg-slate-50">Selanjutnya</button>
+            <button
+              disabled={page <= 1}
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              className="px-3 py-1 border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-50"
+            >
+              Sebelumnya
+            </button>
+            <button
+              disabled={page >= (pagination?.totalPages || 1)}
+              onClick={() => setPage(p => p + 1)}
+              className="px-3 py-1 border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-50"
+            >
+              Selanjutnya
+            </button>
           </div>
         </div>
       </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { SULTRA_DISTRICTS } from '@/data/bsscData';
 import {
@@ -17,61 +17,64 @@ import {
   FileText,
   AlertCircle,
   Printer,
-  Home
+  Home,
+  Loader2
 } from 'lucide-react';
+import { fetchAPI } from '@/lib/api';
 
 export default function RegistrationPage() {
   const [currentStep, setCurrentStep] = useState<number>(1);
   const [isSubmitted, setIsSubmitted] = useState<boolean>(false);
   const [registrationCode, setRegistrationCode] = useState<string>('');
+  const [loadingProfile, setLoadingProfile] = useState<boolean>(true);
 
-  // Form State (Otomatis terisi dari data pembuatan akun pada /register)
+  // Form State (Real empty defaults, automatically populated from Backend API)
   const [formData, setFormData] = useState({
     // Step 1: Kategori
     jenjang: 'S1',
     agreedSemesterRange: true,
 
-    // Step 2: Data Diri (Terisi Otomatis dari Registrasi Akun)
-    namaLengkap: 'Budi Santoso',
-    tempatLahir: 'Kendari',
-    tanggalLahir: '2003-08-15',
+    // Step 2: Data Diri
+    namaLengkap: '',
+    tempatLahir: '',
+    tanggalLahir: '',
     jenisKelamin: 'Laki-laki',
-    nik: '7471021508030001',
-    noKk: '7471020101010099',
+    nik: '',
+    noKk: '',
     asalDaerah: 'KOTA_KENDARI',
-    alamatKtp: 'Jl. H.E.A. Mokodompit No. 12, Kel. Kambu, Kec. Kambu, Kota Kendari',
-    alamatDomisili: 'Jl. H.E.A. Mokodompit No. 12, Kel. Kambu, Kec. Kambu, Kota Kendari',
-    noHp: '+62 822 9182 3456',
-    email: 'budi.santoso@uho.ac.id',
+    alamatKtp: '',
+    alamatDomisili: '',
+    noHp: '',
+    email: '',
 
-    // Step 3: Data Akademik (Terisi Otomatis dari Registrasi Akun)
-    perguruanTinggi: 'Universitas Halu Oleo',
-    fakultasProdi: 'Teknik / Teknik Informatika',
+    // Step 3: Data Akademik
+    perguruanTinggi: '',
+    fakultasProdi: '',
     akreditasiProdi: 'Baik Sekali',
-    nim: 'E1E121001',
+    nim: '',
     semester: 3,
-    ipk: '3.45',
-    targetLulus: '2027',
+    ipk: '',
+    targetLulus: '',
     beasiswaLain: 'Tidak Ada',
 
-    // Step 4: Riwayat Pendidikan (Terisi Otomatis dari Registrasi Akun)
-    sdNama: 'SD Negeri 1 Kendari',
-    sdTahunLulus: '2015',
-    smpNama: 'SMP Negeri 1 Kendari',
-    smpTahunLulus: '2018',
-    smaNama: 'SMA Negeri 1 Kendari',
-    smaJurusan: 'IPA',
-    smaTahunLulus: '2023',
-    prestasiRelevan: 'Nilai Rata-rata Ujian 88.50',
+    // Step 4: Riwayat Pendidikan
+    sdNama: '',
+    sdTahunLulus: '',
+    smpNama: '',
+    smpTahunLulus: '',
+    smaNama: '',
+    smaJurusan: '',
+    smaTahunLulus: '',
+    prestasiRelevan: '',
 
     // Step 5: Keluarga & Ekonomi
     namaAyah: '',
     pekerjaanAyah: '',
     namaIbu: '',
     pekerjaanIbu: '',
-    penghasilanOrtu: '< Rp 2.500.000',
+    penghasilanOrtu: '< Rp 1.500.000',
     jumlahTanggungan: '3',
-    kepemilikanBantuan: 'Ada',
+    kepemilikanBantuan: 'Tidak Ada',
 
     // Step 6: Prestasi & Pengalaman
     prestasiAkademik: '',
@@ -80,19 +83,87 @@ export default function RegistrationPage() {
     pengalamanPengabdian: '',
     pelatihanSertifikasi: '',
 
-    // Step 7: Dokumen Uploads (Terisi Otomatis dari Verifikasi Akun)
-    fileSuratPermohonan: 'Surat_Permohonan_BSSC.pdf',
-    filePasfoto: 'Foto_Selfie_Verifikasi_Akun.jpg (Terverifikasi Wajah)',
-    fileKtp: 'KTP_Sultra_Original.pdf',
-    fileSuratAktif: 'KTM_Surat_Keterangan_Aktif_Kuliah.pdf (Terunggah saat Registrasi)',
-    fileTranskrip: 'Transkrip_Nilai_Sementara.pdf',
-    fileDtks: 'Bukti_DTKS_DTSEN.pdf',
-    fileSuratPernyataan: 'Surat_Pernyataan_Materai10000.pdf',
-    fileMotivationOrEsai: 'Motivation_Letter_BSSC.pdf',
+    // Step 7: Dokumen Uploads
+    fileSuratPermohonan: '',
+    filePasfoto: '',
+    fileKtp: '',
+    fileSuratAktif: '',
+    fileTranskrip: '',
+    fileDtks: '',
+    fileSuratPernyataan: '',
+    fileMotivationOrEsai: '',
 
     // Declaration
     agreedDeclaration: false
   });
+
+  const [uploadingDocKey, setUploadingDocKey] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function loadUserProfile() {
+      setLoadingProfile(true);
+      try {
+        const res = await fetchAPI('/applicant/profile');
+        if (res.success && res.data) {
+          const u = res.data.user || {};
+          const p = res.data.profile || {};
+          const app = res.data.application;
+          const docs = res.data.documents || [];
+
+          if (app) {
+            setRegistrationCode(app.registrationNo);
+            setIsSubmitted(true);
+          }
+
+          const selfieDoc = docs.find((d: any) => d.docType === 'selfie');
+          const ktmDoc = docs.find((d: any) => d.docType === 'ktm');
+          const pendukungDoc = docs.find((d: any) => d.docType === 'pendukung');
+
+          setFormData(prev => ({
+            ...prev,
+            namaLengkap: u.namaLengkap || '',
+            nik: u.nik || '',
+            email: u.email || '',
+            jenjang: u.jenjangTarget || 'S1',
+            tempatLahir: p.tempatLahir || '',
+            tanggalLahir: p.tanggalLahir || '',
+            jenisKelamin: p.gender || 'Laki-laki',
+            noHp: p.noHp || '',
+            alamatDomisili: p.alamatDomisili || '',
+            alamatKtp: p.alamatDomisili || '',
+            filePasfoto: selfieDoc ? selfieDoc.originalName : prev.filePasfoto,
+            fileSuratAktif: ktmDoc ? ktmDoc.originalName : prev.fileSuratAktif,
+            fileKtp: pendukungDoc ? pendukungDoc.originalName : prev.fileKtp,
+          }));
+        }
+      } catch (err: any) {
+        console.warn('Profile fetch warning:', err.message);
+      } finally {
+        setLoadingProfile(false);
+      }
+    }
+    loadUserProfile();
+  }, []);
+
+  const handleDocumentUpload = async (docKey: string, docType: string, file: File) => {
+    setUploadingDocKey(docKey);
+    try {
+      const uploadFormData = new FormData();
+      uploadFormData.append(docType, file);
+      const endpoint = docType === 'ktm' ? '/applicant/upload/ktm' : docType === 'selfie' ? '/applicant/upload/selfie' : '/applicant/upload/pendukung';
+      const res = await fetchAPI(endpoint, {
+        method: 'POST',
+        body: uploadFormData,
+      });
+      if (res.success) {
+        setFormData(prev => ({ ...prev, [docKey]: file.name }));
+      }
+    } catch (err: any) {
+      alert(err.message || 'Gagal mengunggah dokumen.');
+    } finally {
+      setUploadingDocKey(null);
+    }
+  };
 
   const steps = [
     { id: 1, title: 'Kategori Jenjang', icon: GraduationCap },
@@ -123,11 +194,34 @@ export default function RegistrationPage() {
     }
   };
 
-  const handleSubmitFinal = () => {
-    const randomNo = `BSSC-2026-${formData.jenjang}-${Math.floor(1000 + Math.random() * 9000)}`;
-    setRegistrationCode(randomNo);
-    setIsSubmitted(true);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+  const handleSubmitFinal = async () => {
+    try {
+      // 1. Update Profile
+      await fetchAPI('/applicant/profile', {
+        method: 'PUT',
+        body: JSON.stringify({
+          tempatLahir: formData.tempatLahir,
+          tanggalLahir: formData.tanggalLahir,
+          gender: formData.jenisKelamin === 'Laki-laki' ? 'Laki-laki' : 'Perempuan',
+          noHp: formData.noHp,
+          alamatDomisili: formData.alamatDomisili,
+        }),
+      });
+
+      // 2. Submit Application
+      const res = await fetchAPI('/applicant/application', {
+        method: 'POST',
+        body: JSON.stringify({ catatanTambahan: `Permohonan Beasiswa ${formData.jenjang}` }),
+      });
+
+      if (res.success && res.data) {
+        setRegistrationCode(res.data.registrationNo);
+        setIsSubmitted(true);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    } catch (err: any) {
+      alert(err.message || 'Gagal mengirim permohonan beasiswa.');
+    }
   };
 
   return (
@@ -757,52 +851,76 @@ export default function RegistrationPage() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {(formData.jenjang === 'S1'
                       ? [
-                          { key: 'fileSuratPermohonan', title: '1. Surat Permohonan BSSC (Gubernur Sultra)' },
-                          { key: 'filePasfoto', title: '2. Pasfoto Terbaru (Verifikasi Selfie Akun)' },
-                          { key: 'fileKtp', title: '3. KTP Provinsi Sulawesi Tenggara' },
-                          { key: 'fileSuratAktif', title: '4. KTM / Surat Aktif Kuliah (Saat Registrasi)' },
-                          { key: 'fileTranskrip', title: '5. Transkrip Nilai Sementara S1 (Min IPK 3.25)' },
-                          { key: 'fileDtks', title: '6. Bukti Terdaftar DTKS / DTSEN' },
-                          { key: 'fileSuratPernyataan', title: '7. Surat Pernyataan Bebas Beasiswa Lain (Materai 10rb)' },
-                          { key: 'fileMotivationOrEsai', title: '8. Motivation Letter (S1/D4)' }
+                          { key: 'fileSuratPermohonan', docType: 'pendukung', title: '1. Surat Permohonan BSSC (Gubernur Sultra)' },
+                          { key: 'filePasfoto', docType: 'selfie', title: '2. Pasfoto Terbaru / Selfie KTP' },
+                          { key: 'fileKtp', docType: 'pendukung', title: '3. KTP Provinsi Sulawesi Tenggara' },
+                          { key: 'fileSuratAktif', docType: 'ktm', title: '4. KTM / Surat Aktif Kuliah' },
+                          { key: 'fileTranskrip', docType: 'pendukung', title: '5. Transkrip Nilai Sementara S1' },
+                          { key: 'fileDtks', docType: 'pendukung', title: '6. Bukti Terdaftar DTKS / DTSEN' },
+                          { key: 'fileSuratPernyataan', docType: 'pendukung', title: '7. Surat Pernyataan Bebas Beasiswa Lain (Materai)' },
+                          { key: 'fileMotivationOrEsai', docType: 'pendukung', title: '8. Motivation Letter (S1/D4)' }
                         ]
                       : formData.jenjang === 'S2'
                       ? [
-                          { key: 'fileSuratPermohonan', title: '1. Surat Permohonan BSSC (Gubernur Sultra)' },
-                          { key: 'filePasfoto', title: '2. Pasfoto Terbaru (Verifikasi Selfie Akun)' },
-                          { key: 'fileKtp', title: '3. KTP Provinsi Sulawesi Tenggara' },
-                          { key: 'fileSuratAktif', title: '4. KTM / Surat Aktif S2 (Saat Registrasi)' },
-                          { key: 'fileTranskrip', title: '5. Transkrip Nilai Semester S2 (Min IPK 3.50)' },
-                          { key: 'fileDtks', title: '6. Ijazah & Transkrip Nilai S1 (Legalisir)' },
-                          { key: 'fileSuratPernyataan', title: '7. Surat Pernyataan Bebas Beasiswa Lain (Materai 10rb)' },
-                          { key: 'fileMotivationOrEsai', title: '8. Esai Rencana Penelitian & Kontribusi Sultra (S2)' }
+                          { key: 'fileSuratPermohonan', docType: 'pendukung', title: '1. Surat Permohonan BSSC (Gubernur Sultra)' },
+                          { key: 'filePasfoto', docType: 'selfie', title: '2. Pasfoto Terbaru / Selfie KTP' },
+                          { key: 'fileKtp', docType: 'pendukung', title: '3. KTP Provinsi Sulawesi Tenggara' },
+                          { key: 'fileSuratAktif', docType: 'ktm', title: '4. KTM / Surat Aktif S2' },
+                          { key: 'fileTranskrip', docType: 'pendukung', title: '5. Transkrip Nilai Semester S2' },
+                          { key: 'fileDtks', docType: 'pendukung', title: '6. Ijazah & Transkrip Nilai S1' },
+                          { key: 'fileSuratPernyataan', docType: 'pendukung', title: '7. Surat Pernyataan Bebas Beasiswa Lain' },
+                          { key: 'fileMotivationOrEsai', docType: 'pendukung', title: '8. Esai Rencana Penelitian & Kontribusi Sultra (S2)' }
                         ]
                       : [
-                          { key: 'fileSuratPermohonan', title: '1. Surat Permohonan BSSC (Gubernur Sultra)' },
-                          { key: 'filePasfoto', title: '2. Pasfoto Terbaru (Verifikasi Selfie Akun)' },
-                          { key: 'fileKtp', title: '3. KTP Provinsi Sulawesi Tenggara' },
-                          { key: 'fileSuratAktif', title: '4. KTM / Surat Aktif S3 (Saat Registrasi)' },
-                          { key: 'fileTranskrip', title: '5. Transkrip Nilai Semester S3 (Min IPK 3.50)' },
-                          { key: 'fileDtks', title: '6. Ijazah & Transkrip S1 & S2 (Legalisir)' },
-                          { key: 'fileSuratPernyataan', title: '7. Surat Rekomendasi Promotor / Profesor' },
-                          { key: 'fileMotivationOrEsai', title: '8. Proposal Disertasi & Esai Kontribusi Sultra (S3)' }
+                          { key: 'fileSuratPermohonan', docType: 'pendukung', title: '1. Surat Permohonan BSSC (Gubernur Sultra)' },
+                          { key: 'filePasfoto', docType: 'selfie', title: '2. Pasfoto Terbaru / Selfie KTP' },
+                          { key: 'fileKtp', docType: 'pendukung', title: '3. KTP Provinsi Sulawesi Tenggara' },
+                          { key: 'fileSuratAktif', docType: 'ktm', title: '4. KTM / Surat Aktif S3' },
+                          { key: 'fileTranskrip', docType: 'pendukung', title: '5. Transkrip Nilai Semester S3' },
+                          { key: 'fileDtks', docType: 'pendukung', title: '6. Ijazah & Transkrip S1 & S2' },
+                          { key: 'fileSuratPernyataan', docType: 'pendukung', title: '7. Surat Rekomendasi Promotor' },
+                          { key: 'fileMotivationOrEsai', docType: 'pendukung', title: '8. Proposal Disertasi & Esai Kontribusi Sultra (S3)' }
                         ]
-                    ).map((docItem, idx) => (
-                      <div key={idx} className="p-4 rounded-xl border border-slate-200 bg-slate-50 space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="font-semibold text-slate-900 text-xs">{docItem.title}</span>
-                          <span className="text-[10px] text-emerald-800 bg-emerald-100 font-bold px-2 py-0.5 rounded">
-                            PDF / JPG
-                          </span>
+                    ).map((docItem, idx) => {
+                      const currentVal = (formData as any)[docItem.key];
+                      const isUploading = uploadingDocKey === docItem.key;
+
+                      return (
+                        <div key={idx} className="p-4 rounded-xl border border-slate-200 bg-slate-50 space-y-2 relative">
+                          <div className="flex items-center justify-between">
+                            <span className="font-semibold text-slate-900 text-xs">{docItem.title}</span>
+                            <span className="text-[10px] text-emerald-800 bg-emerald-100 font-bold px-2 py-0.5 rounded">
+                              PDF / JPG
+                            </span>
+                          </div>
+
+                          <div className="flex items-center justify-between gap-2 bg-white p-2.5 rounded-lg border border-slate-200 text-xs">
+                            <div className="flex items-center gap-2 truncate flex-1">
+                              <FileText className="w-4 h-4 text-blue-900 shrink-0" />
+                              <span className="truncate font-mono text-slate-700 text-[11px]">
+                                {currentVal || 'Belum diunggah'}
+                              </span>
+                            </div>
+
+                            <label className="shrink-0 cursor-pointer px-2.5 py-1 bg-blue-50 hover:bg-blue-100 text-blue-900 rounded font-semibold text-[11px] transition-colors">
+                              {isUploading ? 'Mengunggah...' : currentVal ? 'Ganti File' : 'Unggah File'}
+                              <input
+                                type="file"
+                                accept=".pdf,.jpg,.jpeg,.png"
+                                className="hidden"
+                                disabled={isUploading}
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) {
+                                    handleDocumentUpload(docItem.key, docItem.docType, file);
+                                  }
+                                }}
+                              />
+                            </label>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2 bg-white p-2.5 rounded-lg border border-slate-200 text-xs">
-                          <FileText className="w-4 h-4 text-blue-900 shrink-0" />
-                          <span className="truncate font-mono text-slate-700 text-[11px]">
-                            {(formData as any)[docItem.key]}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -823,7 +941,7 @@ export default function RegistrationPage() {
                       </div>
                       <div>
                         <span className="text-slate-500 block">IPK Kumulatif</span>
-                        <strong className="text-blue-900 text-sm">{formData.ipk}</strong>
+                        <strong className="text-blue-900 text-sm">{formData.ipk || '-'}</strong>
                       </div>
                       <div>
                         <span className="text-slate-500 block">Semester</span>
@@ -831,19 +949,19 @@ export default function RegistrationPage() {
                       </div>
                       <div>
                         <span className="text-slate-500 block">Asal Daerah</span>
-                        <strong className="text-slate-900 text-sm">{formData.asalDaerah}</strong>
+                        <strong className="text-slate-900 text-sm">{formData.asalDaerah || '-'}</strong>
                       </div>
                     </div>
 
                     <div className="space-y-1">
                       <p className="text-slate-500">Nama Pendaftar:</p>
-                      <p className="font-bold text-slate-900 text-sm">{formData.namaLengkap || 'Muhammad Rezky Pratama'}</p>
+                      <p className="font-bold text-slate-900 text-sm">{formData.namaLengkap || '-'}</p>
                     </div>
 
                     <div className="space-y-1">
                       <p className="text-slate-500">Perguruan Tinggi & Prodi:</p>
                       <p className="font-bold text-slate-900 text-sm">
-                        {formData.perguruanTinggi || 'Universitas Halu Oleo'} ({formData.fakultasProdi || 'Teknik Sipil'})
+                        {formData.perguruanTinggi || '-'} {formData.fakultasProdi ? `(${formData.fakultasProdi})` : ''}
                       </p>
                     </div>
 

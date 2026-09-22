@@ -1,0 +1,512 @@
+{
+	"info": {
+		"_postman_id": "bssc-backend-api-v1",
+		"name": "Beasiswa Sultra Cerdas - API Backend",
+		"description": "Koleksi API Postman lengkap untuk pengujian backend Beasiswa Sultra Cerdas sebelum Connection Sprint dengan Frontend.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:5000",
+			"type": "string"
+		},
+		{
+			"key": "mahasiswa_token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "admin_token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "refresh_token",
+			"value": "",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "1. Public Endpoints",
+			"item": [
+				{
+					"name": "Health Check",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/public/health",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "public", "health"]
+						}
+					}
+				},
+				{
+					"name": "Cek Status Berdasarkan NIK",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/public/cek-status/7401020304050001",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "public", "cek-status", "7401020304050001"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "2. Authentication",
+			"item": [
+				{
+					"name": "Register Mahasiswa Baru",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"budi.santoso@student.uho.ac.id\",\n  \"password\": \"Mahasiswa@2026!\",\n  \"confirmPassword\": \"Mahasiswa@2026!\",\n  \"nik\": \"7401020304050099\",\n  \"namaLengkap\": \"Budi Santoso\",\n  \"jenjangTarget\": \"S1\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/auth/register",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "auth", "register"]
+						}
+					}
+				},
+				{
+					"name": "Login Mahasiswa",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"if (jsonData.data && jsonData.data.accessToken) {",
+									"    pm.collectionVariables.set('mahasiswa_token', jsonData.data.accessToken);",
+									"    pm.collectionVariables.set('refresh_token', jsonData.data.refreshToken);",
+									"    console.log('Mahasiswa token updated automatically!');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"identifier\": \"ahmad.dani@student.uho.ac.id\",\n  \"password\": \"Mahasiswa@2026!\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/auth/login",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "auth", "login"]
+						}
+					}
+				},
+				{
+					"name": "Login Admin",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"if (jsonData.data && jsonData.data.accessToken) {",
+									"    pm.collectionVariables.set('admin_token', jsonData.data.accessToken);",
+									"    console.log('Admin token updated automatically!');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"identifier\": \"admin@beasiswa-sultra.go.id\",\n  \"password\": \"Admin@2026!\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/auth/login",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "auth", "login"]
+						}
+					}
+				},
+				{
+					"name": "Refresh Token",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"refreshToken\": \"{{refresh_token}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/auth/refresh",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "auth", "refresh"]
+						}
+					}
+				},
+				{
+					"name": "Logout",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{mahasiswa_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"refreshToken\": \"{{refresh_token}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/auth/logout",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "auth", "logout"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "3. Applicant (Mahasiswa Portal)",
+			"item": [
+				{
+					"name": "Get Profile Saya",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{mahasiswa_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/applicant/profile",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "applicant", "profile"]
+						}
+					}
+				},
+				{
+					"name": "Update Profile Biodata",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{mahasiswa_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"tempatLahir\": \"Kendari\",\n  \"tanggalLahir\": \"2002-05-15\",\n  \"gender\": \"Laki-laki\",\n  \"noHp\": \"081234567890\",\n  \"alamatDomisili\": \"Jl. Ahmad Yani No. 45, Kendari\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/applicant/profile",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "applicant", "profile"]
+						}
+					}
+				},
+				{
+					"name": "Update Data Pendidikan",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{mahasiswa_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"educationList\": [\n    {\n      \"tingkat\": \"SMA\",\n      \"institusi\": \"SMAN 1 Kendari\",\n      \"jurusan\": \"IPA\",\n      \"tahunMulai\": \"2017\",\n      \"tahunLulus\": \"2020\"\n    },\n    {\n      \"tingkat\": \"S1\",\n      \"institusi\": \"Universitas Halu Oleo\",\n      \"jurusan\": \"Teknik Informatika\",\n      \"tahunMulai\": \"2021\",\n      \"tahunLulus\": \"\"\n    }\n  ]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/applicant/education",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "applicant", "education"]
+						}
+					}
+				},
+				{
+					"name": "Upload Pasfoto (JPEG/PNG/WEBP)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{mahasiswa_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"type": "file",
+									"src": []
+								}
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/applicant/upload/foto",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "applicant", "upload", "foto"]
+						}
+					}
+				},
+				{
+					"name": "Upload KTM / Transkrip (PDF/JPEG/PNG)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{mahasiswa_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"type": "file",
+									"src": []
+								}
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/applicant/upload/ktm",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "applicant", "upload", "ktm"]
+						}
+					}
+				},
+				{
+					"name": "Submit Permohonan Beasiswa",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{mahasiswa_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"catatanTambahan\": \"Saya berharap beasiswa ini dapat menunjang studi dan riset akhir saya.\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/applicant/application",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "applicant", "application"]
+						}
+					}
+				},
+				{
+					"name": "Get Permohonan Beasiswa Saya",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{mahasiswa_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/applicant/application",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "applicant", "application"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "4. Admin Panel",
+			"item": [
+				{
+					"name": "Get Dashboard Statistics",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{admin_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/admin/dashboard",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "admin", "dashboard"]
+						}
+					}
+				},
+				{
+					"name": "Get List Applicants (Paginated & Filter)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{admin_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/admin/applicants?page=1&limit=10&status=SUBMITTED",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "admin", "applicants"],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "10"
+								},
+								{
+									"key": "status",
+									"value": "SUBMITTED"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Verify & Update Status Pendaftar",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{admin_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"status\": \"APPROVED\",\n  \"notes\": \"Berkas lengkap, IPK 3.85 valid dan lolos verifikasi kualifikasi.\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/admin/applicants/YOUR_APPLICANT_ID_HERE/verify",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "admin", "applicants", "YOUR_APPLICANT_ID_HERE", "verify"]
+						}
+					}
+				}
+			]
+		}
+	]
+}

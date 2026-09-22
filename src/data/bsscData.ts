@@ -220,37 +220,3 @@ export const FAQ_DATA: FaqItem[] = [
   }
 ];
 
-export const MOCK_APPLICATIONS: Record<string, {
-  registrationNo: string;
-  name: string;
-  nik: string;
-  univ: string;
-  prodi: string;
-  jenjang: string;
-  status: 'TERKIRIM' | 'VERIFIKASI_BERKAS' | 'SELEKSI_ADMINISTRASI' | 'DITERIMA' | 'PENCAIRAN_TERMIN_1';
-  dateSubmitted: string;
-  notes: string;
-}> = {
-  '3401020304050001': {
-    registrationNo: 'BSSC-2026-S1-0892',
-    name: 'Andi Rahmat Hidayat',
-    nik: '3401020304050001',
-    univ: 'Universitas Halu Oleo (UHO)',
-    prodi: 'Teknik Sipil',
-    jenjang: 'S1',
-    status: 'PENCAIRAN_TERMIN_1',
-    dateSubmitted: '15 September 2026',
-    notes: 'Berkas telah diverifikasi dan lolos seleksi. Dana Termin I telah berhasil ditransfer.'
-  },
-  '3401020304050002': {
-    registrationNo: 'BSSC-2026-S2-0314',
-    name: 'Siti Nurhaliza',
-    nik: '3401020304050002',
-    univ: 'Universitas 19 November Kolaka',
-    prodi: 'Kesehatan Masyarakat',
-    jenjang: 'S2',
-    status: 'VERIFIKASI_BERKAS',
-    dateSubmitted: '20 September 2026',
-    notes: 'Berkas administrasi sedang dalam proses verifikasi tim seleksi Pemprov Sultra.'
-  }
-};

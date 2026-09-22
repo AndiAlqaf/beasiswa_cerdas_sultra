@@ -17,8 +17,10 @@ import {
   ShieldCheck,
   AlertCircle,
   FileText,
-  FileCheck
+  FileCheck,
+  Loader2
 } from 'lucide-react';
+import { fetchAPI, setTokens } from '@/lib/api';
 
 interface EducationEntry {
   id: string;
@@ -63,7 +65,7 @@ export default function RegisterPage() {
     {
       id: '1',
       tingkat: 'SMA',
-      institusi: 'SMA Negeri 1 Kendari',
+      institusi: '',
       jurusan: '',
       tahunMulai: '',
       tahunLulus: ''
@@ -71,7 +73,7 @@ export default function RegisterPage() {
     {
       id: '2',
       tingkat: 'S1',
-      institusi: 'Universitas Halu Oleo',
+      institusi: '',
       jurusan: '',
       tahunMulai: '',
       tahunLulus: ''
@@ -80,31 +82,29 @@ export default function RegisterPage() {
 
   // Step 5: Dokumen KTM / Surat Keterangan Aktif Kuliah
   const [fileKtm, setFileKtm] = useState<File | null>(null);
-  const [fileKtmName, setFileKtmName] = useState<string>('KTM_Aktif_Mahasiswa.pdf');
+  const [fileKtmName, setFileKtmName] = useState<string>('');
+  const [filePendukung, setFilePendukung] = useState<File | null>(null);
   const [filePendukungName, setFilePendukungName] = useState<string>('');
   const [agreedDeclaration, setAgreedDeclaration] = useState<boolean>(true);
 
-  // Synchronize education history & file defaults based on target jenjang (S1/S2/S3)
+  // Synchronize education history structure based on target jenjang (S1/S2/S3)
   useEffect(() => {
     if (jenjangTarget === 'S1') {
       setEducationList([
-        { id: '1', tingkat: 'SMA', institusi: 'SMA Negeri 1 Kendari', jurusan: '', tahunMulai: '', tahunLulus: '' },
-        { id: '2', tingkat: 'S1', institusi: 'Universitas Halu Oleo', jurusan: '', tahunMulai: '', tahunLulus: '' }
+        { id: '1', tingkat: 'SMA', institusi: '', jurusan: '', tahunMulai: '', tahunLulus: '' },
+        { id: '2', tingkat: 'S1', institusi: '', jurusan: '', tahunMulai: '', tahunLulus: '' }
       ]);
-      setFileKtmName('KTM_S1_Aktif_Mahasiswa.pdf');
     } else if (jenjangTarget === 'S2') {
       setEducationList([
-        { id: '1', tingkat: 'S1', institusi: 'Universitas Halu Oleo', jurusan: '', tahunMulai: '', tahunLulus: '' },
-        { id: '2', tingkat: 'S2', institusi: 'Universitas Halu Oleo', jurusan: '', tahunMulai: '', tahunLulus: '' }
+        { id: '1', tingkat: 'S1', institusi: '', jurusan: '', tahunMulai: '', tahunLulus: '' },
+        { id: '2', tingkat: 'S2', institusi: '', jurusan: '', tahunMulai: '', tahunLulus: '' }
       ]);
-      setFileKtmName('KTM_S2_Surat_Aktif_Magister.pdf');
     } else if (jenjangTarget === 'S3') {
       setEducationList([
-        { id: '1', tingkat: 'S1', institusi: 'Universitas Halu Oleo', jurusan: '', tahunMulai: '', tahunLulus: '' },
-        { id: '2', tingkat: 'S2', institusi: 'Institut Teknologi Bandung', jurusan: '', tahunMulai: '', tahunLulus: '' },
-        { id: '3', tingkat: 'S3', institusi: 'Universitas Halu Oleo', jurusan: '', tahunMulai: '', tahunLulus: '' }
+        { id: '1', tingkat: 'S1', institusi: '', jurusan: '', tahunMulai: '', tahunLulus: '' },
+        { id: '2', tingkat: 'S2', institusi: '', jurusan: '', tahunMulai: '', tahunLulus: '' },
+        { id: '3', tingkat: 'S3', institusi: '', jurusan: '', tahunMulai: '', tahunLulus: '' }
       ]);
-      setFileKtmName('KTM_S3_Surat_Aktif_Doktor.pdf');
     }
   }, [jenjangTarget]);
 
@@ -218,10 +218,113 @@ export default function RegisterPage() {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleRegisterAccount = async () => {
+    if (!email || !password || !namaLengkap || !nimNik) {
+      setError('Harap lengkapi semua bidang bertanda bintang (*).');
+      return;
+    }
+    if (password !== confirmPassword) {
+      setError('Konfirmasi password tidak cocok.');
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetchAPI('/auth/register', {
+        method: 'POST',
+        skipAuth: true,
+        body: JSON.stringify({
+          email,
+          nik: nimNik,
+          password,
+          confirmPassword,
+          namaLengkap,
+          jenjangTarget,
+        }),
+      });
+
+      if (res.success && res.data) {
+        setTokens(res.data.accessToken, res.data.refreshToken, res.data.user);
+        nextStep();
+      }
+    } catch (err: any) {
+      setError(err.message || 'Registrasi gagal. Silakan coba lagi.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitted(true);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (!agreedDeclaration) return;
+    
+    setLoading(true);
+    setError(null);
+    try {
+      // 1. Submit Profile (Data Diri)
+      await fetchAPI('/applicant/profile', {
+        method: 'PUT',
+        body: JSON.stringify({
+          tempatLahir,
+          tanggalLahir,
+          gender,
+          noHp,
+          statusPernikahan,
+          alamatDomisili,
+        }),
+      });
+
+      // 2. Submit Education
+      await fetchAPI('/applicant/education', {
+        method: 'PUT',
+        body: JSON.stringify({
+          educationList,
+        }),
+      });
+
+      // 3. Upload Selfie
+      if (capturedImage && capturedImage.startsWith('data:image')) {
+        const res = await fetch(capturedImage);
+        const fileBlob = await res.blob();
+        const formData = new FormData();
+        formData.append('file', fileBlob, 'selfie.png');
+        await fetchAPI('/applicant/upload/selfie', {
+          method: 'POST',
+          body: formData,
+        });
+      }
+
+      // 4. Upload KTM
+      if (fileKtm) {
+        const formData = new FormData();
+        formData.append('file', fileKtm);
+        await fetchAPI('/applicant/upload/ktm', {
+          method: 'POST',
+          body: formData,
+        });
+      }
+
+      // 5. Upload KTP/KK (Pendukung)
+      if (filePendukung) {
+        const formData = new FormData();
+        formData.append('file', filePendukung);
+        await fetchAPI('/applicant/upload/pendukung', {
+          method: 'POST',
+          body: formData,
+        });
+      }
+
+      setIsSubmitted(true);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (err: any) {
+      setError(err.message || 'Gagal menyimpan data kelengkapan.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -413,15 +516,30 @@ export default function RegisterPage() {
                       Tampilkan Password
                     </label>
                   </div>
+                  {error && (
+                    <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl flex items-center gap-2 text-xs text-rose-800">
+                      <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                      <span>{error}</span>
+                    </div>
+                  )}
                 </div>
 
                 <div className="pt-4">
                   <button
                     type="button"
-                    onClick={nextStep}
-                    className="w-full py-3.5 px-6 bg-[#0B3A6A] hover:bg-[#082a4d] text-white font-bold rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 text-base"
+                    disabled={loading}
+                    onClick={handleRegisterAccount}
+                    className="w-full py-3.5 px-6 bg-[#0B3A6A] hover:bg-[#082a4d] text-white font-bold rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 text-base disabled:opacity-50"
                   >
-                    Lanjut ke Foto Selfie <ArrowRight className="w-5 h-5" />
+                    {loading ? (
+                      <>
+                        <Loader2 className="w-5 h-5 animate-spin" /> Daftarkan Akun...
+                      </>
+                    ) : (
+                      <>
+                        Lanjut ke Foto Selfie <ArrowRight className="w-5 h-5" />
+                      </>
+                    )}
                   </button>
                 </div>
 
@@ -850,7 +968,10 @@ export default function RegisterPage() {
                         accept=".pdf,.jpg,.jpeg,.png"
                         onChange={(e) => {
                           const file = e.target.files?.[0];
-                          if (file) setFileKtmName(file.name);
+                          if (file) {
+                            setFileKtm(file);
+                            setFileKtmName(file.name);
+                          }
                         }}
                         className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
                       />
@@ -899,7 +1020,10 @@ export default function RegisterPage() {
                         accept=".pdf,.jpg,.jpeg,.png"
                         onChange={(e) => {
                           const file = e.target.files?.[0];
-                          if (file) setFilePendukungName(file.name);
+                          if (file) {
+                            setFilePendukung(file);
+                            setFilePendukungName(file.name);
+                          }
                         }}
                         className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
                       />
@@ -966,22 +1090,24 @@ export default function RegisterPage() {
             <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl max-w-md mx-auto text-left space-y-2">
               <div className="flex justify-between text-xs text-slate-500">
                 <span>Email Terdaftar:</span>
-                <span className="font-semibold text-slate-800">{email || 'mahasiswa@sultra.ac.id'}</span>
+                <span className="font-semibold text-slate-800">{email || '-'}</span>
               </div>
               <div className="flex justify-between text-xs text-slate-500">
                 <span>NIM / NIK:</span>
-                <span className="font-semibold text-slate-800">{nimNik || '74710200000000'}</span>
+                <span className="font-semibold text-slate-800">{nimNik || '-'}</span>
               </div>
+              {fileKtmName && (
+                <div className="flex justify-between text-xs text-slate-500">
+                  <span>Dokumen KTM / Aktif Kuliah:</span>
+                  <span className="font-semibold text-emerald-600 flex items-center gap-1 truncate max-w-[200px]">
+                    <FileCheck className="w-3.5 h-3.5 shrink-0" /> {fileKtmName}
+                  </span>
+                </div>
+              )}
               <div className="flex justify-between text-xs text-slate-500">
-                <span>Dokumen KTM / Aktif Kuliah:</span>
-                <span className="font-semibold text-emerald-600 flex items-center gap-1">
-                  <FileCheck className="w-3.5 h-3.5" /> Terunggah ({fileKtmName})
-                </span>
-              </div>
-              <div className="flex justify-between text-xs text-slate-500">
-                <span>Status Verifikasi:</span>
+                <span>Status Verifikasi Akun:</span>
                 <span className="font-bold text-emerald-600 flex items-center gap-1">
-                  <ShieldCheck className="w-3.5 h-3.5" /> Terverifikasi
+                  <ShieldCheck className="w-3.5 h-3.5" /> Terdaftar di Sistem
                 </span>
               </div>
             </div>
