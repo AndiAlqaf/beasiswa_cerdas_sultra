@@ -45,31 +45,236 @@ export const PRIORITY_FIELDS = [
     id: 'pendidikan',
     name: 'Pendidikan',
     icon: 'GraduationCap',
-    description: 'Keguruan, Manajemen Pendidikan, Pendidikan Dasar, Bimbingan Konseling, dan Pembelajaran Inovatif.',
+    description: 'Pendidikan Pancasila dan Kewarganegaraan, Bimbingan dan Konseling, Manajemen Pendidikan, Teknologi Pendidikan, Pendidikan Teknik Informatika, dan lain-lain.',
     color: 'emerald'
   },
   {
     id: 'kesehatan',
     name: 'Kesehatan',
     icon: 'Stethoscope',
-    description: 'Kedokteran, Keperawatan, Kebidanan, Farmasi, Kesehatan Masyarakat, dan Gizi.',
+    description: 'Ilmu Kedokteran, Ilmu Gizi, Farmasi, Epidemiologi, Kesehatan Lingkungan, Administrasi Rumah Sakit, Rekam Medis, dan lain-lain.',
     color: 'sky'
   },
   {
     id: 'agromaritim',
     name: 'Agromaritim',
     icon: 'Wheat',
-    description: 'Pertanian, Perikanan, Kelautan, Peternakan, Kehutanan, dan Teknologi Pangan.',
+    description: 'Agribisnis, Agroteknologi, Agronomi, Ilmu Kelautan, Akuakultur, Kehutanan, Pariwisata, dan lain-lain.',
     color: 'amber'
   },
   {
     id: 'infrastruktur',
     name: 'Infrastruktur',
     icon: 'Building2',
-    description: 'Teknik Sipil, Arsitektur, Perencanaan Wilayah Kota, Teknik Elektro, dan Lingkungan.',
+    description: 'Teknik Sipil, Teknik Arsitektur, Perencanaan Wilayah dan Kota, Teknik Lingkungan, Teknik Pertambangan, Teknik Informatika, dan lain-lain.',
     color: 'indigo'
   }
 ];
+
+export interface PriorityProdiItem {
+  category: 'Pendidikan' | 'Kesehatan' | 'Agromaritim' | 'Infrastruktur';
+  name: string;
+}
+
+export const PRIORITY_PRODI_BY_JENJANG: Record<'S1' | 'S2' | 'S3', PriorityProdiItem[]> = {
+  S1: [
+    // Pendidikan
+    { category: 'Pendidikan', name: 'Pendidikan Pancasila dan Kewarganegaraan' },
+    { category: 'Pendidikan', name: 'Bimbingan dan Konseling' },
+    { category: 'Pendidikan', name: 'Manajemen Pendidikan' },
+    { category: 'Pendidikan', name: 'Teknologi Pendidikan' },
+    { category: 'Pendidikan', name: 'Pendidikan Luar Biasa/Pendidikan Khusus' },
+    { category: 'Pendidikan', name: 'Pendidikan Teknik Informatika' },
+    { category: 'Pendidikan', name: 'Pendidikan Ilmu Komputer' },
+    { category: 'Pendidikan', name: 'Pendidikan Teknik Bangunan/Sipil' },
+    { category: 'Pendidikan', name: 'Pendidikan Teknik Mesin' },
+    { category: 'Pendidikan', name: 'Pendidikan Kelautan dan Perikanan' },
+    { category: 'Pendidikan', name: 'Pendidikan Teknik Sipil dan Perencanaan' },
+    { category: 'Pendidikan', name: 'Pendidikan Bahasa Mandarin' },
+    { category: 'Pendidikan', name: 'Pendidikan Bahasa Jepang' },
+    { category: 'Pendidikan', name: 'Pendidikan Bahasa Jerman' },
+    { category: 'Pendidikan', name: 'Pendidikan Bahasa Korea' },
+
+    // Kesehatan
+    { category: 'Kesehatan', name: 'Ilmu Gizi' },
+    { category: 'Kesehatan', name: 'Farmasi' },
+    { category: 'Kesehatan', name: 'Administrasi Rumah Sakit' },
+    { category: 'Kesehatan', name: 'Rekam Medis dan Informasi Kesehatan' },
+    { category: 'Kesehatan', name: 'Teknologi Laboratorium Medis' },
+    { category: 'Kesehatan', name: 'Kesehatan Lingkungan' },
+    { category: 'Kesehatan', name: 'Keselamatan dan Kesehatan Kerja' },
+    { category: 'Kesehatan', name: 'Teknologi Radiologi Pencitraan' },
+    { category: 'Kesehatan', name: 'Teknologi Biomedis' },
+    { category: 'Kesehatan', name: 'Elektromedik' },
+
+    // Agromaritim
+    { category: 'Agromaritim', name: 'Agribisnis' },
+    { category: 'Agromaritim', name: 'Agroteknologi' },
+    { category: 'Agromaritim', name: 'Agronomi' },
+    { category: 'Agromaritim', name: 'Ilmu Tanah' },
+    { category: 'Agromaritim', name: 'Proteksi Tanaman' },
+    { category: 'Agromaritim', name: 'Penyuluhan Pertanian' },
+    { category: 'Agromaritim', name: 'Teknologi Industri Pertanian' },
+    { category: 'Agromaritim', name: 'Ilmu dan Teknologi Pangan/Teknologi Pangan' },
+    { category: 'Agromaritim', name: 'Ilmu Pangan' },
+    { category: 'Agromaritim', name: 'Akuakultur' },
+    { category: 'Agromaritim', name: 'Pemanfaatan Sumberdaya Perikanan/Perikanan Tangkap' },
+    { category: 'Agromaritim', name: 'Manajemen Sumber Daya Perairan' },
+    { category: 'Agromaritim', name: 'Teknologi Hasil Perikanan' },
+    { category: 'Agromaritim', name: 'Ilmu Kelautan' },
+    { category: 'Agromaritim', name: 'Kehutanan' },
+    { category: 'Agromaritim', name: 'Ilmu Lingkungan' },
+    { category: 'Agromaritim', name: 'Pariwisata' },
+    { category: 'Agromaritim', name: 'Manajemen Pemasaran Pariwisata' },
+    { category: 'Agromaritim', name: 'Ilmu dan Teknologi Kelautan' },
+    { category: 'Agromaritim', name: 'Agribisnis Pangan' },
+    { category: 'Agromaritim', name: 'Teknologi Mesin Pertanian' },
+
+    // Infrastruktur
+    { category: 'Infrastruktur', name: 'Teknik Sipil' },
+    { category: 'Infrastruktur', name: 'Arsitektur' },
+    { category: 'Infrastruktur', name: 'Perencanaan Wilayah dan Kota' },
+    { category: 'Infrastruktur', name: 'Teknik Lingkungan' },
+    { category: 'Infrastruktur', name: 'Teknik Geodesi' },
+    { category: 'Infrastruktur', name: 'Teknik Geomatika' },
+    { category: 'Infrastruktur', name: 'Teknik Geologi' },
+    { category: 'Infrastruktur', name: 'Teknik Industri' },
+    { category: 'Infrastruktur', name: 'Teknik Kelautan' },
+    { category: 'Infrastruktur', name: 'Teknik Perkapalan' },
+    { category: 'Infrastruktur', name: 'Teknik Pertambangan' },
+    { category: 'Infrastruktur', name: 'Teknik Energi Informatika' },
+    { category: 'Infrastruktur', name: 'Sistem Informasi' },
+    { category: 'Infrastruktur', name: 'Teknologi Informasi' },
+    { category: 'Infrastruktur', name: 'Sains Data' },
+    { category: 'Infrastruktur', name: 'Aktuaria' }
+  ],
+  S2: [
+    // Pendidikan
+    { category: 'Pendidikan', name: 'Manajemen Pendidikan' },
+    { category: 'Pendidikan', name: 'Administrasi Pendidikan' },
+    { category: 'Pendidikan', name: 'Teknologi Pendidikan' },
+    { category: 'Pendidikan', name: 'Pendidikan Luar Biasa/Pendidikan Khusus' },
+
+    // Kesehatan
+    { category: 'Kesehatan', name: 'Epidemiologi' },
+    { category: 'Kesehatan', name: 'Ilmu Gizi' },
+    { category: 'Kesehatan', name: 'Ilmu Farmasi' },
+    { category: 'Kesehatan', name: 'Kesehatan Lingkungan' },
+    { category: 'Kesehatan', name: 'Keselamatan dan Kesehatan Kerja' },
+    { category: 'Kesehatan', name: 'Administrasi dan Kebijakan Kesehatan' },
+    { category: 'Kesehatan', name: 'Manajemen Rumah Sakit' },
+    { category: 'Kesehatan', name: 'Ilmu Biomedis' },
+    { category: 'Kesehatan', name: 'Vaksinologi dan Imunoterapetika' },
+    { category: 'Kesehatan', name: 'Imunologi' },
+    { category: 'Kesehatan', name: 'Ilmu Kesehatan Reproduksi' },
+    { category: 'Kesehatan', name: 'Teknologi Laboratorium Kesehatan' },
+
+    // Agromaritim
+    { category: 'Agromaritim', name: 'Agribisnis' },
+    { category: 'Agromaritim', name: 'Agroteknologi' },
+    { category: 'Agromaritim', name: 'Agronomi' },
+    { category: 'Agromaritim', name: 'Ilmu Tanah' },
+    { category: 'Agromaritim', name: 'Ilmu Pertanian' },
+    { category: 'Agromaritim', name: 'Ilmu Pangan' },
+    { category: 'Agromaritim', name: 'Ilmu dan Teknologi Pangan/Teknologi Pangan' },
+    { category: 'Agromaritim', name: 'Teknologi Industri Pertanian' },
+    { category: 'Agromaritim', name: 'Teknologi Hasil Perkebunan' },
+    { category: 'Agromaritim', name: 'Ilmu Peternakan' },
+    { category: 'Agromaritim', name: 'Ilmu Kelautan' },
+    { category: 'Agromaritim', name: 'Pengelolaan Sumber Daya Perairan' },
+    { category: 'Agromaritim', name: 'Pengelolaan Sumber Daya Pesisir dan Laut' },
+    { category: 'Agromaritim', name: 'Ilmu Kehutanan' },
+    { category: 'Agromaritim', name: 'Ilmu Lingkungan' },
+    { category: 'Agromaritim', name: 'Penyuluhan dan Komunikasi Pembangunan' },
+    { category: 'Agromaritim', name: 'Fitopatologi' },
+    { category: 'Agromaritim', name: 'Entomologi' },
+    { category: 'Agromaritim', name: 'Manajemen Hutan' },
+    { category: 'Agromaritim', name: 'Konservasi Sumber Daya Hutan' },
+    { category: 'Agromaritim', name: 'Perencanaan Kepariwisataan' },
+    { category: 'Agromaritim', name: 'Kajian Pariwisata' },
+    { category: 'Agromaritim', name: 'Pariwisata Berkelanjutan' },
+    { category: 'Agromaritim', name: 'Ilmu dan Teknologi Kelautan' },
+    { category: 'Agromaritim', name: 'Ilmu Perikanan' },
+    { category: 'Agromaritim', name: 'Budidaya Perairan/Akuakultur' },
+    { category: 'Agromaritim', name: 'Bioteknologi Perikanan dan Kelautan' },
+
+    // Infrastruktur
+    { category: 'Infrastruktur', name: 'Teknik Sipil' },
+    { category: 'Infrastruktur', name: 'Arsitektur' },
+    { category: 'Infrastruktur', name: 'Perencanaan Wilayah dan Kota' },
+    { category: 'Infrastruktur', name: 'Teknik Lingkungan' },
+    { category: 'Infrastruktur', name: 'Teknik Geologi' },
+    { category: 'Infrastruktur', name: 'Teknik Industri' },
+    { category: 'Infrastruktur', name: 'Teknik Kelautan' },
+    { category: 'Infrastruktur', name: 'Teknik Pertambangan' },
+    { category: 'Infrastruktur', name: 'Informatika' },
+    { category: 'Infrastruktur', name: 'Ilmu Komputer' },
+    { category: 'Infrastruktur', name: 'Sistem Informasi' },
+    { category: 'Infrastruktur', name: 'Teknologi Informasi' },
+    { category: 'Infrastruktur', name: 'Sains Data' },
+    { category: 'Infrastruktur', name: 'Penginderaan Jauh' },
+    { category: 'Infrastruktur', name: 'Teknik Geodesi' },
+    { category: 'Infrastruktur', name: 'Teknik Geomatika' },
+    { category: 'Infrastruktur', name: 'Teknik Metalurgi' },
+    { category: 'Infrastruktur', name: 'Sistem dan Teknik Transportasi' }
+  ],
+  S3: [
+    // Pendidikan
+    { category: 'Pendidikan', name: 'Manajemen Pendidikan' },
+    { category: 'Pendidikan', name: 'Teknologi Pendidikan' },
+    { category: 'Pendidikan', name: 'Pendidikan Teknologi dan Kejuruan' },
+    { category: 'Pendidikan', name: 'Pendidikan Luar Biasa/Pendidikan Khusus' },
+
+    // Kesehatan
+    { category: 'Kesehatan', name: 'Ilmu Kedokteran' },
+    { category: 'Kesehatan', name: 'Ilmu Gizi' },
+    { category: 'Kesehatan', name: 'Ilmu Kesehatan Masyarakat' },
+    { category: 'Kesehatan', name: 'Biomedis' },
+    { category: 'Kesehatan', name: 'Epidemiologi' },
+    { category: 'Kesehatan', name: 'Kesehatan Lingkungan' },
+    { category: 'Kesehatan', name: 'Administrasi dan Kebijakan Kesehatan' },
+
+    // Agromaritim
+    { category: 'Agromaritim', name: 'Agronomi dan Hortikultura' },
+    { category: 'Agromaritim', name: 'Ilmu Teknologi Benih' },
+    { category: 'Agromaritim', name: 'Ilmu Tanah' },
+    { category: 'Agromaritim', name: 'Entomologi' },
+    { category: 'Agromaritim', name: 'Fitopatologi' },
+    { category: 'Agromaritim', name: 'Ilmu Agribisnis' },
+    { category: 'Agromaritim', name: 'Ilmu Pangan' },
+    { category: 'Agromaritim', name: 'Teknologi Industri Pertanian' },
+    { category: 'Agromaritim', name: 'Ilmu Produksi dan Teknologi Peternakan' },
+    { category: 'Agromaritim', name: 'Ilmu Nutrisi dan Pakan' },
+    { category: 'Agromaritim', name: 'Ilmu Perikanan' },
+    { category: 'Agromaritim', name: 'Ilmu Kelautan' },
+    { category: 'Agromaritim', name: 'Pengelolaan Sumberdaya Pesisir dan Lautan' },
+    { category: 'Agromaritim', name: 'Budidaya Perairan/Akuakultur' },
+    { category: 'Agromaritim', name: 'Teknologi Hasil Perairan' },
+    { category: 'Agromaritim', name: 'Ilmu dan Teknologi Hasil Hutan' },
+    { category: 'Agromaritim', name: 'Manajemen Ekowisata dan Jasa Lingkungan' },
+    { category: 'Agromaritim', name: 'Konservasi Biodiversitas Tropika' },
+    { category: 'Agromaritim', name: 'Pengelolaan Sumber Daya Alam' },
+    { category: 'Agromaritim', name: 'Ilmu Lingkungan' },
+    { category: 'Agromaritim', name: 'Penyuluhan dan Komunikasi Pembangunan' },
+    { category: 'Agromaritim', name: 'Komunikasi Pembangunan, Pertanian dan Pedesaan' },
+    { category: 'Agromaritim', name: 'Kajian Pariwisata' },
+
+    // Infrastruktur
+    { category: 'Infrastruktur', name: 'Ilmu Teknik' },
+    { category: 'Infrastruktur', name: 'Teknik Sipil' },
+    { category: 'Infrastruktur', name: 'Arsitektur' },
+    { category: 'Infrastruktur', name: 'Perencanaan Wilayah dan Kota' },
+    { category: 'Infrastruktur', name: 'Teknik Lingkungan' },
+    { category: 'Infrastruktur', name: 'Teknik Geologi' },
+    { category: 'Infrastruktur', name: 'Teknik Industri' },
+    { category: 'Infrastruktur', name: 'Teknik Kelautan' },
+    { category: 'Infrastruktur', name: 'Teknik Pertambangan' },
+    { category: 'Infrastruktur', name: 'Ilmu Komputer' },
+    { category: 'Infrastruktur', name: 'Informatika' },
+    { category: 'Infrastruktur', name: 'Ilmu Perencanaan Pembangunan Wilayah dan Pedesaan' },
+    { category: 'Infrastruktur', name: 'Transportasi' }
+  ]
+};
 
 export const SCHOLARSHIP_AMOUNTS = [
   {
@@ -110,6 +315,15 @@ export const SCHEDULE_TIMELINE = [
 ];
 
 export const TEMPLATE_DOCUMENTS: DocumentTemplate[] = [
+  {
+    id: 'juknis-bssc-2026',
+    title: 'Buku Petunjuk Teknis (Juknis) BSSC 2026',
+    description: 'Dokumen resmi Juknis Beasiswa Stimulan Sultra Cerdas TA 2026 mencakup syarat, alur, & prodi prioritas.',
+    fileType: 'PDF',
+    fileSize: '4.8 MB',
+    downloadUrl: '/Petunjuk_Teknis_BSSC_2026.pdf',
+    requiredFor: 'Semua Jenjang (S1/D4, S2, S3)'
+  },
   {
     id: 'surat-permohonan',
     title: 'Template Surat Permohonan BSSC 2026',

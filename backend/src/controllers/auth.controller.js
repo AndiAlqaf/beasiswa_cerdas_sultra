@@ -17,7 +17,7 @@ const { MAX_LOGIN_ATTEMPTS, LOCKOUT_DURATION_MS } = require('../config/security'
  */
 async function register(req, res) {
   try {
-    const { email, nik, password, namaLengkap, jenjangTarget } = req.body;
+    const { email, nik, password, namaLengkap, jenjangTarget, prodiPrioritas } = req.body;
     const clientIp = getClientIp(req);
     const pool = getPool();
 
@@ -50,8 +50,8 @@ async function register(req, res) {
       );
 
       await conn.execute(
-        `INSERT INTO profiles (id, user_id) VALUES (?, ?)`,
-        [uuidv4(), userId]
+        `INSERT INTO profiles (id, user_id, prodi_prioritas) VALUES (?, ?, ?)`,
+        [uuidv4(), userId, prodiPrioritas || null]
       );
 
       await conn.commit();

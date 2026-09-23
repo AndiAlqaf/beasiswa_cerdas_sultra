@@ -140,7 +140,7 @@ const educationValidation = [
   
   body('educationList.*.tingkat')
     .trim()
-    .isIn(['SMA', 'D3', 'S1', 'S2', 'S3']).withMessage('Tingkat pendidikan tidak valid.'),
+    .isIn(['SD', 'SMP', 'SMA', 'SMK', 'MA', 'MTS', 'MI', 'D1', 'D2', 'D3', 'D4', 'S1', 'S2', 'S3']).withMessage('Tingkat pendidikan tidak valid.'),
   
   body('educationList.*.institusi')
     .trim()

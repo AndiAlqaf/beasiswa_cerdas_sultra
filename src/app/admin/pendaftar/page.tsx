@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, Download, Eye, Edit, Trash2, Loader2, AlertCircle, X, FileText, Printer } from 'lucide-react';
+import { Search, Filter, Download, Eye, Edit, Trash2, Loader2, AlertCircle, X, FileText, Printer, ExternalLink } from 'lucide-react';
 import { fetchAPI } from '@/lib/api';
 
 const getDocTitle = (key: string) => {

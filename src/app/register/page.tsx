@@ -21,6 +21,7 @@ import {
   Loader2
 } from 'lucide-react';
 import { fetchAPI, setTokens } from '@/lib/api';
+import { PRIORITY_PRODI_BY_JENJANG } from '@/data/bsscData';
 
 interface EducationEntry {
   id: string;
@@ -40,6 +41,8 @@ export default function RegisterPage() {
   
   // Step 1: Akun & NIM/NIK & Jenjang Target Beasiswa
   const [jenjangTarget, setJenjangTarget] = useState<string>('S1');
+  const [prodiPrioritas, setProdiPrioritas] = useState<string>('');
+  const [isSemesterConfirmed, setIsSemesterConfirmed] = useState<boolean>(false);
   const [namaLengkap, setNamaLengkap] = useState<string>('');
   const [nimNik, setNimNik] = useState<string>('');
   const [email, setEmail] = useState<string>('');
@@ -69,14 +72,6 @@ export default function RegisterPage() {
       jurusan: '',
       tahunMulai: '',
       tahunLulus: ''
-    },
-    {
-      id: '2',
-      tingkat: 'S1',
-      institusi: '',
-      jurusan: '',
-      tahunMulai: '',
-      tahunLulus: ''
     }
   ]);
 
@@ -89,21 +84,21 @@ export default function RegisterPage() {
 
   // Synchronize education history structure based on target jenjang (S1/S2/S3)
   useEffect(() => {
+    setProdiPrioritas('');
     if (jenjangTarget === 'S1') {
+      setEducationList([
+        { id: '1', tingkat: 'SMA', institusi: '', jurusan: '', tahunMulai: '', tahunLulus: '' }
+      ]);
+    } else if (jenjangTarget === 'S2') {
       setEducationList([
         { id: '1', tingkat: 'SMA', institusi: '', jurusan: '', tahunMulai: '', tahunLulus: '' },
         { id: '2', tingkat: 'S1', institusi: '', jurusan: '', tahunMulai: '', tahunLulus: '' }
       ]);
-    } else if (jenjangTarget === 'S2') {
-      setEducationList([
-        { id: '1', tingkat: 'S1', institusi: '', jurusan: '', tahunMulai: '', tahunLulus: '' },
-        { id: '2', tingkat: 'S2', institusi: '', jurusan: '', tahunMulai: '', tahunLulus: '' }
-      ]);
     } else if (jenjangTarget === 'S3') {
       setEducationList([
-        { id: '1', tingkat: 'S1', institusi: '', jurusan: '', tahunMulai: '', tahunLulus: '' },
-        { id: '2', tingkat: 'S2', institusi: '', jurusan: '', tahunMulai: '', tahunLulus: '' },
-        { id: '3', tingkat: 'S3', institusi: '', jurusan: '', tahunMulai: '', tahunLulus: '' }
+        { id: '1', tingkat: 'SMA', institusi: '', jurusan: '', tahunMulai: '', tahunLulus: '' },
+        { id: '2', tingkat: 'S1', institusi: '', jurusan: '', tahunMulai: '', tahunLulus: '' },
+        { id: '3', tingkat: 'S2', institusi: '', jurusan: '', tahunMulai: '', tahunLulus: '' }
       ]);
     }
   }, [jenjangTarget]);
@@ -222,8 +217,12 @@ export default function RegisterPage() {
   const [error, setError] = useState<string | null>(null);
 
   const handleRegisterAccount = async () => {
-    if (!email || !password || !namaLengkap || !nimNik) {
-      setError('Harap lengkapi semua bidang bertanda bintang (*).');
+    if (!email || !password || !namaLengkap || !nimNik || !prodiPrioritas) {
+      setError('Harap lengkapi semua bidang bertanda bintang (*), termasuk Program Studi Prioritas.');
+      return;
+    }
+    if (!isSemesterConfirmed) {
+      setError('Harap beri tanda centang konfirmasi bahwa Anda benar berada di semester yang sesuai kriteria.');
       return;
     }
     if (password !== confirmPassword) {
@@ -244,6 +243,7 @@ export default function RegisterPage() {
           confirmPassword,
           namaLengkap,
           jenjangTarget,
+          prodiPrioritas,
         }),
       });
 
@@ -441,6 +441,37 @@ export default function RegisterPage() {
                   </div>
                 </div>
 
+                {/* Priority Study Program Selection */}
+                <div className="space-y-2">
+                  <label className="block text-sm font-bold text-slate-800">
+                    Program Studi Prioritas (Lampiran 1 Petunjuk Teknis) *
+                  </label>
+                  <select
+                    value={prodiPrioritas}
+                    onChange={(e) => setProdiPrioritas(e.target.value)}
+                    required
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0B3A6A] transition-all text-slate-900 font-medium"
+                  >
+                    <option value="">-- Pilih Program Studi Prioritas ({jenjangTarget}) --</option>
+                    {(['Pendidikan', 'Kesehatan', 'Agromaritim', 'Infrastruktur'] as const).map((cat) => {
+                      const items = (PRIORITY_PRODI_BY_JENJANG[jenjangTarget as 'S1' | 'S2' | 'S3'] || []).filter(p => p.category === cat);
+                      if (items.length === 0) return null;
+                      return (
+                        <optgroup key={cat} label={`Bidang Prioritas: ${cat}`}>
+                          {items.map((p, idx) => (
+                            <option key={idx} value={p.name}>
+                              {p.name}
+                            </option>
+                          ))}
+                        </optgroup>
+                      );
+                    })}
+                  </select>
+                  <p className="text-xs text-slate-500 font-medium">
+                    Pilihan prodi disesuaikan dengan Lampiran 1 Juknis Beasiswa Stimulan Sultra Cerdas 2026 untuk jenjang {jenjangTarget}.
+                  </p>
+                </div>
+
                 <div className="space-y-4 pt-2 border-t border-slate-100">
                   <div>
                     <label className="block text-sm font-bold text-slate-800 mb-1.5">
@@ -524,6 +555,24 @@ export default function RegisterPage() {
                     />
                     <label htmlFor="showPass" className="text-sm font-medium text-slate-600 cursor-pointer">
                       Tampilkan Password
+                    </label>
+                  </div>
+
+                  <div className="pt-2">
+                    <label className="flex items-start gap-3 p-3.5 bg-blue-50/70 border border-blue-200/80 rounded-xl cursor-pointer hover:bg-blue-50 transition-colors">
+                      <input
+                        type="checkbox"
+                        checked={isSemesterConfirmed}
+                        onChange={(e) => setIsSemesterConfirmed(e.target.checked)}
+                        className="w-4.5 h-4.5 mt-0.5 rounded text-[#0B3A6A] focus:ring-[#0B3A6A] shrink-0"
+                      />
+                      <span className="text-xs font-semibold text-slate-800 leading-relaxed">
+                        {jenjangTarget === 'S1'
+                          ? 'Saya menyatakan dengan sebenarnya bahwa saat ini saya adalah mahasiswa aktif yang berada di semester 3, 4, atau 5. *'
+                          : jenjangTarget === 'S2'
+                          ? 'Saya menyatakan dengan sebenarnya bahwa saat ini saya adalah mahasiswa aktif yang berada di semester 2 atau 3. *'
+                          : 'Saya menyatakan dengan sebenarnya bahwa saat ini saya adalah mahasiswa aktif yang berada di semester 2, 3, 4, atau 5. *'}
+                      </span>
                     </label>
                   </div>
                   {error && (

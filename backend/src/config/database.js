@@ -193,7 +193,8 @@ async function runMigrations() {
     'prestasi_non_akademik TEXT NULL',
     'pengalaman_organisasi TEXT NULL',
     'pengalaman_pengabdian TEXT NULL',
-    'pelatihan_sertifikasi TEXT NULL'
+    'pelatihan_sertifikasi TEXT NULL',
+    'prodi_prioritas VARCHAR(255) NULL'
   ];
 
   for (const colDef of columnsToAdd) {

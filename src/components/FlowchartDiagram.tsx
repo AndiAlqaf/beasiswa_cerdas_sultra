@@ -80,7 +80,7 @@ export default function FlowchartDiagram() {
                       Surat Permohonan
                     </div>
                     <div className="bg-white text-slate-900 px-4 py-2.5 rounded-lg text-xs font-bold text-center shadow-xs">
-                      Surat Pernyataan (Materai)
+                      Surat Pernyataan (E-Materai)
                     </div>
                     <div className="bg-white text-slate-900 px-4 py-2.5 rounded-lg text-xs font-bold text-center shadow-xs text-blue-900">
                       Motivation Letter
@@ -131,7 +131,7 @@ export default function FlowchartDiagram() {
                       Surat Permohonan
                     </div>
                     <div className="bg-white text-slate-900 px-4 py-2.5 rounded-lg text-xs font-bold text-center shadow-xs">
-                      Surat Pernyataan (Materai)
+                      Surat Pernyataan (E-Materai)
                     </div>
                     <div className="bg-white text-slate-900 px-4 py-2.5 rounded-lg text-xs font-bold text-center shadow-xs text-blue-900">
                       Esai Kontribusi Daerah (5 Tahun)
@@ -182,7 +182,7 @@ export default function FlowchartDiagram() {
                       Surat Permohonan
                     </div>
                     <div className="bg-white text-slate-900 px-4 py-2.5 rounded-lg text-xs font-bold text-center shadow-xs">
-                      Surat Pernyataan (Materai)
+                      Surat Pernyataan (E-Materai)
                     </div>
                     <div className="bg-white text-slate-900 px-4 py-2.5 rounded-lg text-xs font-bold text-center shadow-xs text-blue-900">
                       Esai Kontribusi Daerah (5 Tahun)

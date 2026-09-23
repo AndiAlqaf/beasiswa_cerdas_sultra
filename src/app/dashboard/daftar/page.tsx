@@ -58,13 +58,15 @@ export default function RegistrationPage() {
     beasiswaLain: 'Tidak Ada',
 
     // Step 4: Riwayat Pendidikan
-    sdNama: '',
-    sdTahunLulus: '',
-    smpNama: '',
-    smpTahunLulus: '',
     smaNama: '',
     smaJurusan: '',
     smaTahunLulus: '',
+    s1Nama: '',
+    s1Jurusan: '',
+    s1TahunLulus: '',
+    s2Nama: '',
+    s2Jurusan: '',
+    s2TahunLulus: '',
     prestasiRelevan: '',
 
     // Step 5: Keluarga & Ekonomi
@@ -112,10 +114,10 @@ export default function RegistrationPage() {
           const docs = res.data.documents || [];
           const edus = res.data.education || [];
 
-          const sd = edus.find((e: any) => e.tingkat === 'SD') || {};
-          const smp = edus.find((e: any) => e.tingkat === 'SMP') || {};
           const sma = edus.find((e: any) => e.tingkat === 'SMA') || {};
-          const univ = edus.find((e: any) => e.tingkat === 'S1' || e.tingkat === 'S2' || e.tingkat === 'S3') || {};
+          const s1 = edus.find((e: any) => e.tingkat === 'S1') || {};
+          const s2 = edus.find((e: any) => e.tingkat === 'S2') || {};
+          const currentJenjang = u.jenjangTarget || 'S1';
 
           if (app) {
             setRegistrationCode(app.registrationNo);
@@ -131,7 +133,7 @@ export default function RegistrationPage() {
             namaLengkap: u.namaLengkap || '',
             nik: u.nik || '',
             email: u.email || '',
-            jenjang: u.jenjangTarget || 'S1',
+            jenjang: currentJenjang,
             tempatLahir: p.tempatLahir || '',
             tanggalLahir: p.tanggalLahir || '',
             jenisKelamin: p.gender || 'Laki-laki',
@@ -145,15 +147,17 @@ export default function RegistrationPage() {
             ipk: p.ipk || '',
             targetLulus: p.targetLulus || '',
             beasiswaLain: p.beasiswaLain || 'Tidak Ada',
-            sdNama: sd.institusi || '',
-            sdTahunLulus: sd.tahunLulus || '',
-            smpNama: smp.institusi || '',
-            smpTahunLulus: smp.tahunLulus || '',
             smaNama: sma.institusi || '',
             smaJurusan: sma.jurusan || '',
             smaTahunLulus: sma.tahunLulus || '',
-            perguruanTinggi: univ.institusi || '',
-            fakultasProdi: univ.jurusan || '',
+            s1Nama: s1.institusi || '',
+            s1Jurusan: s1.jurusan || '',
+            s1TahunLulus: s1.tahunLulus || '',
+            s2Nama: s2.institusi || '',
+            s2Jurusan: s2.jurusan || '',
+            s2TahunLulus: s2.tahunLulus || '',
+            perguruanTinggi: (currentJenjang === 'S3' ? edus.find((e: any) => e.tingkat === 'S3')?.institusi : currentJenjang === 'S2' ? s2.institusi : s1.institusi) || '',
+            fakultasProdi: (currentJenjang === 'S3' ? edus.find((e: any) => e.tingkat === 'S3')?.jurusan : currentJenjang === 'S2' ? s2.jurusan : s1.jurusan) || '',
             namaAyah: p.namaAyah || '',
             pekerjaanAyah: p.pekerjaanAyah || '',
             namaIbu: p.namaIbu || '',
@@ -244,9 +248,9 @@ export default function RegistrationPage() {
       { key: 'nim', name: 'NIM (Tahap 3)' },
       { key: 'ipk', name: 'IPK Kumulatif (Tahap 3)' },
       { key: 'targetLulus', name: 'Target Tahun Lulus (Tahap 3)' },
-      { key: 'sdNama', name: 'Nama SD (Tahap 4)' },
-      { key: 'smpNama', name: 'Nama SMP (Tahap 4)' },
-      { key: 'smaNama', name: 'Nama SMA (Tahap 4)' },
+      { key: 'smaNama', name: 'Nama SMA/SMK (Tahap 4)' },
+      ...(formData.jenjang === 'S2' || formData.jenjang === 'S3' ? [{ key: 's1Nama', name: 'Nama PT S1 (Tahap 4)' }] : []),
+      ...(formData.jenjang === 'S3' ? [{ key: 's2Nama', name: 'Nama PT S2 (Tahap 4)' }] : []),
       { key: 'namaAyah', name: 'Nama Ayah (Tahap 5)' },
       { key: 'namaIbu', name: 'Nama Ibu (Tahap 5)' },
       { key: 'fileSuratPermohonan', name: 'Dokumen: Surat Permohonan (Tahap 7)' },
@@ -303,12 +307,38 @@ export default function RegistrationPage() {
       });
 
       // 1.5 Update Education History
-      const educationList = [
-        { tingkat: 'SD', institusi: formData.sdNama, tahunLulus: formData.sdTahunLulus },
-        { tingkat: 'SMP', institusi: formData.smpNama, tahunLulus: formData.smpTahunLulus },
-        { tingkat: 'SMA', institusi: formData.smaNama, jurusan: formData.smaJurusan, tahunLulus: formData.smaTahunLulus },
-        { tingkat: 'S1', institusi: formData.perguruanTinggi, jurusan: formData.fakultasProdi },
-      ].filter(e => e.institusi);
+      const educationList: any[] = [];
+      if (formData.smaNama) {
+        educationList.push({
+          tingkat: 'SMA',
+          institusi: formData.smaNama,
+          jurusan: formData.smaJurusan || null,
+          tahunLulus: formData.smaTahunLulus || null
+        });
+      }
+      if ((formData.jenjang === 'S2' || formData.jenjang === 'S3') && formData.s1Nama) {
+        educationList.push({
+          tingkat: 'S1',
+          institusi: formData.s1Nama,
+          jurusan: formData.s1Jurusan || null,
+          tahunLulus: formData.s1TahunLulus || null
+        });
+      }
+      if (formData.jenjang === 'S3' && formData.s2Nama) {
+        educationList.push({
+          tingkat: 'S2',
+          institusi: formData.s2Nama,
+          jurusan: formData.s2Jurusan || null,
+          tahunLulus: formData.s2TahunLulus || null
+        });
+      }
+      if (formData.perguruanTinggi) {
+        educationList.push({
+          tingkat: formData.jenjang || 'S1',
+          institusi: formData.perguruanTinggi,
+          jurusan: formData.fakultasProdi || null
+        });
+      }
 
       await fetchAPI('/applicant/education', {
         method: 'PUT',
@@ -662,7 +692,7 @@ export default function RegistrationPage() {
                         onChange={(e) => handleInputChange('semester', parseInt(e.target.value))}
                         className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-blue-900 focus:outline-none"
                       >
-                        {[2, 3, 4, 5].map((s) => (
+                        {(formData.jenjang === 'S1' ? [3, 4, 5] : formData.jenjang === 'S2' ? [2, 3] : [2, 3, 4, 5]).map((s) => (
                           <option key={s} value={s}>
                             Semester {s}
                           </option>
@@ -712,54 +742,19 @@ export default function RegistrationPage() {
                 <div className="space-y-6 max-w-4xl mx-auto">
                   <div className="border-b border-slate-100 pb-4">
                     <h2 className="text-xl font-bold text-slate-900">Tahap 4: Riwayat Pendidikan Sebelumnya</h2>
-                    <p className="text-xs text-slate-500">Isikan riwayat pendidikan SD, SMP, dan SMA/SMK.</p>
+                    <p className="text-xs text-slate-500">
+                      {formData.jenjang === 'S3'
+                        ? 'Isikan riwayat pendidikan SMA/SMK, S1, dan S2.'
+                        : formData.jenjang === 'S2'
+                        ? 'Isikan riwayat pendidikan SMA/SMK dan S1.'
+                        : 'Isikan riwayat pendidikan SMA/SMK.'}
+                    </p>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 text-xs font-medium text-slate-700">
+                    {/* SMA / SMK (Shown for all jenjang) */}
                     <div>
-                      <label className="block mb-1 font-semibold">SD (Nama Sekolah)</label>
-                      <input
-                        type="text"
-                        value={formData.sdNama}
-                        onChange={(e) => handleInputChange('sdNama', e.target.value)}
-                        placeholder="SDN 1 Kendari"
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-blue-900 focus:outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="block mb-1 font-semibold">SD (Tahun Lulus)</label>
-                      <input
-                        type="text"
-                        value={formData.sdTahunLulus}
-                        onChange={(e) => handleInputChange('sdTahunLulus', e.target.value)}
-                        placeholder="2015"
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-blue-900 focus:outline-none"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block mb-1 font-semibold">SMP (Nama Sekolah)</label>
-                      <input
-                        type="text"
-                        value={formData.smpNama}
-                        onChange={(e) => handleInputChange('smpNama', e.target.value)}
-                        placeholder="SMPN 1 Kendari"
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-blue-900 focus:outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="block mb-1 font-semibold">SMP (Tahun Lulus)</label>
-                      <input
-                        type="text"
-                        value={formData.smpTahunLulus}
-                        onChange={(e) => handleInputChange('smpTahunLulus', e.target.value)}
-                        placeholder="2018"
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-blue-900 focus:outline-none"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block mb-1 font-semibold">SMA / SMK (Nama Sekolah & Jurusan)</label>
+                      <label className="block mb-1 font-semibold">SMA / SMK / MA (Nama Sekolah & Jurusan)</label>
                       <input
                         type="text"
                         value={formData.smaNama}
@@ -769,7 +764,7 @@ export default function RegistrationPage() {
                       />
                     </div>
                     <div>
-                      <label className="block mb-1 font-semibold">SMA / SMK (Tahun Lulus)</label>
+                      <label className="block mb-1 font-semibold">SMA / SMK / MA (Tahun Lulus)</label>
                       <input
                         type="text"
                         value={formData.smaTahunLulus}
@@ -778,6 +773,58 @@ export default function RegistrationPage() {
                         className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-blue-900 focus:outline-none"
                       />
                     </div>
+
+                    {/* S1 / D4 (Shown for S2 and S3) */}
+                    {(formData.jenjang === 'S2' || formData.jenjang === 'S3') && (
+                      <>
+                        <div>
+                          <label className="block mb-1 font-semibold">S1 / D4 (Nama Perguruan Tinggi & Prodi)</label>
+                          <input
+                            type="text"
+                            value={formData.s1Nama}
+                            onChange={(e) => handleInputChange('s1Nama', e.target.value)}
+                            placeholder="Universitas Halu Oleo (Teknik Informatika)"
+                            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-blue-900 focus:outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="block mb-1 font-semibold">S1 / D4 (Tahun Lulus)</label>
+                          <input
+                            type="text"
+                            value={formData.s1TahunLulus}
+                            onChange={(e) => handleInputChange('s1TahunLulus', e.target.value)}
+                            placeholder="2024"
+                            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-blue-900 focus:outline-none"
+                          />
+                        </div>
+                      </>
+                    )}
+
+                    {/* S2 / Magister (Shown for S3) */}
+                    {formData.jenjang === 'S3' && (
+                      <>
+                        <div>
+                          <label className="block mb-1 font-semibold">S2 / Magister (Nama Perguruan Tinggi & Prodi)</label>
+                          <input
+                            type="text"
+                            value={formData.s2Nama}
+                            onChange={(e) => handleInputChange('s2Nama', e.target.value)}
+                            placeholder="Universitas Gadjah Mada (Magister Ilmu Komputer)"
+                            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-blue-900 focus:outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="block mb-1 font-semibold">S2 / Magister (Tahun Lulus)</label>
+                          <input
+                            type="text"
+                            value={formData.s2TahunLulus}
+                            onChange={(e) => handleInputChange('s2TahunLulus', e.target.value)}
+                            placeholder="2026"
+                            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-blue-900 focus:outline-none"
+                          />
+                        </div>
+                      </>
+                    )}
 
                     <div className="sm:col-span-2">
                       <label className="block mb-1 font-semibold">Nilai Rata-rata / Catatan Prestasi Relevan</label>

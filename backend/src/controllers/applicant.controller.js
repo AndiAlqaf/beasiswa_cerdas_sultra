@@ -25,7 +25,7 @@ async function getProfile(req, res) {
              p.beasiswa_lain, p.nama_ayah, p.pekerjaan_ayah, p.nama_ibu, p.pekerjaan_ibu,
              p.penghasilan_ortu, p.jumlah_tanggungan, p.kepemilikan_bantuan,
              p.prestasi_akademik, p.prestasi_non_akademik, p.pengalaman_organisasi,
-             p.pengalaman_pengabdian, p.pelatihan_sertifikasi
+             p.pengalaman_pengabdian, p.pelatihan_sertifikasi, p.prodi_prioritas
       FROM users u
       LEFT JOIN profiles p ON p.user_id = u.id
       WHERE u.id = ?
@@ -78,7 +78,8 @@ async function getProfile(req, res) {
           prestasiNonAkademik: user.prestasi_non_akademik,
           pengalamanOrganisasi: user.pengalaman_organisasi,
           pengalamanPengabdian: user.pengalaman_pengabdian,
-          pelatihanSertifikasi: user.pelatihan_sertifikasi
+          pelatihanSertifikasi: user.pelatihan_sertifikasi,
+          prodiPrioritas: user.prodi_prioritas
         },
         education,
         documents: documents.map(doc => ({
@@ -105,7 +106,7 @@ async function updateProfile(req, res) {
       beasiswaLain, namaAyah, pekerjaanAyah, namaIbu, pekerjaanIbu,
       penghasilanOrtu, jumlahTanggungan, kepemilikanBantuan,
       prestasiAkademik, prestasiNonAkademik, pengalamanOrganisasi,
-      pengalamanPengabdian, pelatihanSertifikasi
+      pengalamanPengabdian, pelatihanSertifikasi, prodiPrioritas
     } = req.body;
     const pool = getPool();
 
@@ -136,7 +137,8 @@ async function updateProfile(req, res) {
           prestasi_non_akademik = COALESCE(?, prestasi_non_akademik),
           pengalaman_organisasi = COALESCE(?, pengalaman_organisasi),
           pengalaman_pengabdian = COALESCE(?, pengalaman_pengabdian),
-          pelatihan_sertifikasi = COALESCE(?, pelatihan_sertifikasi)
+          pelatihan_sertifikasi = COALESCE(?, pelatihan_sertifikasi),
+          prodi_prioritas = COALESCE(?, prodi_prioritas)
       WHERE user_id = ?
     `, [
       tempatLahir || null, tanggalLahir || null, gender || null,
@@ -146,7 +148,7 @@ async function updateProfile(req, res) {
       namaAyah || null, pekerjaanAyah || null, namaIbu || null, pekerjaanIbu || null,
       penghasilanOrtu || null, jumlahTanggungan || null, kepemilikanBantuan || null,
       prestasiAkademik || null, prestasiNonAkademik || null, pengalamanOrganisasi || null,
-      pengalamanPengabdian || null, pelatihanSertifikasi || null,
+      pengalamanPengabdian || null, pelatihanSertifikasi || null, prodiPrioritas || null,
       userId,
     ]);
 

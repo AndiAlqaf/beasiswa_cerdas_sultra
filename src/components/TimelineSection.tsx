@@ -41,7 +41,7 @@ export default function TimelineSection() {
                     <h3 className="font-bold text-slate-900 text-base">{step.title}</h3>
                     {step.status === 'active' && (
                       <span className="px-2 py-0.5 rounded text-[10px] uppercase font-extrabold bg-blue-900 text-white tracking-wider">
-                        SEDANGBERJALAN
+                        SEDANG BERJALAN
                       </span>
                     )}
                   </div>

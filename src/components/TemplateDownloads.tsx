@@ -7,7 +7,22 @@ import { Download, FileText, CheckCircle2, FileCheck, ShieldAlert } from 'lucide
 export default function TemplateDownloads() {
   const [downloadedIds, setDownloadedIds] = useState<string[]>([]);
 
-  const handleSimulatedDownload = (docTitle: string, docId: string) => {
+  const handleSimulatedDownload = (docTitle: string, docId: string, downloadUrl?: string) => {
+    if (downloadUrl && downloadUrl !== '#') {
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = downloadUrl.split('/').pop() || `${docId}.pdf`;
+      link.target = '_blank';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      if (!downloadedIds.includes(docId)) {
+        setDownloadedIds([...downloadedIds, docId]);
+      }
+      return;
+    }
+
     // Generate text content for download simulation
     const sampleContent = `===========================================================
 PEMERINTAH PROVINSI SULAWESI TENGGARA
@@ -86,7 +101,7 @@ Penyelenggara: Pemerintah Provinsi Sulawesi Tenggara
 
                 <div className="pt-4 border-t border-slate-100">
                   <button
-                    onClick={() => handleSimulatedDownload(doc.title, doc.id)}
+                    onClick={() => handleSimulatedDownload(doc.title, doc.id, doc.downloadUrl)}
                     className={`w-full py-2.5 px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
                       isDownloaded
                         ? 'bg-emerald-600 text-white shadow-xs'
