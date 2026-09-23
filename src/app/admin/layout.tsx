@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { LayoutDashboard, Users, FileCheck, Settings, LogOut, Menu, X, Bell } from 'lucide-react';
@@ -8,11 +8,29 @@ import { getUser, clearTokens } from '@/lib/api';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const profileRef = useRef<HTMLDivElement>(null);
+  const notificationsRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
   const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
     setUser(getUser());
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
+        setProfileOpen(false);
+      }
+      if (notificationsRef.current && !notificationsRef.current.contains(event.target as Node)) {
+        setNotificationsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
   }, []);
 
   const handleLogout = () => {
@@ -79,16 +97,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             );
           })}
         </nav>
-
-        <div className="absolute bottom-0 left-0 w-full p-4 border-t border-[#134983]">
-          <button
-            onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-rose-200 hover:bg-white/10 transition-colors text-left"
-          >
-            <LogOut className="w-5 h-5" />
-            Keluar (Admin)
-          </button>
-        </div>
       </aside>
 
       {/* Main Content */}
@@ -106,18 +114,73 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </div>
 
           <div className="flex items-center gap-4">
-            <button className="relative p-2 rounded-full text-slate-500 hover:bg-slate-100 transition-colors">
-              <Bell className="w-5 h-5" />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 border border-white rounded-full"></span>
-            </button>
-            <div className="flex items-center gap-3 pl-4 border-l border-slate-200">
-              <div className="w-9 h-9 rounded-full bg-blue-100 text-blue-900 flex items-center justify-center font-bold text-sm">
-                {adminInitials}
-              </div>
-              <div className="hidden sm:block text-sm">
-                <p className="font-bold text-slate-900 leading-none">{adminName}</p>
-                <p className="text-xs text-slate-500 mt-1">Administrator Sistem</p>
-              </div>
+            <div className="relative" ref={notificationsRef}>
+              <button 
+                onClick={() => setNotificationsOpen(!notificationsOpen)}
+                className={`relative p-2 rounded-full transition-colors ${notificationsOpen ? 'bg-slate-100 text-blue-600' : 'text-slate-500 hover:bg-slate-100'}`}
+              >
+                <Bell className="w-5 h-5" />
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 border border-white rounded-full"></span>
+              </button>
+
+              {notificationsOpen && (
+                <div className="absolute right-0 top-full mt-2 w-80 bg-white rounded-xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)] border border-slate-100 py-2 z-50 origin-top-right">
+                  {/* Dropdown Pointer Arrow */}
+                  <div className="absolute -top-2 right-3 w-4 h-4 bg-white border-t border-l border-slate-100 transform rotate-45"></div>
+                  
+                  <div className="px-4 py-3 border-b border-slate-100 relative z-10 flex items-center justify-between">
+                    <h3 className="font-bold text-slate-900 text-sm">Notifikasi</h3>
+                    <span className="text-xs bg-rose-100 text-rose-600 px-2 py-0.5 rounded-full font-semibold">1 Baru</span>
+                  </div>
+                  
+                  <div className="max-h-[300px] overflow-y-auto relative z-10">
+                    <Link href="/admin/pendaftar" onClick={() => setNotificationsOpen(false)} className="block px-4 py-3 hover:bg-slate-50 transition-colors">
+                      <p className="text-sm font-semibold text-slate-900 mb-1">Pendaftar Baru</p>
+                      <p className="text-xs text-slate-500 line-clamp-2">Ada 5 pendaftar baru yang menunggu untuk diverifikasi berkasnya hari ini.</p>
+                      <p className="text-[10px] text-slate-400 mt-2 font-medium">Baru saja</p>
+                    </Link>
+                  </div>
+                  
+                  <div className="px-4 py-2 border-t border-slate-100 relative z-10">
+                    <Link href="/admin/pendaftar" onClick={() => setNotificationsOpen(false)} className="block text-center text-xs font-bold text-blue-600 hover:text-blue-700 transition-colors py-1">
+                      Lihat Semua Pendaftar
+                    </Link>
+                  </div>
+                </div>
+              )}
+            </div>
+            <div className="relative" ref={profileRef}>
+              <button 
+                onClick={() => setProfileOpen(!profileOpen)}
+                className="flex items-center gap-3 pl-4 border-l border-slate-200 hover:opacity-80 transition-opacity text-left h-full py-2"
+              >
+                <div className="w-9 h-9 rounded-full bg-blue-100 text-blue-900 flex items-center justify-center font-bold text-sm">
+                  {adminInitials}
+                </div>
+                <div className="hidden sm:block text-sm">
+                  <p className="font-bold text-slate-900 leading-none">{adminName}</p>
+                  <p className="text-xs text-slate-500 mt-1">Administrator Sistem</p>
+                </div>
+              </button>
+
+              {profileOpen && (
+                <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)] border border-slate-100 py-2 z-50 origin-top-right">
+                  {/* Dropdown Pointer Arrow */}
+                  <div className="absolute -top-2 right-8 w-4 h-4 bg-white border-t border-l border-slate-100 transform rotate-45"></div>
+                  
+                  <div className="px-4 py-2 border-b border-slate-100 mb-1 sm:hidden relative z-10">
+                    <p className="font-bold text-slate-900 text-sm truncate">{adminName}</p>
+                    <p className="text-xs text-slate-500">Administrator</p>
+                  </div>
+                  <button
+                    onClick={handleLogout}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-semibold text-rose-600 hover:bg-rose-50 transition-colors text-left relative z-10"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    Keluar Akun
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </header>

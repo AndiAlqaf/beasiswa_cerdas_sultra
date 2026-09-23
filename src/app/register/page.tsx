@@ -291,7 +291,7 @@ export default function RegisterPage() {
         const res = await fetch(capturedImage);
         const fileBlob = await res.blob();
         const formData = new FormData();
-        formData.append('file', fileBlob, 'selfie.png');
+        formData.append('selfie', fileBlob, 'selfie.png');
         await fetchAPI('/applicant/upload/selfie', {
           method: 'POST',
           body: formData,
@@ -301,7 +301,7 @@ export default function RegisterPage() {
       // 4. Upload KTM
       if (fileKtm) {
         const formData = new FormData();
-        formData.append('file', fileKtm);
+        formData.append('ktm', fileKtm);
         await fetchAPI('/applicant/upload/ktm', {
           method: 'POST',
           body: formData,
@@ -311,7 +311,7 @@ export default function RegisterPage() {
       // 5. Upload KTP/KK (Pendukung)
       if (filePendukung) {
         const formData = new FormData();
-        formData.append('file', filePendukung);
+        formData.append('pendukung', filePendukung);
         await fetchAPI('/applicant/upload/pendukung', {
           method: 'POST',
           body: formData,
@@ -377,6 +377,16 @@ export default function RegisterPage() {
                 ))}
               </div>
             </div>
+
+            {error && (
+              <div className="mb-6 p-4 bg-rose-50 border border-rose-200 rounded-2xl flex items-start gap-3 text-rose-800 text-sm shadow-sm">
+                <AlertCircle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <h4 className="font-bold text-rose-900 mb-1">Terjadi Kesalahan</h4>
+                  <p>{error}</p>
+                </div>
+              </div>
+            )}
 
             {/* STEP 1: AKUN & NIP / NIM / NIK */}
             {currentStep === 1 && (
@@ -448,14 +458,14 @@ export default function RegisterPage() {
 
                   <div>
                     <label className="block text-sm font-bold text-slate-800 mb-1.5">
-                      NIM / NIK Mahasiswa *
+                      NIK Mahasiswa *
                     </label>
                     <input
                       type="text"
                       required
                       value={nimNik}
                       onChange={(e) => setNimNik(e.target.value)}
-                      placeholder="Masukkan NIM atau 16 Digit NIK"
+                      placeholder="Masukkan 16 Digit NIK"
                       className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-base focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0B3A6A] transition-all text-slate-900"
                     />
                   </div>
@@ -572,7 +582,7 @@ export default function RegisterPage() {
                       <img
                         src={capturedImage}
                         alt="Hasil Foto Selfie"
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover scale-x-[-1]"
                       />
                     ) : (
                       <>
@@ -581,7 +591,7 @@ export default function RegisterPage() {
                           autoPlay
                           playsInline
                           muted
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-cover scale-x-[-1]"
                         />
                         {/* Oval dashed face overlay guide */}
                         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -1063,9 +1073,18 @@ export default function RegisterPage() {
                   </button>
                   <button
                     type="submit"
-                    className="px-8 py-3.5 bg-[#0B3A6A] hover:bg-[#082a4d] text-white font-extrabold rounded-xl shadow-lg text-sm transition-all flex items-center gap-2"
+                    disabled={loading}
+                    className="px-8 py-3.5 bg-[#0B3A6A] hover:bg-[#082a4d] disabled:bg-slate-400 disabled:cursor-not-allowed text-white font-extrabold rounded-xl shadow-lg text-sm transition-all flex items-center gap-2"
                   >
-                    Daftar Akun Sekarang <ArrowRight className="w-5 h-5" />
+                    {loading ? (
+                      <>
+                        <Loader2 className="w-5 h-5 animate-spin" /> Sedang Memproses...
+                      </>
+                    ) : (
+                      <>
+                        Daftar Akun Sekarang <ArrowRight className="w-5 h-5" />
+                      </>
+                    )}
                   </button>
                 </div>
               </form>

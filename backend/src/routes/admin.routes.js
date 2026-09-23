@@ -17,6 +17,7 @@ const {
   listApplicants,
   getApplicantDetail,
   verifyApplicant,
+  viewDocument,
 } = require('../controllers/admin.controller');
 
 // All routes require authentication as admin
@@ -29,6 +30,7 @@ router.get('/dashboard', getDashboard);
 // Applicant management
 router.get('/applicants', paginationValidation, listApplicants);
 router.get('/applicants/:id', getApplicantDetail);
+router.get('/applicants/:id/documents/:docId/view', viewDocument);
 router.patch('/applicants/:id/verify', verifyStatusValidation, verifyApplicant);
 
 module.exports = router;

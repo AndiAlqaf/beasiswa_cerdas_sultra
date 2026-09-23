@@ -15,21 +15,19 @@ const { log, LOG_LEVELS } = require('../utils/logger');
  */
 async function authenticate(req, res, next) {
   try {
-    const authHeader = req.headers.authorization;
+    let authHeader = req.headers.authorization;
+    let token = '';
 
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({
-        success: false,
-        message: 'Token autentikasi tidak ditemukan. Silakan login terlebih dahulu.',
-      });
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.split(' ')[1];
+    } else if (req.query.token) {
+      token = req.query.token;
     }
-
-    const token = authHeader.split(' ')[1];
 
     if (!token || token.length < 10) {
       return res.status(401).json({
         success: false,
-        message: 'Format token tidak valid.',
+        message: 'Token autentikasi tidak ditemukan atau tidak valid.',
       });
     }
 

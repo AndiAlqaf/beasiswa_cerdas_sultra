@@ -172,6 +172,41 @@ async function runMigrations() {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
   `);
 
+  // Dynamically add missing columns to profiles table without losing existing data
+  const columnsToAdd = [
+    'no_kk VARCHAR(20) NULL',
+    'alamat_ktp TEXT NULL',
+    'akreditasi_prodi VARCHAR(50) NULL',
+    'nim VARCHAR(30) NULL',
+    'semester INT NULL',
+    'ipk DECIMAL(4,2) NULL',
+    'target_lulus VARCHAR(10) NULL',
+    'beasiswa_lain VARCHAR(255) NULL',
+    'nama_ayah VARCHAR(150) NULL',
+    'pekerjaan_ayah VARCHAR(150) NULL',
+    'nama_ibu VARCHAR(150) NULL',
+    'pekerjaan_ibu VARCHAR(150) NULL',
+    'penghasilan_ortu VARCHAR(100) NULL',
+    'jumlah_tanggungan INT NULL',
+    'kepemilikan_bantuan VARCHAR(100) NULL',
+    'prestasi_akademik TEXT NULL',
+    'prestasi_non_akademik TEXT NULL',
+    'pengalaman_organisasi TEXT NULL',
+    'pengalaman_pengabdian TEXT NULL',
+    'pelatihan_sertifikasi TEXT NULL'
+  ];
+
+  for (const colDef of columnsToAdd) {
+    const colName = colDef.split(' ')[0];
+    try {
+      await migrationConn.query(`ALTER TABLE profiles ADD COLUMN ${colDef}`);
+    } catch (e) {
+      if (e.code !== 'ER_DUP_FIELDNAME') {
+        console.error(`[DB] Error adding column ${colName}:`, e);
+      }
+    }
+  }
+
   await migrationConn.end();
   console.log('[DB] MySQL migrations completed successfully');
 }

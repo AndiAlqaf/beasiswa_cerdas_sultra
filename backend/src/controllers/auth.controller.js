@@ -112,36 +112,15 @@ async function login(req, res) {
       return res.status(401).json({ success: false, message: 'Email/NIK atau password salah.' });
     }
 
-    // Check if account is locked
-    if (user.locked_until) {
-      const lockExpiry = new Date(user.locked_until);
-      if (lockExpiry > new Date()) {
-        const remainingMinutes = Math.ceil((lockExpiry - new Date()) / 60000);
-        auditLog({ action: 'LOGIN_ACCOUNT_LOCKED', userId: user.id, ipAddress: clientIp, userAgent: req.headers['user-agent'], requestId: req.requestId });
-        return res.status(423).json({ success: false, message: `Akun terkunci karena terlalu banyak percobaan gagal. Coba lagi dalam ${remainingMinutes} menit.` });
-      }
-      // Lock expired, reset
-      await pool.execute('UPDATE users SET failed_login_attempts = 0, locked_until = NULL WHERE id = ?', [user.id]);
-    }
+    // Lockout logic removed as requested
 
     // Compare password
     const isMatch = await comparePassword(password, user.password_hash);
     if (!isMatch) {
-      const newAttempts = user.failed_login_attempts + 1;
-
-      if (newAttempts >= MAX_LOGIN_ATTEMPTS) {
-        const lockUntil = new Date(Date.now() + LOCKOUT_DURATION_MS).toISOString().slice(0, 19).replace('T', ' ');
-        await pool.execute('UPDATE users SET failed_login_attempts = ?, locked_until = ? WHERE id = ?', [newAttempts, lockUntil, user.id]);
-        auditLog({ action: 'ACCOUNT_LOCKED', userId: user.id, ipAddress: clientIp, userAgent: req.headers['user-agent'], details: { attempts: newAttempts }, requestId: req.requestId });
-        return res.status(423).json({ success: false, message: `Akun dikunci selama 15 menit setelah ${MAX_LOGIN_ATTEMPTS}x percobaan gagal.` });
-      }
-
-      await pool.execute('UPDATE users SET failed_login_attempts = ? WHERE id = ?', [newAttempts, user.id]);
-      auditLog({ action: 'LOGIN_FAILED', userId: user.id, ipAddress: clientIp, userAgent: req.headers['user-agent'], details: { attempts: newAttempts }, requestId: req.requestId });
+      auditLog({ action: 'LOGIN_FAILED', userId: user.id, ipAddress: clientIp, userAgent: req.headers['user-agent'], requestId: req.requestId });
       return res.status(401).json({
         success: false,
         message: 'Email/NIK atau password salah.',
-        ...(newAttempts >= 3 ? { attemptsRemaining: MAX_LOGIN_ATTEMPTS - newAttempts } : {}),
       });
     }
 

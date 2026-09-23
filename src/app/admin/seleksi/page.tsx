@@ -1,8 +1,25 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { CheckCircle2, XCircle, Clock, FileText, ExternalLink, Search, X, Loader2, AlertCircle } from 'lucide-react';
+import { CheckCircle2, XCircle, Clock, FileText, ExternalLink, Search, X, Loader2, AlertCircle, Printer } from 'lucide-react';
 import { fetchAPI } from '@/lib/api';
+
+const getDocTitle = (key: string) => {
+  const map: Record<string, string> = {
+    fileSuratPermohonan: 'Surat Permohonan',
+    filePasfoto: 'Pasfoto / Selfie',
+    fileKtp: 'KTP',
+    fileSuratAktif: 'Surat Aktif Kuliah / KTM',
+    fileTranskrip: 'Transkrip Nilai Sementara',
+    fileDtks: 'Surat Keterangan (DTKS / Ijazah)',
+    fileSuratPernyataan: 'Surat Pernyataan',
+    fileMotivationOrEsai: 'Motivation Letter / Esai',
+    selfie: 'Selfie Profil',
+    ktm: 'KTM',
+    pendukung: 'Berkas Pendukung',
+  };
+  return map[key] || key;
+};
 
 export default function SeleksiPage() {
   const [selectedApplicant, setSelectedApplicant] = useState<any>(null);
@@ -13,6 +30,27 @@ export default function SeleksiPage() {
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [jenjangFilter, setJenjangFilter] = useState<string>('');
+
+  const handleViewDocument = async (userId: string, docId: string) => {
+    try {
+      const token = localStorage.getItem('bssc_access_token');
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1'}/admin/applicants/${userId}/documents/${docId}/view`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || 'Gagal memuat dokumen');
+      }
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      window.open(url, '_blank');
+      setTimeout(() => window.URL.revokeObjectURL(url), 60000);
+    } catch (err: any) {
+      alert(err.message);
+    }
+  };
 
   const loadApplicants = async () => {
     setLoading(true);
@@ -59,7 +97,8 @@ export default function SeleksiPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="relative">
+      <div className="space-y-6 print:hidden">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h2 className="text-2xl font-bold text-slate-900">Verifikasi & Seleksi</h2>
@@ -236,11 +275,19 @@ export default function SeleksiPage() {
                             <div className="flex items-center gap-3">
                               <CheckCircle2 className="w-6 h-6 text-emerald-500 shrink-0" />
                               <div>
-                                <p className="font-medium text-slate-800 uppercase">{doc.docType}</p>
+                                <p className="font-medium text-slate-800 uppercase">{getDocTitle(doc.docType)}</p>
                                 <p className="text-xs text-slate-500 mt-0.5">{doc.originalName} ({Math.round(doc.fileSize / 1024)} KB)</p>
                               </div>
                             </div>
-                            <span className="text-xs bg-slate-100 px-3 py-1 rounded text-slate-600 font-mono">Terverifikasi Sistem</span>
+                            <div className="flex items-center gap-3">
+                              <span className="text-xs bg-slate-100 px-3 py-1 rounded text-slate-600 font-mono">Terverifikasi Sistem</span>
+                              <button 
+                                onClick={() => handleViewDocument(applicantDetail.user?.id || selectedApplicant?.userId, doc.id)}
+                                className="px-3 py-1.5 text-xs font-bold bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors flex items-center gap-1"
+                              >
+                                <ExternalLink className="w-3.5 h-3.5" /> Lihat
+                              </button>
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -257,8 +304,14 @@ export default function SeleksiPage() {
             {/* Modal Footer */}
             <div className="p-5 border-t border-slate-100 bg-slate-50 flex justify-end gap-3">
               <button 
+                onClick={() => window.print()}
+                className="px-5 py-2.5 bg-slate-800 text-white font-medium rounded-xl hover:bg-slate-900 transition-colors flex items-center gap-2 mr-auto"
+              >
+                <Printer className="w-4 h-4" /> Cetak Formulir
+              </button>
+              <button 
                 onClick={() => { setSelectedApplicant(null); setApplicantDetail(null); }}
-                className="px-5 py-2.5 bg-white border border-slate-300 text-slate-700 font-medium rounded-xl hover:bg-slate-50 transition-colors"
+                className="px-5 py-2.5 bg-slate-200 text-slate-700 font-medium rounded-xl hover:bg-slate-300 transition-colors"
               >
                 Tutup
               </button>
@@ -304,6 +357,101 @@ export default function SeleksiPage() {
               >
                 <CheckCircle2 className="w-4 h-4" /> Loloskan
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+      </div>
+
+      {/* Printable CV - Only visible during print */}
+      {applicantDetail && (
+        <div className="hidden print:block p-8 font-sans text-black max-w-4xl mx-auto bg-white min-h-screen">
+          <div className="text-center mb-8 border-b-4 border-black pb-6">
+            <h1 className="text-2xl font-black uppercase tracking-wider mb-2">Formulir Pendaftaran Beasiswa Sultra Cerdas 2026</h1>
+            <p className="text-lg">Nomor Registrasi: <span className="font-bold font-mono px-3 py-1 bg-gray-100 border border-black inline-block ml-2">{applicantDetail.application?.registrationNo || '-'}</span></p>
+          </div>
+          
+          <div className="space-y-6 text-sm">
+            <section>
+              <h2 className="font-bold text-lg border-b-2 border-black mb-3 uppercase bg-gray-100 px-2 py-1">1. Data Diri & Kependudukan</h2>
+              <table className="w-full text-left border-collapse">
+                <tbody>
+                  <tr><td className="w-1/3 py-1.5 font-semibold">Nama Lengkap</td><td>: {applicantDetail.user?.namaLengkap}</td></tr>
+                  <tr><td className="w-1/3 py-1.5 font-semibold">NIK</td><td>: {applicantDetail.user?.nik}</td></tr>
+                  <tr><td className="w-1/3 py-1.5 font-semibold">No. KK</td><td>: {applicantDetail.profile?.noKk || '-'}</td></tr>
+                  <tr><td className="w-1/3 py-1.5 font-semibold">Tempat, Tanggal Lahir</td><td>: {applicantDetail.profile?.tempatLahir || '-'}, {applicantDetail.profile?.tanggalLahir ? applicantDetail.profile.tanggalLahir.split('T')[0] : '-'}</td></tr>
+                  <tr><td className="w-1/3 py-1.5 font-semibold">Jenis Kelamin</td><td>: {applicantDetail.profile?.gender || '-'}</td></tr>
+                  <tr><td className="w-1/3 py-1.5 font-semibold">Alamat KTP</td><td>: {applicantDetail.profile?.alamatKtp || '-'}</td></tr>
+                  <tr><td className="w-1/3 py-1.5 font-semibold">Alamat Domisili</td><td>: {applicantDetail.profile?.alamatDomisili || '-'}</td></tr>
+                  <tr><td className="w-1/3 py-1.5 font-semibold">No. Handphone (WA)</td><td>: {applicantDetail.profile?.noHp || '-'}</td></tr>
+                  <tr><td className="w-1/3 py-1.5 font-semibold">Email</td><td>: {applicantDetail.user?.email || '-'}</td></tr>
+                </tbody>
+              </table>
+            </section>
+            
+            <section>
+              <h2 className="font-bold text-lg border-b-2 border-black mb-3 uppercase bg-gray-100 px-2 py-1">2. Data Akademik</h2>
+              <table className="w-full text-left border-collapse">
+                <tbody>
+                  <tr><td className="w-1/3 py-1.5 font-semibold">Jenjang Beasiswa</td><td>: {applicantDetail.user?.jenjangTarget}</td></tr>
+                  {applicantDetail.education && applicantDetail.education.length > 0 ? (
+                    <>
+                      <tr><td className="w-1/3 py-1.5 font-semibold">Perguruan Tinggi</td><td>: {applicantDetail.education[0].institusi || '-'}</td></tr>
+                      <tr><td className="w-1/3 py-1.5 font-semibold">Fakultas / Program Studi</td><td>: {applicantDetail.education[0].jurusan || '-'}</td></tr>
+                    </>
+                  ) : (
+                     <>
+                      <tr><td className="w-1/3 py-1.5 font-semibold">Perguruan Tinggi</td><td>: -</td></tr>
+                      <tr><td className="w-1/3 py-1.5 font-semibold">Fakultas / Program Studi</td><td>: -</td></tr>
+                     </>
+                  )}
+                  <tr><td className="w-1/3 py-1.5 font-semibold">Akreditasi Prodi</td><td>: {applicantDetail.profile?.akreditasiProdi || '-'}</td></tr>
+                  <tr><td className="w-1/3 py-1.5 font-semibold">NIM</td><td>: {applicantDetail.profile?.nim || '-'}</td></tr>
+                  <tr><td className="w-1/3 py-1.5 font-semibold">Semester</td><td>: {applicantDetail.profile?.semester || '-'}</td></tr>
+                  <tr><td className="w-1/3 py-1.5 font-semibold">IPK Kumulatif</td><td>: {applicantDetail.profile?.ipk || '-'}</td></tr>
+                  <tr><td className="w-1/3 py-1.5 font-semibold">Target Tahun Lulus</td><td>: {applicantDetail.profile?.targetLulus || '-'}</td></tr>
+                  <tr><td className="w-1/3 py-1.5 font-semibold">Beasiswa Lain</td><td>: {applicantDetail.profile?.beasiswaLain || '-'}</td></tr>
+                </tbody>
+              </table>
+            </section>
+
+            <section>
+              <h2 className="font-bold text-lg border-b-2 border-black mb-3 uppercase bg-gray-100 px-2 py-1">3. Data Keluarga & Ekonomi</h2>
+              <table className="w-full text-left border-collapse">
+                <tbody>
+                  <tr><td className="w-1/3 py-1.5 font-semibold">Nama Ayah</td><td>: {applicantDetail.profile?.namaAyah || '-'}</td></tr>
+                  <tr><td className="w-1/3 py-1.5 font-semibold">Pekerjaan Ayah</td><td>: {applicantDetail.profile?.pekerjaanAyah || '-'}</td></tr>
+                  <tr><td className="w-1/3 py-1.5 font-semibold">Nama Ibu</td><td>: {applicantDetail.profile?.namaIbu || '-'}</td></tr>
+                  <tr><td className="w-1/3 py-1.5 font-semibold">Pekerjaan Ibu</td><td>: {applicantDetail.profile?.pekerjaanIbu || '-'}</td></tr>
+                  <tr><td className="w-1/3 py-1.5 font-semibold">Rata-rata Penghasilan</td><td>: {applicantDetail.profile?.penghasilanOrtu || '-'}</td></tr>
+                  <tr><td className="w-1/3 py-1.5 font-semibold">Jumlah Tanggungan</td><td>: {applicantDetail.profile?.jumlahTanggungan || '-'}</td></tr>
+                  <tr><td className="w-1/3 py-1.5 font-semibold">Kepemilikan Bantuan</td><td>: {applicantDetail.profile?.kepemilikanBantuan || '-'}</td></tr>
+                </tbody>
+              </table>
+            </section>
+
+            <section>
+              <h2 className="font-bold text-lg border-b-2 border-black mb-3 uppercase bg-gray-100 px-2 py-1">4. Riwayat & Prestasi</h2>
+              <table className="w-full text-left border-collapse">
+                <tbody>
+                  <tr><td className="w-1/3 py-1.5 font-semibold">Prestasi Akademik</td><td>: {applicantDetail.profile?.prestasiAkademik || '-'}</td></tr>
+                  <tr><td className="w-1/3 py-1.5 font-semibold">Prestasi Non-Akademik</td><td>: {applicantDetail.profile?.prestasiNonAkademik || '-'}</td></tr>
+                  <tr><td className="w-1/3 py-1.5 font-semibold">Pengalaman Organisasi</td><td>: {applicantDetail.profile?.pengalamanOrganisasi || '-'}</td></tr>
+                  <tr><td className="w-1/3 py-1.5 font-semibold">Pelatihan/Sertifikasi</td><td>: {applicantDetail.profile?.pelatihanSertifikasi || '-'}</td></tr>
+                </tbody>
+              </table>
+            </section>
+
+            <section className="mt-8 p-4 border-2 border-black text-xs text-justify">
+              <p><strong>PERNYATAAN:</strong> Saya yang bertanda tangan di bawah ini menyatakan dengan sesungguhnya bahwa seluruh data dan dokumen yang terlampir pada pendaftaran ini adalah <strong>BENAR, SAH, dan DAPAT DIPERTANGGUNGJAWABKAN</strong>. Apabila di kemudian hari terbukti memberikan data fiktif atau menerima pendanaan ganda (double funding), saya bersedia menerima sanksi pembatalan status penerima beasiswa dan wajib mengembalikan seluruh dana beasiswa yang telah diterima ke Kas Daerah Pemerintah Provinsi Sulawesi Tenggara.</p>
+            </section>
+            
+            <div className="mt-12 flex justify-end">
+              <div className="text-center w-64">
+                <p>Pendaftar Beasiswa,</p>
+                <p className="mt-20 border-b-2 border-black font-bold uppercase">{applicantDetail.user?.namaLengkap}</p>
+                <p className="mt-1">NIK. {applicantDetail.user?.nik}</p>
+              </div>
             </div>
           </div>
         </div>

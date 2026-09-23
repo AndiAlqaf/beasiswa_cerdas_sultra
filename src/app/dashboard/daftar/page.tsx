@@ -98,6 +98,7 @@ export default function RegistrationPage() {
   });
 
   const [uploadingDocKey, setUploadingDocKey] = useState<string | null>(null);
+  const [validationErrors, setValidationErrors] = useState<string[]>([]);
 
   useEffect(() => {
     async function loadUserProfile() {
@@ -109,6 +110,12 @@ export default function RegistrationPage() {
           const p = res.data.profile || {};
           const app = res.data.application;
           const docs = res.data.documents || [];
+          const edus = res.data.education || [];
+
+          const sd = edus.find((e: any) => e.tingkat === 'SD') || {};
+          const smp = edus.find((e: any) => e.tingkat === 'SMP') || {};
+          const sma = edus.find((e: any) => e.tingkat === 'SMA') || {};
+          const univ = edus.find((e: any) => e.tingkat === 'S1' || e.tingkat === 'S2' || e.tingkat === 'S3') || {};
 
           if (app) {
             setRegistrationCode(app.registrationNo);
@@ -130,7 +137,35 @@ export default function RegistrationPage() {
             jenisKelamin: p.gender || 'Laki-laki',
             noHp: p.noHp || '',
             alamatDomisili: p.alamatDomisili || '',
-            alamatKtp: p.alamatDomisili || '',
+            alamatKtp: p.alamatKtp || p.alamatDomisili || '',
+            noKk: p.noKk || '',
+            akreditasiProdi: p.akreditasiProdi || 'Baik Sekali',
+            nim: p.nim || '',
+            semester: p.semester || 3,
+            ipk: p.ipk || '',
+            targetLulus: p.targetLulus || '',
+            beasiswaLain: p.beasiswaLain || 'Tidak Ada',
+            sdNama: sd.institusi || '',
+            sdTahunLulus: sd.tahunLulus || '',
+            smpNama: smp.institusi || '',
+            smpTahunLulus: smp.tahunLulus || '',
+            smaNama: sma.institusi || '',
+            smaJurusan: sma.jurusan || '',
+            smaTahunLulus: sma.tahunLulus || '',
+            perguruanTinggi: univ.institusi || '',
+            fakultasProdi: univ.jurusan || '',
+            namaAyah: p.namaAyah || '',
+            pekerjaanAyah: p.pekerjaanAyah || '',
+            namaIbu: p.namaIbu || '',
+            pekerjaanIbu: p.pekerjaanIbu || '',
+            penghasilanOrtu: p.penghasilanOrtu || '< Rp 1.500.000',
+            jumlahTanggungan: p.jumlahTanggungan || '3',
+            kepemilikanBantuan: p.kepemilikanBantuan || 'Tidak Ada',
+            prestasiAkademik: p.prestasiAkademik || '',
+            prestasiNonAkademik: p.prestasiNonAkademik || '',
+            pengalamanOrganisasi: p.pengalamanOrganisasi || '',
+            pengalamanPengabdian: p.pengalamanPengabdian || '',
+            pelatihanSertifikasi: p.pelatihanSertifikasi || '',
             filePasfoto: selfieDoc ? selfieDoc.originalName : prev.filePasfoto,
             fileSuratAktif: ktmDoc ? ktmDoc.originalName : prev.fileSuratAktif,
             fileKtp: pendukungDoc ? pendukungDoc.originalName : prev.fileKtp,
@@ -145,13 +180,12 @@ export default function RegistrationPage() {
     loadUserProfile();
   }, []);
 
-  const handleDocumentUpload = async (docKey: string, docType: string, file: File) => {
+  const handleDocumentUpload = async (docKey: string, _oldDocType: string, file: File) => {
     setUploadingDocKey(docKey);
     try {
       const uploadFormData = new FormData();
-      uploadFormData.append(docType, file);
-      const endpoint = docType === 'ktm' ? '/applicant/upload/ktm' : docType === 'selfie' ? '/applicant/upload/selfie' : '/applicant/upload/pendukung';
-      const res = await fetchAPI(endpoint, {
+      uploadFormData.append(docKey, file);
+      const res = await fetchAPI(`/applicant/upload/${docKey}`, {
         method: 'POST',
         body: uploadFormData,
       });
@@ -195,6 +229,46 @@ export default function RegistrationPage() {
   };
 
   const handleSubmitFinal = async () => {
+    // Validate required fields
+    const requiredFields = [
+      { key: 'namaLengkap', name: 'Nama Lengkap (Tahap 2)' },
+      { key: 'tempatLahir', name: 'Tempat Lahir (Tahap 2)' },
+      { key: 'tanggalLahir', name: 'Tanggal Lahir (Tahap 2)' },
+      { key: 'nik', name: 'NIK (Tahap 2)' },
+      { key: 'noKk', name: 'No. KK (Tahap 2)' },
+      { key: 'alamatKtp', name: 'Alamat KTP (Tahap 2)' },
+      { key: 'alamatDomisili', name: 'Alamat Domisili (Tahap 2)' },
+      { key: 'noHp', name: 'No. HP (Tahap 2)' },
+      { key: 'perguruanTinggi', name: 'Perguruan Tinggi (Tahap 3)' },
+      { key: 'fakultasProdi', name: 'Fakultas / Prodi (Tahap 3)' },
+      { key: 'nim', name: 'NIM (Tahap 3)' },
+      { key: 'ipk', name: 'IPK Kumulatif (Tahap 3)' },
+      { key: 'targetLulus', name: 'Target Tahun Lulus (Tahap 3)' },
+      { key: 'sdNama', name: 'Nama SD (Tahap 4)' },
+      { key: 'smpNama', name: 'Nama SMP (Tahap 4)' },
+      { key: 'smaNama', name: 'Nama SMA (Tahap 4)' },
+      { key: 'namaAyah', name: 'Nama Ayah (Tahap 5)' },
+      { key: 'namaIbu', name: 'Nama Ibu (Tahap 5)' },
+      { key: 'fileSuratPermohonan', name: 'Dokumen: Surat Permohonan (Tahap 7)' },
+      { key: 'filePasfoto', name: 'Dokumen: Pasfoto/Selfie (Tahap 7)' },
+      { key: 'fileKtp', name: 'Dokumen: KTP (Tahap 7)' },
+      { key: 'fileSuratAktif', name: 'Dokumen: Surat Aktif Kuliah (Tahap 7)' },
+      { key: 'fileTranskrip', name: 'Dokumen: Transkrip Nilai (Tahap 7)' },
+      { key: 'fileDtks', name: 'Dokumen: Syarat ke-6 (Tahap 7)' },
+      { key: 'fileSuratPernyataan', name: 'Dokumen: Surat Pernyataan (Tahap 7)' },
+      { key: 'fileMotivationOrEsai', name: 'Dokumen: Motivation Letter/Esai (Tahap 7)' }
+    ];
+
+    const missingFields = requiredFields.filter(f => {
+      const val = (formData as any)[f.key];
+      return !val || (typeof val === 'string' && val.trim() === '');
+    });
+
+    if (missingFields.length > 0) {
+      setValidationErrors(missingFields.map(f => f.name));
+      return;
+    }
+
     try {
       // 1. Update Profile
       await fetchAPI('/applicant/profile', {
@@ -205,7 +279,40 @@ export default function RegistrationPage() {
           gender: formData.jenisKelamin === 'Laki-laki' ? 'Laki-laki' : 'Perempuan',
           noHp: formData.noHp,
           alamatDomisili: formData.alamatDomisili,
+          noKk: formData.noKk,
+          alamatKtp: formData.alamatKtp,
+          akreditasiProdi: formData.akreditasiProdi,
+          nim: formData.nim,
+          semester: formData.semester,
+          ipk: formData.ipk,
+          targetLulus: formData.targetLulus,
+          beasiswaLain: formData.beasiswaLain,
+          namaAyah: formData.namaAyah,
+          pekerjaanAyah: formData.pekerjaanAyah,
+          namaIbu: formData.namaIbu,
+          pekerjaanIbu: formData.pekerjaanIbu,
+          penghasilanOrtu: formData.penghasilanOrtu,
+          jumlahTanggungan: formData.jumlahTanggungan,
+          kepemilikanBantuan: formData.kepemilikanBantuan,
+          prestasiAkademik: formData.prestasiAkademik,
+          prestasiNonAkademik: formData.prestasiNonAkademik,
+          pengalamanOrganisasi: formData.pengalamanOrganisasi,
+          pengalamanPengabdian: formData.pengalamanPengabdian,
+          pelatihanSertifikasi: formData.pelatihanSertifikasi
         }),
+      });
+
+      // 1.5 Update Education History
+      const educationList = [
+        { tingkat: 'SD', institusi: formData.sdNama, tahunLulus: formData.sdTahunLulus },
+        { tingkat: 'SMP', institusi: formData.smpNama, tahunLulus: formData.smpTahunLulus },
+        { tingkat: 'SMA', institusi: formData.smaNama, jurusan: formData.smaJurusan, tahunLulus: formData.smaTahunLulus },
+        { tingkat: 'S1', institusi: formData.perguruanTinggi, jurusan: formData.fakultasProdi },
+      ].filter(e => e.institusi);
+
+      await fetchAPI('/applicant/education', {
+        method: 'PUT',
+        body: JSON.stringify({ educationList }),
       });
 
       // 2. Submit Application
@@ -225,7 +332,8 @@ export default function RegistrationPage() {
   };
 
   return (
-    <div className="pb-10 max-w-7xl mx-auto">
+    <div className="relative">
+      <div className="pb-10 max-w-7xl mx-auto print:hidden">
         {/* Page Header */}
         <div className="max-w-3xl mx-auto text-center space-y-2 mb-10">
           <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">
@@ -1065,5 +1173,112 @@ export default function RegistrationPage() {
           </div>
         )}
       </div>
+
+      {/* Printable CV - Only visible during print */}
+      {isSubmitted && (
+        <div className="hidden print:block p-8 font-sans text-black max-w-4xl mx-auto bg-white min-h-screen">
+          <div className="text-center mb-8 border-b-4 border-black pb-6">
+            <h1 className="text-2xl font-black uppercase tracking-wider mb-2">Formulir Pendaftaran Beasiswa Sultra Cerdas 2026</h1>
+            <p className="text-lg">Nomor Registrasi: <span className="font-bold font-mono px-3 py-1 bg-gray-100 border border-black inline-block ml-2">{registrationCode}</span></p>
+          </div>
+          
+          <div className="space-y-6 text-sm">
+            <section>
+              <h2 className="font-bold text-lg border-b-2 border-black mb-3 uppercase bg-gray-100 px-2 py-1">1. Data Diri Pendaftar</h2>
+              <table className="w-full text-left border-collapse">
+                <tbody>
+                  <tr><td className="w-1/3 py-1.5 font-semibold">Nama Lengkap</td><td>: {formData.namaLengkap}</td></tr>
+                  <tr><td className="w-1/3 py-1.5 font-semibold">NIK</td><td>: {formData.nik}</td></tr>
+                  <tr><td className="w-1/3 py-1.5 font-semibold">Tempat, Tanggal Lahir</td><td>: {formData.tempatLahir}, {formData.tanggalLahir}</td></tr>
+                  <tr><td className="w-1/3 py-1.5 font-semibold">Jenis Kelamin</td><td>: {formData.jenisKelamin}</td></tr>
+                  <tr><td className="w-1/3 py-1.5 font-semibold">Asal Daerah (Kab/Kota)</td><td>: {formData.asalDaerah}</td></tr>
+                  <tr><td className="w-1/3 py-1.5 font-semibold">Alamat Domisili</td><td>: {formData.alamatDomisili}</td></tr>
+                  <tr><td className="w-1/3 py-1.5 font-semibold">No. Handphone (WA)</td><td>: {formData.noHp}</td></tr>
+                  <tr><td className="w-1/3 py-1.5 font-semibold">Email</td><td>: {formData.email}</td></tr>
+                </tbody>
+              </table>
+            </section>
+            
+            <section>
+              <h2 className="font-bold text-lg border-b-2 border-black mb-3 uppercase bg-gray-100 px-2 py-1">2. Data Akademik</h2>
+              <table className="w-full text-left border-collapse">
+                <tbody>
+                  <tr><td className="w-1/3 py-1.5 font-semibold">Jenjang Beasiswa</td><td>: {formData.jenjang}</td></tr>
+                  <tr><td className="w-1/3 py-1.5 font-semibold">Perguruan Tinggi</td><td>: {formData.perguruanTinggi}</td></tr>
+                  <tr><td className="w-1/3 py-1.5 font-semibold">Fakultas / Program Studi</td><td>: {formData.fakultasProdi}</td></tr>
+                  <tr><td className="w-1/3 py-1.5 font-semibold">NIM</td><td>: {formData.nim}</td></tr>
+                  <tr><td className="w-1/3 py-1.5 font-semibold">Semester Saat Ini</td><td>: {formData.semester}</td></tr>
+                  <tr><td className="w-1/3 py-1.5 font-semibold">IPK Terakhir</td><td>: {formData.ipk}</td></tr>
+                </tbody>
+              </table>
+            </section>
+            
+            <section>
+              <h2 className="font-bold text-lg border-b-2 border-black mb-3 uppercase bg-gray-100 px-2 py-1">3. Latar Belakang Keluarga & Ekonomi</h2>
+              <table className="w-full text-left border-collapse">
+                <tbody>
+                  <tr><td className="w-1/3 py-1.5 font-semibold">Nama Ayah / Ibu</td><td>: {formData.namaAyah} / {formData.namaIbu}</td></tr>
+                  <tr><td className="w-1/3 py-1.5 font-semibold">Pekerjaan Ayah / Ibu</td><td>: {formData.pekerjaanAyah || '-'} / {formData.pekerjaanIbu || '-'}</td></tr>
+                  <tr><td className="w-1/3 py-1.5 font-semibold">Rata-rata Penghasilan</td><td>: {formData.penghasilanOrtu}</td></tr>
+                  <tr><td className="w-1/3 py-1.5 font-semibold">Jumlah Tanggungan</td><td>: {formData.jumlahTanggungan} Orang</td></tr>
+                </tbody>
+              </table>
+            </section>
+
+            <section className="mt-8 p-4 border-2 border-black text-xs text-justify">
+              <p><strong>PERNYATAAN:</strong> Saya yang bertanda tangan di bawah ini menyatakan dengan sesungguhnya bahwa seluruh data dan dokumen yang terlampir pada pendaftaran ini adalah <strong>BENAR, SAH, dan DAPAT DIPERTANGGUNGJAWABKAN</strong>. Apabila di kemudian hari terbukti memberikan data fiktif atau menerima pendanaan ganda (double funding), saya bersedia menerima sanksi pembatalan status penerima beasiswa dan wajib mengembalikan seluruh dana beasiswa yang telah diterima ke Kas Daerah Pemerintah Provinsi Sulawesi Tenggara.</p>
+            </section>
+            
+            <div className="mt-12 flex justify-end">
+              <div className="text-center w-64">
+                <p>Kendari, {new Date().toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                <p className="mt-1 mb-24">Pendaftar Beasiswa,</p>
+                <p className="border-b-2 border-black font-bold uppercase">{formData.namaLengkap}</p>
+                <p className="mt-1">NIK. {formData.nik}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Validation Errors Modal */}
+      {validationErrors.length > 0 && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 print:hidden">
+          <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden border border-slate-200">
+            <div className="bg-rose-50 p-6 flex items-start gap-4 border-b border-rose-100">
+              <div className="w-10 h-10 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center shrink-0">
+                <AlertCircle className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-rose-900">Data Belum Lengkap</h3>
+                <p className="text-xs text-rose-700 mt-1">
+                  Mohon lengkapi data yang masih kosong berikut ini sebelum melakukan Submit Final:
+                </p>
+              </div>
+            </div>
+            
+            <div className="p-6 max-h-64 overflow-y-auto">
+              <ul className="space-y-2">
+                {validationErrors.map((err, idx) => (
+                  <li key={idx} className="flex items-center gap-2 text-sm text-slate-700">
+                    <span className="w-1.5 h-1.5 rounded-full bg-rose-400 shrink-0"></span>
+                    {err}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            
+            <div className="p-4 border-t border-slate-100 bg-slate-50 flex justify-end">
+              <button
+                onClick={() => setValidationErrors([])}
+                className="px-6 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl transition-colors shadow-sm"
+              >
+                Tutup & Lengkapi Data
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

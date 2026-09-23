@@ -127,6 +127,11 @@ async function getApplicantDetail(req, res) {
       SELECT u.id, u.email, u.nik, u.nama_lengkap, u.jenjang_target, u.created_at,
              p.tempat_lahir, p.tanggal_lahir, p.gender, p.no_hp,
              p.status_pernikahan, p.alamat_domisili, p.selfie_path,
+             p.no_kk, p.alamat_ktp, p.akreditasi_prodi, p.nim, p.semester, p.ipk, p.target_lulus,
+             p.beasiswa_lain, p.nama_ayah, p.pekerjaan_ayah, p.nama_ibu, p.pekerjaan_ibu,
+             p.penghasilan_ortu, p.jumlah_tanggungan, p.kepemilikan_bantuan,
+             p.prestasi_akademik, p.prestasi_non_akademik, p.pengalaman_organisasi,
+             p.pengalaman_pengabdian, p.pelatihan_sertifikasi,
              a.id as app_id, a.registration_no, a.status, a.notes, a.submitted_at, a.verified_at
       FROM users u
       LEFT JOIN profiles p ON p.user_id = u.id
@@ -157,6 +162,26 @@ async function getApplicantDetail(req, res) {
           tempatLahir: user.tempat_lahir, tanggalLahir: user.tanggal_lahir, gender: user.gender,
           noHp: user.no_hp, statusPernikahan: user.status_pernikahan, alamatDomisili: user.alamat_domisili,
           hasSelfie: !!user.selfie_path,
+          noKk: user.no_kk,
+          alamatKtp: user.alamat_ktp,
+          akreditasiProdi: user.akreditasi_prodi,
+          nim: user.nim,
+          semester: user.semester,
+          ipk: user.ipk,
+          targetLulus: user.target_lulus,
+          beasiswaLain: user.beasiswa_lain,
+          namaAyah: user.nama_ayah,
+          pekerjaanAyah: user.pekerjaan_ayah,
+          namaIbu: user.nama_ibu,
+          pekerjaanIbu: user.pekerjaan_ibu,
+          penghasilanOrtu: user.penghasilan_ortu,
+          jumlahTanggungan: user.jumlah_tanggungan,
+          kepemilikanBantuan: user.kepemilikan_bantuan,
+          prestasiAkademik: user.prestasi_akademik,
+          prestasiNonAkademik: user.prestasi_non_akademik,
+          pengalamanOrganisasi: user.pengalaman_organisasi,
+          pengalamanPengabdian: user.pengalaman_pengabdian,
+          pelatihanSertifikasi: user.pelatihan_sertifikasi
         },
         application: user.app_id ? {
           id: user.app_id, registrationNo: user.registration_no, status: user.status,
@@ -211,5 +236,39 @@ async function verifyApplicant(req, res) {
     res.status(500).json({ success: false, message: 'Gagal memperbarui status pendaftar.' });
   }
 }
+/**
+ * GET /api/v1/admin/applicants/:id/documents/:docId/view
+ */
+async function viewDocument(req, res) {
+  try {
+    const { id: userId, docId } = req.params;
+    const pool = getPool();
 
-module.exports = { getDashboard, listApplicants, getApplicantDetail, verifyApplicant };
+    const [docs] = await pool.execute(
+      'SELECT file_path, original_name, mime_type FROM documents WHERE id = ? AND user_id = ?',
+      [docId, userId]
+    );
+
+    if (docs.length === 0) {
+      return res.status(404).json({ success: false, message: 'Dokumen tidak ditemukan.' });
+    }
+
+    const doc = docs[0];
+    const fs = require('fs');
+    if (!fs.existsSync(doc.file_path)) {
+      return res.status(404).json({ success: false, message: 'File fisik dokumen tidak ditemukan di server.' });
+    }
+
+    // Set appropriate headers for viewing in browser (inline instead of attachment)
+    res.setHeader('Content-Type', doc.mime_type);
+    res.setHeader('Content-Disposition', `inline; filename="${doc.original_name}"`);
+    
+    // Stream the file
+    res.sendFile(doc.file_path);
+  } catch (err) {
+    log(LOG_LEVELS.ERROR, `View document error: ${err.message}`);
+    res.status(500).json({ success: false, message: 'Gagal memuat dokumen.' });
+  }
+}
+
+module.exports = { getDashboard, listApplicants, getApplicantDetail, verifyApplicant, viewDocument };

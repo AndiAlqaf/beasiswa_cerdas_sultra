@@ -38,9 +38,12 @@ router.put('/profile', profileUpdateValidation, updateProfile);
 router.put('/education', educationValidation, updateEducation);
 
 // File uploads (multer middleware handles file processing & validation)
-router.post('/upload/selfie', createUploadMiddleware('selfie', 'selfie'), uploadDocument('selfie'));
-router.post('/upload/ktm', createUploadMiddleware('ktm', 'ktm'), uploadDocument('ktm'));
-router.post('/upload/pendukung', createUploadMiddleware('pendukung', 'pendukung'), uploadDocument('pendukung'));
+router.post('/upload/:docType', (req, res, next) => {
+  const dt = req.params.docType;
+  createUploadMiddleware(dt, dt)(req, res, () => {
+    uploadDocument(dt)(req, res, next);
+  });
+});
 
 // Application
 router.get('/application', getApplication);

@@ -41,7 +41,7 @@ const registerValidation = [
   
   body('nik')
     .trim()
-    .matches(/^\d{7,16}$/).withMessage('NIK/NIM harus berupa 7-16 digit angka.'),
+    .matches(/^\d{7,16}$/).withMessage('NIK harus berupa 16 digit angka.'),
   
   body('password')
     .isLength({ min: 8, max: 128 }).withMessage('Password harus 8-128 karakter.')

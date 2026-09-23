@@ -16,7 +16,11 @@ const { sanitizeFilename } = require('../utils/sanitizer');
 const { log, LOG_LEVELS } = require('../utils/logger');
 
 // Ensure upload directories exist
-const UPLOAD_DIRS = ['selfies', 'ktm', 'pendukung'];
+const UPLOAD_DIRS = [
+  'selfies', 'ktm', 'pendukung',
+  'fileSuratPermohonan', 'filePasfoto', 'fileKtp', 'fileSuratAktif',
+  'fileTranskrip', 'fileDtks', 'fileSuratPernyataan', 'fileMotivationOrEsai'
+];
 for (const dir of UPLOAD_DIRS) {
   const fullPath = path.join(env.UPLOAD_DIR, dir);
   if (!fs.existsSync(fullPath)) {

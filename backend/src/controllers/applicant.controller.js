@@ -20,7 +20,12 @@ async function getProfile(req, res) {
     const [userRows] = await pool.execute(`
       SELECT u.id, u.email, u.nik, u.nama_lengkap, u.jenjang_target, u.role, u.created_at,
              p.tempat_lahir, p.tanggal_lahir, p.gender, p.no_hp, p.status_pernikahan,
-             p.alamat_domisili, p.selfie_path
+             p.alamat_domisili, p.selfie_path,
+             p.no_kk, p.alamat_ktp, p.akreditasi_prodi, p.nim, p.semester, p.ipk, p.target_lulus,
+             p.beasiswa_lain, p.nama_ayah, p.pekerjaan_ayah, p.nama_ibu, p.pekerjaan_ibu,
+             p.penghasilan_ortu, p.jumlah_tanggungan, p.kepemilikan_bantuan,
+             p.prestasi_akademik, p.prestasi_non_akademik, p.pengalaman_organisasi,
+             p.pengalaman_pengabdian, p.pelatihan_sertifikasi
       FROM users u
       LEFT JOIN profiles p ON p.user_id = u.id
       WHERE u.id = ?
@@ -54,6 +59,26 @@ async function getProfile(req, res) {
           gender: user.gender, noHp: user.no_hp,
           statusPernikahan: user.status_pernikahan, alamatDomisili: user.alamat_domisili,
           hasSelfie: !!user.selfie_path,
+          noKk: user.no_kk,
+          alamatKtp: user.alamat_ktp,
+          akreditasiProdi: user.akreditasi_prodi,
+          nim: user.nim,
+          semester: user.semester,
+          ipk: user.ipk,
+          targetLulus: user.target_lulus,
+          beasiswaLain: user.beasiswa_lain,
+          namaAyah: user.nama_ayah,
+          pekerjaanAyah: user.pekerjaan_ayah,
+          namaIbu: user.nama_ibu,
+          pekerjaanIbu: user.pekerjaan_ibu,
+          penghasilanOrtu: user.penghasilan_ortu,
+          jumlahTanggungan: user.jumlah_tanggungan,
+          kepemilikanBantuan: user.kepemilikan_bantuan,
+          prestasiAkademik: user.prestasi_akademik,
+          prestasiNonAkademik: user.prestasi_non_akademik,
+          pengalamanOrganisasi: user.pengalaman_organisasi,
+          pengalamanPengabdian: user.pengalaman_pengabdian,
+          pelatihanSertifikasi: user.pelatihan_sertifikasi
         },
         education,
         documents: documents.map(doc => ({
@@ -74,7 +99,14 @@ async function getProfile(req, res) {
 async function updateProfile(req, res) {
   try {
     const userId = req.user.id;
-    const { tempatLahir, tanggalLahir, gender, noHp, statusPernikahan, alamatDomisili } = req.body;
+    const { 
+      tempatLahir, tanggalLahir, gender, noHp, statusPernikahan, alamatDomisili,
+      noKk, alamatKtp, akreditasiProdi, nim, semester, ipk, targetLulus,
+      beasiswaLain, namaAyah, pekerjaanAyah, namaIbu, pekerjaanIbu,
+      penghasilanOrtu, jumlahTanggungan, kepemilikanBantuan,
+      prestasiAkademik, prestasiNonAkademik, pengalamanOrganisasi,
+      pengalamanPengabdian, pelatihanSertifikasi
+    } = req.body;
     const pool = getPool();
 
     await pool.execute(`
@@ -84,11 +116,37 @@ async function updateProfile(req, res) {
           gender = COALESCE(?, gender),
           no_hp = COALESCE(?, no_hp),
           status_pernikahan = COALESCE(?, status_pernikahan),
-          alamat_domisili = COALESCE(?, alamat_domisili)
+          alamat_domisili = COALESCE(?, alamat_domisili),
+          no_kk = COALESCE(?, no_kk),
+          alamat_ktp = COALESCE(?, alamat_ktp),
+          akreditasi_prodi = COALESCE(?, akreditasi_prodi),
+          nim = COALESCE(?, nim),
+          semester = COALESCE(?, semester),
+          ipk = COALESCE(?, ipk),
+          target_lulus = COALESCE(?, target_lulus),
+          beasiswa_lain = COALESCE(?, beasiswa_lain),
+          nama_ayah = COALESCE(?, nama_ayah),
+          pekerjaan_ayah = COALESCE(?, pekerjaan_ayah),
+          nama_ibu = COALESCE(?, nama_ibu),
+          pekerjaan_ibu = COALESCE(?, pekerjaan_ibu),
+          penghasilan_ortu = COALESCE(?, penghasilan_ortu),
+          jumlah_tanggungan = COALESCE(?, jumlah_tanggungan),
+          kepemilikan_bantuan = COALESCE(?, kepemilikan_bantuan),
+          prestasi_akademik = COALESCE(?, prestasi_akademik),
+          prestasi_non_akademik = COALESCE(?, prestasi_non_akademik),
+          pengalaman_organisasi = COALESCE(?, pengalaman_organisasi),
+          pengalaman_pengabdian = COALESCE(?, pengalaman_pengabdian),
+          pelatihan_sertifikasi = COALESCE(?, pelatihan_sertifikasi)
       WHERE user_id = ?
     `, [
       tempatLahir || null, tanggalLahir || null, gender || null,
       noHp || null, statusPernikahan || null, alamatDomisili || null,
+      noKk || null, alamatKtp || null, akreditasiProdi || null, nim || null,
+      semester || null, ipk || null, targetLulus || null, beasiswaLain || null,
+      namaAyah || null, pekerjaanAyah || null, namaIbu || null, pekerjaanIbu || null,
+      penghasilanOrtu || null, jumlahTanggungan || null, kepemilikanBantuan || null,
+      prestasiAkademik || null, prestasiNonAkademik || null, pengalamanOrganisasi || null,
+      pengalamanPengabdian || null, pelatihanSertifikasi || null,
       userId,
     ]);
 
@@ -173,7 +231,7 @@ function uploadDocument(docType) {
         [docId, userId, docType, req.file.originalname, req.file.filename, req.file.mimetype, req.file.size, req.file.path]
       );
 
-      if (docType === 'selfie') {
+      if (docType === 'selfie' || docType === 'filePasfoto') {
         await pool.execute('UPDATE profiles SET selfie_path = ? WHERE user_id = ?', [req.file.path, userId]);
       }
 
