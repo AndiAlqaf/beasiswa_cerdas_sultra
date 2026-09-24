@@ -4,12 +4,14 @@ import React, { useEffect, useState } from 'react';
 import { CheckCircle2, Clock, FileText, Calendar, ChevronRight, AlertCircle, Award, XCircle, ArrowRight, Send, Loader2, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
 import { getUser, fetchAPI } from '@/lib/api';
+import { getStoredScheduleConfig, getDynamicTimeline, ScheduleConfig } from '@/lib/schedule';
 
 export default function DashboardPage() {
   const [user, setUser] = useState<any>(null);
   const [application, setApplication] = useState<any>(null);
   const [documents, setDocuments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [scheduleConfig, setScheduleConfig] = useState<ScheduleConfig>(getStoredScheduleConfig());
 
   // Sanggahan State
   const [appealText, setAppealText] = useState('');
@@ -80,7 +82,24 @@ export default function DashboardPage() {
     }
 
     loadData();
+
+    setScheduleConfig(getStoredScheduleConfig());
+    const handleUpdate = () => {
+      setScheduleConfig(getStoredScheduleConfig());
+    };
+    window.addEventListener('bssc_schedule_updated', handleUpdate);
+    return () => window.removeEventListener('bssc_schedule_updated', handleUpdate);
   }, []);
+
+  const timeline = getDynamicTimeline(scheduleConfig);
+  const pengumumanStep = timeline.find((s) => s.id === 'pengumuman');
+  const isAnnouncementPeriodOpen = pengumumanStep
+    ? pengumumanStep.status === 'active' || pengumumanStep.status === 'completed'
+    : false;
+
+  const effectiveStatus = (!isAnnouncementPeriodOpen && (application?.status === 'DITERIMA' || application?.status === 'DITOLAK'))
+    ? 'VERIFIKASI_BERKAS'
+    : application?.status;
 
   const userName = user?.namaLengkap || user?.email || 'Peserta';
   const hasSubmitted = !!application?.registrationNo;
@@ -130,7 +149,7 @@ export default function DashboardPage() {
     }
   };
 
-  const statusInfo = getStatusBadge(application?.status);
+  const statusInfo = getStatusBadge(effectiveStatus);
   const StatusIcon = statusInfo.icon;
 
   return (
@@ -138,10 +157,6 @@ export default function DashboardPage() {
       {/* Welcome Banner */}
       <div className="bg-[#0B3A6A] rounded-3xl p-8 sm:p-10 text-white relative overflow-hidden shadow-md">
         <div className="relative z-10 max-w-2xl">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-blue-200 text-xs font-semibold mb-3 backdrop-blur-xs">
-            <span>Portal Mahasiswa Sultra Cerdas</span>
-            {user?.jenjangTarget && <span>• Jenjang {user.jenjangTarget}</span>}
-          </div>
           <h2 className="text-2xl sm:text-3xl font-bold mb-3 tracking-tight">
             Selamat Datang, {userName}!
           </h2>
@@ -270,8 +285,8 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* SANGGAHAN SECTION (Jika Status DITOLAK) */}
-      {application?.status === 'DITOLAK' && (
+      {/* SANGGAHAN SECTION (Jika Status DITOLAK dan Masa Sanggah Buka) */}
+      {isAnnouncementPeriodOpen && application?.status === 'DITOLAK' && (
         <div className="bg-rose-50 rounded-3xl border-2 border-rose-200 p-6 sm:p-8 shadow-md space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-rose-100 pb-5">
             <div className="flex items-center gap-3">

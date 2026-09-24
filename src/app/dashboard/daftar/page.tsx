@@ -24,7 +24,7 @@ import {
   Eraser,
   X
 } from 'lucide-react';
-import { fetchAPI } from '@/lib/api';
+import { fetchAPI, getUser } from '@/lib/api';
 
 export default function RegistrationPage() {
   const [currentStep, setCurrentStep] = useState<number>(1);
@@ -171,6 +171,8 @@ export default function RegistrationPage() {
   const [uploadingDocKey, setUploadingDocKey] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
 
+  const [isProfileLoaded, setIsProfileLoaded] = useState<boolean>(false);
+
   useEffect(() => {
     async function loadUserProfile() {
       setLoadingProfile(true);
@@ -202,18 +204,25 @@ export default function RegistrationPage() {
           const ktmDoc = docs.find((d: any) => d.docType === 'ktm');
           const pendukungDoc = docs.find((d: any) => d.docType === 'pendukung');
 
-          setFormData(prev => ({
-            ...prev,
-            namaLengkap: u.namaLengkap || '',
-            nik: u.nik || '',
-            email: u.email || '',
-            jenjang: currentJenjang,
-            tempatLahir: p.tempatLahir || '',
-            tanggalLahir: p.tanggalLahir ? String(p.tanggalLahir).split('T')[0] : '',
-            jenisKelamin: p.gender || 'Laki-laki',
-            noHp: p.noHp || '',
-            alamatDomisili: p.alamatDomisili || '',
-            alamatKtp: p.alamatKtp || p.alamatDomisili || '',
+          let regDraft: any = null;
+          try {
+            const rd = localStorage.getItem('bssc_register_draft');
+            if (rd) regDraft = JSON.parse(rd);
+          } catch (e) {}
+
+          const cachedUser = getUser();
+
+          let initialData = {
+            namaLengkap: u.namaLengkap || cachedUser?.namaLengkap || regDraft?.namaLengkap || '',
+            nik: u.nik || cachedUser?.nik || regDraft?.nimNik || '',
+            email: u.email || cachedUser?.email || regDraft?.email || '',
+            jenjang: currentJenjang || cachedUser?.jenjangTarget || regDraft?.jenjangTarget || 'S1',
+            tempatLahir: p.tempatLahir || regDraft?.tempatLahir || '',
+            tanggalLahir: p.tanggalLahir ? String(p.tanggalLahir).split('T')[0] : (regDraft?.tanggalLahir || ''),
+            jenisKelamin: p.gender || regDraft?.gender || 'Laki-laki',
+            noHp: p.noHp || regDraft?.noHp || '',
+            alamatDomisili: p.alamatDomisili || regDraft?.alamatDomisili || '',
+            alamatKtp: p.alamatKtp || p.alamatDomisili || regDraft?.alamatDomisili || '',
             noKk: p.noKk || '',
             akreditasiProdi: p.akreditasiProdi || 'Baik Sekali',
             nim: p.nim || '',
@@ -244,19 +253,64 @@ export default function RegistrationPage() {
             pengalamanOrganisasi: p.pengalamanOrganisasi || '',
             pengalamanPengabdian: p.pengalamanPengabdian || '',
             pelatihanSertifikasi: p.pelatihanSertifikasi || '',
-            filePasfoto: selfieDoc ? selfieDoc.originalName : prev.filePasfoto,
-            fileSuratAktif: ktmDoc ? ktmDoc.originalName : prev.fileSuratAktif,
-            fileKtp: pendukungDoc ? pendukungDoc.originalName : prev.fileKtp,
-          }));
+            filePasfoto: selfieDoc ? selfieDoc.originalName : '',
+            fileSuratAktif: ktmDoc ? ktmDoc.originalName : '',
+            fileKtp: pendukungDoc ? pendukungDoc.originalName : '',
+          };
+
+          // Restore draft if exists and application is not submitted
+          if (!app) {
+            try {
+              const savedDraft = localStorage.getItem('bssc_application_draft');
+              if (savedDraft) {
+                const draft = JSON.parse(savedDraft);
+                if (draft.currentStep && draft.currentStep > 1) {
+                  setCurrentStep(draft.currentStep);
+                }
+                if (draft.formData) {
+                  Object.keys(draft.formData).forEach((key) => {
+                    const draftVal = draft.formData[key];
+                    if (draftVal !== undefined && draftVal !== null && draftVal !== '') {
+                      (initialData as any)[key] = draftVal;
+                    }
+                  });
+                }
+                if (draft.signatureDataUrl) {
+                  setSignatureDataUrl(draft.signatureDataUrl);
+                  setHasDrawnSignature(true);
+                }
+              }
+            } catch (e) {
+              console.warn('Failed to load application draft:', e);
+            }
+          }
+
+          setFormData(prev => ({ ...prev, ...initialData }));
         }
       } catch (err: any) {
         console.warn('Profile fetch warning:', err.message);
       } finally {
         setLoadingProfile(false);
+        setIsProfileLoaded(true);
       }
     }
     loadUserProfile();
   }, []);
+
+  // Auto-save application draft to localStorage whenever form data or step changes
+  useEffect(() => {
+    if (!isProfileLoaded || isSubmitted) return;
+    try {
+      const draft = {
+        currentStep,
+        formData,
+        signatureDataUrl
+      };
+      localStorage.setItem('bssc_application_draft', JSON.stringify(draft));
+    } catch (e) {
+      console.warn('Failed to save application draft:', e);
+    }
+  }, [isProfileLoaded, isSubmitted, currentStep, formData, signatureDataUrl]);
 
   const handleDocumentUpload = async (docKey: string, _oldDocType: string, file: File) => {
     setUploadingDocKey(docKey);
@@ -444,6 +498,9 @@ export default function RegistrationPage() {
       });
 
       if (res.success && res.data) {
+        try {
+          localStorage.removeItem('bssc_application_draft');
+        } catch (e) {}
         setRegistrationCode(res.data.registrationNo);
         setIsSubmitted(true);
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -649,43 +706,43 @@ export default function RegistrationPage() {
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5 text-xs font-medium text-slate-700">
                     <div className="sm:col-span-2">
-                      <label className="block mb-1 font-semibold">Nama Lengkap (Sesuai KTP / KTM)</label>
+                      <label className="block mb-1 text-xs font-medium text-slate-700">Nama Lengkap (Sesuai KTP / KTM)</label>
                       <input
                         type="text"
                         value={formData.namaLengkap}
                         onChange={(e) => handleInputChange('namaLengkap', e.target.value)}
                         placeholder="Contoh: Muhammad Rezky Pratama"
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-base sm:text-sm focus:ring-2 focus:ring-blue-900 focus:outline-none"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm font-normal text-slate-900 placeholder:font-normal placeholder:text-slate-400 focus:ring-2 focus:ring-blue-900 focus:outline-none"
                       />
                     </div>
 
                     <div>
-                      <label className="block mb-1 font-semibold">Tempat Lahir</label>
+                      <label className="block mb-1 text-xs font-medium text-slate-700">Tempat Lahir</label>
                       <input
                         type="text"
                         value={formData.tempatLahir}
                         onChange={(e) => handleInputChange('tempatLahir', e.target.value)}
                         placeholder="Kendari"
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-base sm:text-sm focus:ring-2 focus:ring-blue-900 focus:outline-none"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm font-normal text-slate-900 placeholder:font-normal placeholder:text-slate-400 focus:ring-2 focus:ring-blue-900 focus:outline-none"
                       />
                     </div>
 
                     <div>
-                      <label className="block mb-1 font-semibold">Tanggal Lahir</label>
+                      <label className="block mb-1 text-xs font-medium text-slate-700">Tanggal Lahir</label>
                       <input
                         type="date"
                         value={formData.tanggalLahir}
                         onChange={(e) => handleInputChange('tanggalLahir', e.target.value)}
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-base sm:text-sm focus:ring-2 focus:ring-blue-900 focus:outline-none"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm font-normal text-slate-900 focus:ring-2 focus:ring-blue-900 focus:outline-none"
                       />
                     </div>
 
                     <div>
-                      <label className="block mb-1 font-semibold">Jenis Kelamin</label>
+                      <label className="block mb-1 text-xs font-medium text-slate-700">Jenis Kelamin</label>
                       <select
                         value={formData.jenisKelamin}
                         onChange={(e) => handleInputChange('jenisKelamin', e.target.value)}
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-base sm:text-sm focus:ring-2 focus:ring-blue-900 focus:outline-none"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm font-normal text-slate-900 focus:ring-2 focus:ring-blue-900 focus:outline-none"
                       >
                         <option value="Laki-laki">Laki-laki</option>
                         <option value="Perempuan">Perempuan</option>
@@ -693,35 +750,35 @@ export default function RegistrationPage() {
                     </div>
 
                     <div>
-                      <label className="block mb-1 font-semibold">NIK (Nomor Induk Kependudukan - 16 Digit)</label>
+                      <label className="block mb-1 text-xs font-medium text-slate-700">NIK (Nomor Induk Kependudukan - 16 Digit)</label>
                       <input
                         type="text"
                         maxLength={16}
                         value={formData.nik}
                         onChange={(e) => handleInputChange('nik', e.target.value.replace(/\D/g, '').slice(0, 16))}
                         placeholder="740102..."
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-base sm:text-sm focus:ring-2 focus:ring-blue-900 focus:outline-none font-mono tracking-wider"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm font-normal text-slate-900 placeholder:font-normal placeholder:text-slate-400 focus:ring-2 focus:ring-blue-900 focus:outline-none font-mono tracking-wider"
                       />
                     </div>
 
                     <div>
-                      <label className="block mb-1 font-semibold">No. Kartu Keluarga (KK)</label>
+                      <label className="block mb-1 text-xs font-medium text-slate-700">No. Kartu Keluarga (KK)</label>
                       <input
                         type="text"
                         maxLength={16}
                         value={formData.noKk}
                         onChange={(e) => handleInputChange('noKk', e.target.value.replace(/\D/g, '').slice(0, 16))}
                         placeholder="740102..."
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-base sm:text-sm focus:ring-2 focus:ring-blue-900 focus:outline-none font-mono tracking-wider"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm font-normal text-slate-900 placeholder:font-normal placeholder:text-slate-400 focus:ring-2 focus:ring-blue-900 focus:outline-none font-mono tracking-wider"
                       />
                     </div>
 
                     <div>
-                      <label className="block mb-1 font-semibold">Asal Daerah (Kabupaten / Kota SULTRA)</label>
+                      <label className="block mb-1 text-xs font-medium text-slate-700">Asal Daerah (Kabupaten / Kota SULTRA)</label>
                       <select
                         value={formData.asalDaerah}
                         onChange={(e) => handleInputChange('asalDaerah', e.target.value)}
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-base sm:text-sm focus:ring-2 focus:ring-blue-900 focus:outline-none"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm font-normal text-slate-900 focus:ring-2 focus:ring-blue-900 focus:outline-none"
                       >
                         {SULTRA_DISTRICTS.map((d) => (
                           <option key={d.code} value={d.code}>
@@ -732,46 +789,46 @@ export default function RegistrationPage() {
                     </div>
 
                     <div className="sm:col-span-2">
-                      <label className="block mb-1 font-semibold">Alamat Sesuai KTP</label>
+                      <label className="block mb-1 text-xs font-medium text-slate-700">Alamat Sesuai KTP</label>
                       <textarea
                         rows={2}
                         value={formData.alamatKtp}
                         onChange={(e) => handleInputChange('alamatKtp', e.target.value)}
                         placeholder="Jl. Ahmad Yani No. 45, Kendari..."
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-base sm:text-sm focus:ring-2 focus:ring-blue-900 focus:outline-none"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm font-normal text-slate-900 placeholder:font-normal placeholder:text-slate-400 focus:ring-2 focus:ring-blue-900 focus:outline-none"
                       ></textarea>
                     </div>
 
                     <div className="sm:col-span-2">
-                      <label className="block mb-1 font-semibold">Alamat Domisili Saat Ini</label>
+                      <label className="block mb-1 text-xs font-medium text-slate-700">Alamat Domisili Saat Ini</label>
                       <textarea
                         rows={2}
                         value={formData.alamatDomisili}
                         onChange={(e) => handleInputChange('alamatDomisili', e.target.value)}
                         placeholder="Sama dengan KTP atau Alamat Kost/Kontrakan..."
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-base sm:text-sm focus:ring-2 focus:ring-blue-900 focus:outline-none"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm font-normal text-slate-900 placeholder:font-normal placeholder:text-slate-400 focus:ring-2 focus:ring-blue-900 focus:outline-none"
                       ></textarea>
                     </div>
 
                     <div>
-                      <label className="block mb-1 font-semibold">No. HP / WhatsApp Aktif</label>
+                      <label className="block mb-1 text-xs font-medium text-slate-700">No. HP / WhatsApp Aktif</label>
                       <input
                         type="text"
                         value={formData.noHp}
                         onChange={(e) => handleInputChange('noHp', e.target.value)}
                         placeholder="081234567890"
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-base sm:text-sm focus:ring-2 focus:ring-blue-900 focus:outline-none"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm font-normal text-slate-900 placeholder:font-normal placeholder:text-slate-400 focus:ring-2 focus:ring-blue-900 focus:outline-none"
                       />
                     </div>
 
                     <div>
-                      <label className="block mb-1 font-semibold">Alamat Email Aktif</label>
+                      <label className="block mb-1 text-xs font-medium text-slate-700">Alamat Email Aktif</label>
                       <input
                         type="email"
                         value={formData.email}
                         onChange={(e) => handleInputChange('email', e.target.value)}
                         placeholder="nama@email.com"
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-base sm:text-sm focus:ring-2 focus:ring-blue-900 focus:outline-none"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm font-normal text-slate-900 placeholder:font-normal placeholder:text-slate-400 focus:ring-2 focus:ring-blue-900 focus:outline-none"
                       />
                     </div>
                   </div>

@@ -122,7 +122,7 @@ export default function LoginPage() {
                     required
                     value={identifier}
                     onChange={(e) => setIdentifier(e.target.value)}
-                    className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all text-slate-900"
+                    className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all text-slate-900 font-normal placeholder:font-normal placeholder:text-slate-400"
                     placeholder="Masukkan Email atau NIK Anda"
                   />
                 </div>
@@ -131,7 +131,7 @@ export default function LoginPage() {
               {/* Password Input */}
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <label className="text-sm font-semibold text-slate-700 block">Kata Sandi</label>
+                  <label className="text-sm font-medium text-slate-700 block">Kata Sandi</label>
                   <Link href="#" className="text-xs font-semibold text-blue-600 hover:text-blue-800">
                     Lupa Sandi?
                   </Link>
@@ -145,7 +145,7 @@ export default function LoginPage() {
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full pl-11 pr-12 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all text-slate-900"
+                    className="w-full pl-11 pr-12 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all text-slate-900 font-normal placeholder:font-normal placeholder:text-slate-400"
                     placeholder="Masukkan kata sandi Anda"
                   />
                   <button

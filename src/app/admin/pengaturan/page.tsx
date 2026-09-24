@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Settings, Users, Bell, Shield, Save, Calendar, FileText, CheckCircle2 } from 'lucide-react';
+import { getStoredScheduleConfig, saveScheduleConfig, ScheduleConfig } from '@/lib/schedule';
 
 export default function PengaturanPage() {
   const [activeTab, setActiveTab] = useState('umum');
@@ -13,12 +14,24 @@ export default function PengaturanPage() {
     status: 'Dibuka',
   });
 
-  const [scheduleConfig, setScheduleConfig] = useState({
+  const [scheduleConfig, setScheduleConfig] = useState<ScheduleConfig>({
     openDate: '2026-09-13',
     closeDate: '2026-09-30',
     selectionStart: '2026-10-01',
+    selectionEnd: '2026-10-15',
     announcementDate: '2026-10-16',
+    announcementEnd: '2026-10-17',
+    sanggahStart: '2026-10-19',
+    sanggahEnd: '2026-10-21',
+    pengumumanSanggahDate: '2026-10-22',
+    penetapanDate: '2026-10-30',
+    kontrakDate: '2026-11-02',
+    penyaluranDate: '2026-11-04'
   });
+
+  useEffect(() => {
+    setScheduleConfig(getStoredScheduleConfig());
+  }, []);
 
   const [reqConfig, setReqConfig] = useState({
     minIpkS1: '3.25',
@@ -29,8 +42,9 @@ export default function PengaturanPage() {
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
+    saveScheduleConfig(scheduleConfig);
     setSavedSuccess(true);
-    setTimeout(() => setSavedSuccess(false), 3000);
+    setTimeout(() => setSavedSuccess(false), 4000);
   };
 
   const tabs = [
@@ -174,7 +188,7 @@ export default function PengaturanPage() {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-700 block">Masa Verifikasi & Seleksi</label>
+                  <label className="text-xs font-bold text-slate-700 block">Masa Verifikasi &amp; Seleksi (Mulai)</label>
                   <input
                     type="date"
                     value={scheduleConfig.selectionStart}
@@ -183,11 +197,29 @@ export default function PengaturanPage() {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-700 block">Pengumuman Kelulusan</label>
+                  <label className="text-xs font-bold text-slate-700 block">Pengumuman Kelulusan (Mulai)</label>
                   <input
                     type="date"
                     value={scheduleConfig.announcementDate}
                     onChange={(e) => setScheduleConfig({ ...scheduleConfig, announcementDate: e.target.value })}
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-900"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-700 block">Masa Sanggah (Mulai)</label>
+                  <input
+                    type="date"
+                    value={scheduleConfig.sanggahStart || '2026-10-19'}
+                    onChange={(e) => setScheduleConfig({ ...scheduleConfig, sanggahStart: e.target.value })}
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-900"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-700 block">Masa Sanggah (Selesai)</label>
+                  <input
+                    type="date"
+                    value={scheduleConfig.sanggahEnd || '2026-10-21'}
+                    onChange={(e) => setScheduleConfig({ ...scheduleConfig, sanggahEnd: e.target.value })}
                     className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-900"
                   />
                 </div>

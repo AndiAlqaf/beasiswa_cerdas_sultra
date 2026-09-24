@@ -11,7 +11,7 @@ export default function TemplateDownloads() {
     if (downloadUrl && downloadUrl !== '#') {
       const link = document.createElement('a');
       link.href = downloadUrl;
-      link.download = downloadUrl.split('/').pop() || `${docId}.pdf`;
+      link.download = decodeURIComponent(downloadUrl.split('/').pop() || `${docId}.docx`);
       link.target = '_blank';
       document.body.appendChild(link);
       link.click();

@@ -98,50 +98,6 @@ export default function LandingPage() {
         <EligibilityChecker />
       </motion.div>
 
-      {/* Juknis Download Banner at bottom of Landing Page */}
-      <motion.section 
-        id="juknis"
-        initial={{ opacity: 0, y: 50 }} 
-        whileInView={{ opacity: 1, y: 0 }} 
-        transition={{ duration: 0.6 }} 
-        viewport={{ once: true, amount: 0.1 }}
-        className="py-16 bg-slate-900 text-white border-t border-slate-800 relative overflow-hidden"
-      >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="bg-gradient-to-r from-slate-800 via-blue-950 to-slate-800 border border-blue-500/30 rounded-3xl p-8 sm:p-12 shadow-2xl flex flex-col lg:flex-row items-center justify-between gap-8">
-            
-            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 text-center sm:text-left">
-              <div className="w-20 h-20 rounded-2xl bg-blue-600/20 border border-blue-400/40 flex items-center justify-center text-blue-400 shrink-0 shadow-inner">
-                <FileText className="w-10 h-10" />
-              </div>
-              <div className="space-y-2">
-              
-                <h3 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
-                  Petunjuk Teknis Beasiswa Stimulan Sultra Cerdas
-                </h3>
-                <p className="text-slate-300 text-sm max-w-2xl leading-relaxed font-light">
-                  Unduh dokumen resmi Petunjuk Teknis (Juknis) TA 2026 untuk mempelajari persyaratan lengkap, kriteria kelayakan, alur pendaftaran, 4 bidang program studi prioritas, serta format lampiran dokumen permohonan.
-                </p>
-              </div>
-            </div>
-
-            <div className="shrink-0 w-full sm:w-auto">
-              <a
-                href="/Petunjuk_Teknis_BSSC_2026.pdf"
-                download="Petunjuk_Teknis_BSSC_2026.pdf"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full sm:w-auto px-8 py-4 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold rounded-2xl shadow-xl hover:shadow-emerald-900/50 transition-all flex items-center justify-center gap-3 border border-emerald-400 text-sm sm:text-base group"
-              >
-                <Download className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                <span>UNDUH DOKUMEN JUKNIS (PDF)</span>
-              </a>
-            </div>
-
-          </div>
-        </div>
-      </motion.section>
-
       <Footer />
     </main>
   );

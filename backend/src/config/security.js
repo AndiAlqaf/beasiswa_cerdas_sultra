@@ -20,19 +20,20 @@ module.exports = {
   // File upload — allowed MIME types
   ALLOWED_MIME_TYPES: [
     'image/jpeg',
+    'image/jpg',
     'image/png',
     'application/pdf',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
   ],
 
   // File upload — magic bytes signatures for validation
   FILE_SIGNATURES: {
     'image/jpeg': [
-      Buffer.from([0xFF, 0xD8, 0xFF, 0xE0]),
-      Buffer.from([0xFF, 0xD8, 0xFF, 0xE1]),
-      Buffer.from([0xFF, 0xD8, 0xFF, 0xE2]),
-      Buffer.from([0xFF, 0xD8, 0xFF, 0xE8]),
-      Buffer.from([0xFF, 0xD8, 0xFF, 0xDB]),
-      Buffer.from([0xFF, 0xD8, 0xFF, 0xEE]),
+      Buffer.from([0xFF, 0xD8]),
+    ],
+    'image/jpg': [
+      Buffer.from([0xFF, 0xD8]),
     ],
     'image/png': [
       Buffer.from([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]),
@@ -40,13 +41,27 @@ module.exports = {
     'application/pdf': [
       Buffer.from([0x25, 0x50, 0x44, 0x46]), // %PDF
     ],
+    'application/msword': [
+      Buffer.from([0xD0, 0xCF, 0x11, 0xE0]),
+    ],
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document': [
+      Buffer.from([0x50, 0x4B, 0x03, 0x04]), // PK..
+    ],
   },
 
-  // Max file sizes per type (bytes)
+  // Max file sizes per type (bytes) — 2MB default max
   MAX_FILE_SIZES: {
-    selfie: 2 * 1024 * 1024,      // 2MB
-    ktm: 2 * 1024 * 1024,         // 2MB
-    pendukung: 2 * 1024 * 1024,   // 2MB
+    selfie: 2 * 1024 * 1024,
+    ktm: 2 * 1024 * 1024,
+    pendukung: 2 * 1024 * 1024,
+    fileSuratPermohonan: 2 * 1024 * 1024,
+    filePasfoto: 2 * 1024 * 1024,
+    fileKtp: 2 * 1024 * 1024,
+    fileSuratAktif: 2 * 1024 * 1024,
+    fileTranskrip: 2 * 1024 * 1024,
+    fileDtks: 2 * 1024 * 1024,
+    fileSuratPernyataan: 2 * 1024 * 1024,
+    fileMotivationOrEsai: 2 * 1024 * 1024,
   },
 
   // Dangerous input patterns to reject

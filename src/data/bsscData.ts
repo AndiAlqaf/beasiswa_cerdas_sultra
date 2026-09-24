@@ -329,8 +329,8 @@ export const TEMPLATE_DOCUMENTS: DocumentTemplate[] = [
     title: 'Template Surat Permohonan BSSC 2026',
     description: 'Format surat permohonan resmi yang ditujukan kepada Gubernur Sulawesi Tenggara.',
     fileType: 'DOCX',
-    fileSize: '45 KB',
-    downloadUrl: '#',
+    fileSize: '8.3 KB',
+    downloadUrl: '/Surat%20Permohonan%20BSSC.docx',
     requiredFor: 'Semua Jenjang (S1/D4, S2, S3)'
   },
   {
@@ -338,36 +338,9 @@ export const TEMPLATE_DOCUMENTS: DocumentTemplate[] = [
     title: 'Template Surat Pernyataan Bebas Beasiswa Lain',
     description: 'Surat pernyataan tidak sedang menerima beasiswa penuh dari institusi lain (Wajib Materai Rp10.000).',
     fileType: 'DOCX',
-    fileSize: '38 KB',
-    downloadUrl: '#',
+    fileSize: '18.2 KB',
+    downloadUrl: '/Surat%20Pernyataan%20Tidak%20Sedang%20Menerima%20Beasiswa%20Penuh.docx',
     requiredFor: 'Semua Jenjang (S1/D4, S2, S3)'
-  },
-  {
-    id: 'panduan-motivation-letter',
-    title: 'Panduan & Format Motivation Letter (S1/D4)',
-    description: 'Format penulisan motivation letter mengenai alasan & target akademik untuk mahasiswa S1/D4.',
-    fileType: 'PDF',
-    fileSize: '120 KB',
-    downloadUrl: '#',
-    requiredFor: 'Khusus Mahasiswa S1 / D4'
-  },
-  {
-    id: 'panduan-esai-kontribusi',
-    title: 'Panduan & Format Esai Kontribusi Daerah (S2/S3)',
-    description: 'Pedoman penyusunan esai rencana kontribusi 5 tahun untuk kemajuan Sulawesi Tenggara.',
-    fileType: 'PDF',
-    fileSize: '150 KB',
-    downloadUrl: '#',
-    requiredFor: 'Khusus Mahasiswa S2 & S3'
-  },
-  {
-    id: 'juknis-bssc-2026',
-    title: 'Petunjuk Teknis (Juknis) BSSC Tahun 2026',
-    description: 'Dokumen lengkap pedoman pelaksanaan, kriteria seleksi, dan aturan beasiswa.',
-    fileType: 'PDF',
-    fileSize: '1.2 MB',
-    downloadUrl: '#',
-    requiredFor: 'Dokumen Acuan Resmi'
   }
 ];
 

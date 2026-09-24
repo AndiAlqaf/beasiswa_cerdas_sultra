@@ -1,8 +1,29 @@
-import React from 'react';
-import { SCHEDULE_TIMELINE } from '@/data/bsscData';
-import { Calendar, Clock, CheckCircle2 } from 'lucide-react';
+'use client';
+
+import React, { useEffect, useState } from 'react';
+import { getDynamicTimeline, TimelineStep } from '@/lib/schedule';
+import { Clock, CheckCircle2 } from 'lucide-react';
 
 export default function TimelineSection() {
+  const [timeline, setTimeline] = useState<TimelineStep[]>([]);
+
+  const loadTimeline = () => {
+    setTimeline(getDynamicTimeline());
+  };
+
+  useEffect(() => {
+    loadTimeline();
+
+    const handleUpdate = () => {
+      loadTimeline();
+    };
+
+    window.addEventListener('bssc_schedule_updated', handleUpdate);
+    return () => {
+      window.removeEventListener('bssc_schedule_updated', handleUpdate);
+    };
+  }, []);
+
   return (
     <section id="jadwal" className="py-20 bg-slate-50 border-b border-slate-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -15,14 +36,16 @@ export default function TimelineSection() {
           </p>
         </div>
 
-        {/* Timeline Horizontal / Vertical Steps */}
+        {/* Timeline Steps */}
         <div className="max-w-4xl mx-auto space-y-4">
-          {SCHEDULE_TIMELINE.map((step, idx) => (
+          {timeline.map((step, idx) => (
             <div
-              key={idx}
+              key={step.id || idx}
               className={`p-5 rounded-2xl border transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 ${
                 step.status === 'active'
                   ? 'bg-white border-blue-600 shadow-md ring-2 ring-blue-900/10'
+                  : step.status === 'completed'
+                  ? 'bg-slate-50/80 border-slate-200 opacity-90'
                   : 'bg-white border-slate-200 hover:border-slate-300'
               }`}
             >
@@ -31,17 +54,28 @@ export default function TimelineSection() {
                   className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm shrink-0 ${
                     step.status === 'active'
                       ? 'bg-blue-900 text-white shadow-xs'
+                      : step.status === 'completed'
+                      ? 'bg-emerald-600 text-white'
                       : 'bg-slate-100 text-slate-700'
                   }`}
                 >
-                  0{idx + 1}
+                  {step.status === 'completed' ? (
+                    <CheckCircle2 className="w-5 h-5 text-white" />
+                  ) : (
+                    `0${idx + 1}`
+                  )}
                 </div>
                 <div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <h3 className="font-bold text-slate-900 text-base">{step.title}</h3>
                     {step.status === 'active' && (
-                      <span className="px-2 py-0.5 rounded text-[10px] uppercase font-extrabold bg-blue-900 text-white tracking-wider">
+                      <span className="px-2.5 py-0.5 rounded text-[10px] uppercase font-extrabold bg-blue-900 text-white tracking-wider shadow-xs">
                         SEDANG BERJALAN
+                      </span>
+                    )}
+                    {step.status === 'completed' && (
+                      <span className="px-2 py-0.5 rounded text-[10px] uppercase font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-200 tracking-wider">
+                        TAHAP SELESAI
                       </span>
                     )}
                   </div>
@@ -54,6 +88,8 @@ export default function TimelineSection() {
                   className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold ${
                     step.status === 'active'
                       ? 'bg-blue-50 text-blue-900 border border-blue-200'
+                      : step.status === 'completed'
+                      ? 'bg-emerald-50 text-emerald-900 border border-emerald-200'
                       : 'bg-slate-100 text-slate-700'
                   }`}
                 >

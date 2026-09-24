@@ -32,7 +32,7 @@ async function register(req, res) {
     const [existingNik] = await pool.execute('SELECT id FROM users WHERE nik = ?', [nik]);
     if (existingNik.length > 0) {
       auditLog({ action: 'REGISTER_DUPLICATE_NIK', ipAddress: clientIp, userAgent: req.headers['user-agent'], details: { nik: nik.substring(0, 4) + '****' }, requestId: req.requestId });
-      return res.status(409).json({ success: false, message: 'NIK/NIM sudah terdaftar. Gunakan NIK/NIM lain atau login.' });
+      return res.status(409).json({ success: false, message: 'NIK sudah terdaftar. Silakan gunakan NIK lain atau masuk ke akun Anda.' });
     }
 
     // Hash password
@@ -108,20 +108,40 @@ async function login(req, res) {
     const user = users[0];
 
     if (!user) {
-      auditLog({ action: 'LOGIN_USER_NOT_FOUND', ipAddress: clientIp, userAgent: req.headers['user-agent'], details: { identifier: identifier.substring(0, 4) + '****' }, requestId: req.requestId });
+      auditLog({ action: 'LOGIN_USER_NOT_FOUND', ipAddress: clientIp, userAgent: req.headers['user-agent'], details: { identifier: identifier ? identifier.substring(0, 4) + '****' : '' }, requestId: req.requestId });
       return res.status(401).json({ success: false, message: 'Email/NIK atau password salah.' });
     }
 
-    // Lockout logic removed as requested
+    // Account Lockout check (UAT-AUTH-05: 5 failed attempts)
+    if (user.locked_until && new Date(user.locked_until) > new Date()) {
+      const remainingMinutes = Math.ceil((new Date(user.locked_until).getTime() - Date.now()) / 60000);
+      auditLog({ action: 'LOGIN_LOCKED_USER_ATTEMPT', userId: user.id, ipAddress: clientIp, userAgent: req.headers['user-agent'], requestId: req.requestId });
+      return res.status(429).json({
+        success: false,
+        message: `Too many requests / Akun terkunci sementara karena 5 kali percobaan login gagal. Silakan coba lagi dalam ${remainingMinutes} menit.`,
+      });
+    }
 
     // Compare password
     const isMatch = await comparePassword(password, user.password_hash);
     if (!isMatch) {
-      auditLog({ action: 'LOGIN_FAILED', userId: user.id, ipAddress: clientIp, userAgent: req.headers['user-agent'], requestId: req.requestId });
-      return res.status(401).json({
-        success: false,
-        message: 'Email/NIK atau password salah.',
-      });
+      const failedAttempts = (user.failed_login_attempts || 0) + 1;
+      if (failedAttempts >= MAX_LOGIN_ATTEMPTS) {
+        const lockedUntil = new Date(Date.now() + LOCKOUT_DURATION_MS).toISOString().slice(0, 19).replace('T', ' ');
+        await pool.execute('UPDATE users SET failed_login_attempts = ?, locked_until = ? WHERE id = ?', [failedAttempts, lockedUntil, user.id]);
+        auditLog({ action: 'ACCOUNT_LOCKED', userId: user.id, ipAddress: clientIp, userAgent: req.headers['user-agent'], requestId: req.requestId });
+        return res.status(429).json({
+          success: false,
+          message: 'Too many requests / Akun terkunci sementara karena 5 kali percobaan login gagal. Silakan coba lagi dalam 15 menit.',
+        });
+      } else {
+        await pool.execute('UPDATE users SET failed_login_attempts = ? WHERE id = ?', [failedAttempts, user.id]);
+        auditLog({ action: 'LOGIN_FAILED', userId: user.id, ipAddress: clientIp, userAgent: req.headers['user-agent'], requestId: req.requestId });
+        return res.status(401).json({
+          success: false,
+          message: `Email/NIK atau password salah. Sisa percobaan: ${MAX_LOGIN_ATTEMPTS - failedAttempts}`,
+        });
+      }
     }
 
     // Login successful — reset failed attempts

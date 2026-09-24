@@ -41,8 +41,11 @@ for (const dir of UPLOAD_DIRS) {
 function getExtFromMime(mimeType) {
   const map = {
     'image/jpeg': '.jpg',
+    'image/jpg': '.jpg',
     'image/png': '.png',
     'application/pdf': '.pdf',
+    'application/msword': '.doc',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document': '.docx',
   };
   return map[mimeType] || '.bin';
 }
@@ -144,7 +147,7 @@ function createUploadMiddleware(docType) {
           if (err.code === 'LIMIT_FILE_SIZE') {
             return res.status(413).json({
               success: false,
-              message: `Ukuran file melebihi batas maksimum (${Math.round(maxSize / 1024 / 1024)}MB).`,
+              message: 'Ukuran file melebihi batas maksimum (2MB)',
             });
           }
           if (err.code === 'LIMIT_FILE_COUNT') {

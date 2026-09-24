@@ -58,6 +58,7 @@ export default function Navbar() {
     { name: 'Alur & Syarat', href: '/#alur-pendaftaran' },
     { name: 'Program Prioritas', href: '/#program-prioritas' },
     { name: 'Jadwal Seleksi', href: '/#jadwal' },
+    { name: 'Pengumuman', href: '/pengumuman' },
     { name: 'FAQ', href: '/#faq' },
   ];
 

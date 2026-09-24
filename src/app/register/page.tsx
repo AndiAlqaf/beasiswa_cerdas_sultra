@@ -105,6 +105,83 @@ export default function RegisterPage() {
   }, [jenjangTarget]);
 
   const [isSubmitted, setIsSubmitted] = useState<boolean>(false);
+  const [isDraftLoaded, setIsDraftLoaded] = useState<boolean>(false);
+
+  // 1. Restore register draft from localStorage on mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('bssc_register_draft');
+      if (saved) {
+        const d = JSON.parse(saved);
+        if (d.currentStep && d.currentStep > 1) setCurrentStep(d.currentStep);
+        if (d.jenjangTarget) setJenjangTarget(d.jenjangTarget);
+        if (d.prodiPrioritas) setProdiPrioritas(d.prodiPrioritas);
+        if (d.isSemesterConfirmed !== undefined) setIsSemesterConfirmed(d.isSemesterConfirmed);
+        if (d.namaLengkap) setNamaLengkap(d.namaLengkap);
+        if (d.nimNik) setNimNik(d.nimNik);
+        if (d.email) setEmail(d.email);
+        if (d.capturedImage) setCapturedImage(d.capturedImage);
+        if (d.tempatLahir) setTempatLahir(d.tempatLahir);
+        if (d.tanggalLahir) setTanggalLahir(d.tanggalLahir);
+        if (d.gender) setGender(d.gender);
+        if (d.noHp) setNoHp(d.noHp);
+        if (d.statusPernikahan) setStatusPernikahan(d.statusPernikahan);
+        if (d.alamatDomisili) setAlamatDomisili(d.alamatDomisili);
+        if (d.educationList && Array.isArray(d.educationList) && d.educationList.length > 0) {
+          setEducationList(d.educationList);
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to load register draft:', e);
+    } finally {
+      setIsDraftLoaded(true);
+    }
+  }, []);
+
+  // 2. Auto-save register draft to localStorage on state changes
+  useEffect(() => {
+    if (!isDraftLoaded || isSubmitted) return;
+    try {
+      const draftData = {
+        currentStep,
+        jenjangTarget,
+        prodiPrioritas,
+        isSemesterConfirmed,
+        namaLengkap,
+        nimNik,
+        email,
+        capturedImage,
+        tempatLahir,
+        tanggalLahir,
+        gender,
+        noHp,
+        statusPernikahan,
+        alamatDomisili,
+        educationList
+      };
+      localStorage.setItem('bssc_register_draft', JSON.stringify(draftData));
+    } catch (e) {
+      console.warn('Failed to save register draft:', e);
+    }
+  }, [
+    isDraftLoaded,
+    isSubmitted,
+    currentStep,
+    jenjangTarget,
+    prodiPrioritas,
+    isSemesterConfirmed,
+    namaLengkap,
+    nimNik,
+    email,
+    capturedImage,
+    tempatLahir,
+    tanggalLahir,
+    gender,
+    noHp,
+    statusPernikahan,
+    alamatDomisili,
+    educationList
+  ]);
 
   // Camera Management
   const startCamera = async () => {
@@ -199,15 +276,55 @@ export default function RegisterPage() {
     );
   };
 
-  // Step Navigation
-  const nextStep = () => {
+  // Step Navigation with Strict Field Validation
+  const validateAndNextStep = () => {
+    setError(null);
+
+    if (currentStep === 2) {
+      if (!capturedImage) {
+        setError('Wajib mengambil foto selfie atau mengunggah foto selfie terlebih dahulu sebelum melanjutkan.');
+        return;
+      }
+    } else if (currentStep === 3) {
+      if (!tempatLahir.trim()) {
+        setError('Tempat Lahir wajib diisi.');
+        return;
+      }
+      if (!tanggalLahir.trim()) {
+        setError('Wajib mengisi Tanggal Lahir Anda.');
+        return;
+      }
+      if (!noHp.trim() || noHp.trim() === '+62') {
+        setError('Nomor Telepon/WA wajib diisi secara lengkap.');
+        return;
+      }
+      if (!alamatDomisili.trim()) {
+        setError('Alamat Domisili lengkap wajib diisi.');
+        return;
+      }
+    } else if (currentStep === 4) {
+      for (let i = 0; i < educationList.length; i++) {
+        const edu = educationList[i];
+        if (!edu.institusi.trim() || !edu.jurusan.trim() || !edu.tahunMulai.trim()) {
+          setError(`Harap lengkapi data riwayat pendidikan ${edu.tingkat} (Nama Sekolah/Perguruan Tinggi, Jurusan, dan Tahun Mulai).`);
+          return;
+        }
+      }
+    }
+
+    setError(null);
     if (currentStep < totalSteps) {
       setCurrentStep((prev) => prev + 1);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
 
+  const nextStep = () => {
+    validateAndNextStep();
+  };
+
   const prevStep = () => {
+    setError(null);
     if (currentStep > 1) {
       setCurrentStep((prev) => prev - 1);
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -324,6 +441,9 @@ export default function RegisterPage() {
         });
       }
 
+      try {
+        localStorage.removeItem('bssc_register_draft');
+      } catch (e) {}
       setIsSubmitted(true);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err: any) {
@@ -480,7 +600,7 @@ export default function RegisterPage() {
 
                 <div className="space-y-4 pt-2 border-t border-slate-100">
                   <div>
-                    <label className="block text-sm font-bold text-slate-800 mb-1.5">
+                    <label className="block text-xs font-medium text-slate-700 mb-1.5">
                       Nama Lengkap Sesuai KTP *
                     </label>
                     <input
@@ -489,12 +609,12 @@ export default function RegisterPage() {
                       value={namaLengkap}
                       onChange={(e) => setNamaLengkap(e.target.value)}
                       placeholder="Contoh: Budi Santoso"
-                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-base focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0B3A6A] transition-all text-slate-900"
+                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0B3A6A] transition-all text-slate-900 font-normal placeholder:font-normal placeholder:text-slate-400"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-bold text-slate-800 mb-1.5">
+                    <label className="block text-xs font-medium text-slate-700 mb-1.5">
                       NIK Mahasiswa *
                     </label>
                     <input
@@ -504,12 +624,12 @@ export default function RegisterPage() {
                       value={nimNik}
                       onChange={(e) => setNimNik(e.target.value.replace(/\D/g, '').slice(0, 16))}
                       placeholder="Masukkan 16 Digit NIK"
-                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-base focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0B3A6A] transition-all text-slate-900 font-mono tracking-wider"
+                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0B3A6A] transition-all text-slate-900 font-normal placeholder:font-normal placeholder:text-slate-400 font-mono tracking-wider"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-bold text-slate-800 mb-1.5">
+                    <label className="block text-xs font-medium text-slate-700 mb-1.5">
                       Email Aktif *
                     </label>
                     <input
@@ -518,13 +638,13 @@ export default function RegisterPage() {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="contoh@email.com"
-                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-base focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0B3A6A] transition-all text-slate-900"
+                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0B3A6A] transition-all text-slate-900 font-normal placeholder:font-normal placeholder:text-slate-400"
                     />
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-bold text-slate-800 mb-1.5">
+                      <label className="block text-xs font-medium text-slate-700 mb-1.5">
                         Password *
                       </label>
                       <div className="relative">
@@ -534,7 +654,7 @@ export default function RegisterPage() {
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
                           placeholder="Minimal 6 karakter"
-                          className="w-full pl-4 pr-11 py-3 bg-slate-50 border border-slate-200 rounded-xl text-base focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0B3A6A] transition-all text-slate-900"
+                          className="w-full pl-4 pr-11 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0B3A6A] transition-all text-slate-900 font-normal placeholder:font-normal placeholder:text-slate-400"
                         />
                         <button
                           type="button"
@@ -548,7 +668,7 @@ export default function RegisterPage() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-bold text-slate-800 mb-1.5">
+                      <label className="block text-xs font-medium text-slate-700 mb-1.5">
                         Konfirmasi Password *
                       </label>
                       <div className="relative">
@@ -558,7 +678,7 @@ export default function RegisterPage() {
                           value={confirmPassword}
                           onChange={(e) => setConfirmPassword(e.target.value)}
                           placeholder="Ulangi password"
-                          className="w-full pl-4 pr-11 py-3 bg-slate-50 border border-slate-200 rounded-xl text-base focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0B3A6A] transition-all text-slate-900"
+                          className="w-full pl-4 pr-11 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0B3A6A] transition-all text-slate-900 font-normal placeholder:font-normal placeholder:text-slate-400"
                         />
                         <button
                           type="button"
@@ -719,6 +839,13 @@ export default function RegisterPage() {
                   </div>
                 </div>
 
+                {error && (
+                  <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl flex items-center gap-2 text-xs font-bold text-rose-800 animate-in fade-in">
+                    <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                    <span>{error}</span>
+                  </div>
+                )}
+
                 <div className="flex items-center justify-between pt-6 border-t border-slate-100">
                   <button
                     type="button"
@@ -729,7 +856,7 @@ export default function RegisterPage() {
                   </button>
                   <button
                     type="button"
-                    onClick={nextStep}
+                    onClick={validateAndNextStep}
                     className="px-6 py-3 bg-[#0B3A6A] hover:bg-[#082a4d] text-white font-bold rounded-xl shadow text-sm transition-all flex items-center gap-2"
                   >
                     Lanjut <ArrowRight className="w-4 h-4" />
@@ -753,7 +880,7 @@ export default function RegisterPage() {
                 <div className="space-y-4">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-bold text-slate-800 mb-1.5">
+                      <label className="block text-xs font-medium text-slate-700 mb-1.5">
                         Tempat Lahir *
                       </label>
                       <input
@@ -762,12 +889,12 @@ export default function RegisterPage() {
                         value={tempatLahir}
                         onChange={(e) => setTempatLahir(e.target.value)}
                         placeholder="Contoh: Kendari"
-                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-base focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0B3A6A] transition-all text-slate-900"
+                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0B3A6A] transition-all text-slate-900 font-normal placeholder:font-normal placeholder:text-slate-400"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-sm font-bold text-slate-800 mb-1.5">
+                      <label className="block text-xs font-medium text-slate-700 mb-1.5">
                         Tanggal Lahir *
                       </label>
                       <input
@@ -775,20 +902,20 @@ export default function RegisterPage() {
                         required
                         value={tanggalLahir}
                         onChange={(e) => setTanggalLahir(e.target.value)}
-                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-base focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0B3A6A] transition-all text-slate-900"
+                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0B3A6A] transition-all text-slate-900 font-normal"
                       />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-bold text-slate-800 mb-1.5">
+                      <label className="block text-xs font-medium text-slate-700 mb-1.5">
                         Gender *
                       </label>
                       <select
                         value={gender}
                         onChange={(e) => setGender(e.target.value)}
-                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-base focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0B3A6A] transition-all text-slate-900 font-medium"
+                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0B3A6A] transition-all text-slate-900 font-normal"
                       >
                         <option value="Laki-laki">Laki-laki</option>
                         <option value="Perempuan">Perempuan</option>
@@ -796,7 +923,7 @@ export default function RegisterPage() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-bold text-slate-800 mb-1.5">
+                      <label className="block text-xs font-medium text-slate-700 mb-1.5">
                         Nomor Telepon/WA *
                       </label>
                       <input
@@ -805,19 +932,19 @@ export default function RegisterPage() {
                         value={noHp}
                         onChange={(e) => setNoHp(e.target.value)}
                         placeholder="+62 8..."
-                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-base focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0B3A6A] transition-all text-slate-900"
+                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0B3A6A] transition-all text-slate-900 font-normal placeholder:font-normal placeholder:text-slate-400"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-bold text-slate-800 mb-1.5">
+                    <label className="block text-xs font-medium text-slate-700 mb-1.5">
                       Status Pernikahan *
                     </label>
                     <select
                       value={statusPernikahan}
                       onChange={(e) => setStatusPernikahan(e.target.value)}
-                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-base focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0B3A6A] transition-all text-slate-900 font-medium"
+                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0B3A6A] transition-all text-slate-900 font-normal"
                     >
                       <option value="Belum Menikah">Belum Menikah</option>
                       <option value="Menikah">Menikah</option>
@@ -825,7 +952,7 @@ export default function RegisterPage() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-bold text-slate-800 mb-1.5">
+                    <label className="block text-xs font-medium text-slate-700 mb-1.5">
                       Alamat Domisili *
                     </label>
                     <textarea
@@ -834,10 +961,17 @@ export default function RegisterPage() {
                       value={alamatDomisili}
                       onChange={(e) => setAlamatDomisili(e.target.value)}
                       placeholder="Masukkan alamat lengkap RT/RW, Kelurahan, Kecamatan"
-                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-base focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0B3A6A] transition-all text-slate-900 resize-none"
+                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0B3A6A] transition-all text-slate-900 font-normal placeholder:font-normal placeholder:text-slate-400 resize-none"
                     ></textarea>
                   </div>
                 </div>
+
+                {error && (
+                  <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl flex items-center gap-2 text-xs font-bold text-rose-800 animate-in fade-in">
+                    <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                    <span>{error}</span>
+                  </div>
+                )}
 
                 <div className="flex items-center justify-between pt-6 border-t border-slate-100">
                   <button
@@ -849,7 +983,7 @@ export default function RegisterPage() {
                   </button>
                   <button
                     type="button"
-                    onClick={nextStep}
+                    onClick={validateAndNextStep}
                     className="px-6 py-3 bg-[#0B3A6A] hover:bg-[#082a4d] text-white font-bold rounded-xl shadow text-sm transition-all flex items-center gap-2"
                   >
                     Lanjut <ArrowRight className="w-4 h-4" />
@@ -992,6 +1126,13 @@ export default function RegisterPage() {
                   </button>
                 </div>
 
+                {error && (
+                  <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl flex items-center gap-2 text-xs font-bold text-rose-800 animate-in fade-in">
+                    <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                    <span>{error}</span>
+                  </div>
+                )}
+
                 <div className="flex items-center justify-between pt-6 border-t border-slate-100">
                   <button
                     type="button"
@@ -1002,7 +1143,7 @@ export default function RegisterPage() {
                   </button>
                   <button
                     type="button"
-                    onClick={nextStep}
+                    onClick={validateAndNextStep}
                     className="px-6 py-3 bg-[#0B3A6A] hover:bg-[#082a4d] text-white font-bold rounded-xl shadow text-sm transition-all flex items-center gap-2"
                   >
                     Lanjut ke Unggah Berkas <ArrowRight className="w-4 h-4" />
