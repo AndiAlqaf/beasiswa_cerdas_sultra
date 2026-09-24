@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import { FileText, Download, Award, Search, Calendar, CheckCircle2, ShieldCheck, Printer, Clock, ArrowRight, AlertCircle, Loader2 } from 'lucide-react';
+import { Bell, Calendar, Download, Printer, ShieldCheck, Search, Loader2, Award, CheckCircle2, FileText, ArrowRight } from 'lucide-react';
 import { fetchAPI } from '@/lib/api';
 import { getStoredScheduleConfig, getDynamicTimeline, ScheduleConfig } from '@/lib/schedule';
 import Link from 'next/link';
@@ -38,15 +38,9 @@ export default function PublicPengumumanPage() {
   const timeline = getDynamicTimeline(scheduleConfig);
   const pengumumanStep = timeline.find((s) => s.id === 'pengumuman');
 
-  // Check if announcement period is currently open or completed
   const isAnnouncementPeriodOpen = pengumumanStep
     ? pengumumanStep.status === 'active' || pengumumanStep.status === 'completed'
     : false;
-
-  const activeStep =
-    timeline.find((step) => step.status === 'active') ||
-    timeline.find((step) => step.status === 'upcoming') ||
-    timeline[0];
 
   const loadRecipients = async () => {
     if (!isAnnouncementPeriodOpen) {
@@ -83,197 +77,172 @@ export default function PublicPengumumanPage() {
     <main className="min-h-screen bg-slate-50 text-slate-900 font-sans antialiased">
       <Navbar />
 
-      {/* Content Container */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-12 space-y-10">
-        
-        {/* JUKNIS DOWNLOAD BANNER (Dipindahkan dari Landing Page) */}
-        <section id="juknis-download" className="relative">
-          <div className="bg-[#0e2744] border border-blue-500/30 rounded-3xl p-6 sm:p-10 shadow-xl flex flex-col lg:flex-row items-center justify-between gap-6 text-white">
-            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5 text-center sm:text-left">
-              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-blue-600/20 border border-blue-400/30 flex items-center justify-center text-blue-400 shrink-0 shadow-inner">
-                <FileText className="w-8 h-8 sm:w-10 sm:h-10 text-blue-300" />
-              </div>
-              <div className="space-y-2">
-                <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
-                  Petunjuk Teknis Beasiswa Stimulan Sultra Cerdas
-                </h2>
-                <p className="text-slate-300 text-xs sm:text-sm max-w-2xl leading-relaxed font-normal">
-                  Unduh dokumen resmi Petunjuk Teknis (Juknis) TA 2026 untuk mempelajari persyaratan lengkap, kriteria kelayakan, alur pendaftaran, 4 bidang program studi prioritas, serta format lampiran dokumen permohonan.
-                </p>
-              </div>
-            </div>
+      <div className="pt-32 pb-20 max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Header Icon + Title */}
+        <div className="text-center mb-10">
+          <div className="w-12 h-12 rounded-2xl bg-slate-100 border border-slate-200/60 text-slate-700 flex items-center justify-center mx-auto mb-4 shadow-xs">
+            <Bell className="w-6 h-6" />
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
+            Pengumuman
+          </h1>
+          <p className="text-xs sm:text-sm text-slate-500 font-normal mt-1.5">
+            Informasi dan pembaruan resmi pelaksanaan Beasiswa Stimulan Sultra Cerdas Pemprov Sulawesi Tenggara.
+          </p>
+        </div>
 
-            <div className="shrink-0 w-full sm:w-auto">
+        {/* Announcement Cards Stack */}
+        <div className="space-y-4">
+
+          {/* Card 1: Pendaftaran Online (Timeline Active) */}
+          <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-xs hover:shadow-md transition-all space-y-2">
+            <div className="flex items-center gap-2 text-xs text-slate-400 font-medium">
+              <Calendar className="w-3.5 h-3.5 text-slate-400" />
+              <span>{timeline[0]?.date || '13 – 30 September 2026'}</span>
+              <span className="px-2 py-0.5 rounded-md bg-rose-100 text-rose-600 text-[10px] font-extrabold uppercase tracking-wider ml-1">
+                TAHAP BERJALAN
+              </span>
+            </div>
+            <h2 className="text-base sm:text-lg font-bold text-slate-900 leading-snug">
+              Pembukaan Pendaftaran Online Beasiswa Stimulan Sultra Cerdas TA 2026
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-500 leading-relaxed font-normal">
+              Pemerintah Provinsi Sulawesi Tenggara secara resmi membuka pendaftaran Beasiswa Stimulan Sultra Cerdas bagi mahasiswa aktif jenjang S1/D4, S2, dan S3 yang berdomisili di Sultra. Pembuatan akun, pengisian formulir, dan unggah berkas dilakukan secara online melalui portal resmi ini.
+            </p>
+          </div>
+
+          {/* Card 2: Juknis PDF & Panduan Berkas */}
+          <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-xs hover:shadow-md transition-all space-y-2">
+            <div className="flex items-center gap-2 text-xs text-slate-400 font-medium">
+              <Calendar className="w-3.5 h-3.5 text-slate-400" />
+              <span>13 September 2026</span>
+            </div>
+            <h2 className="text-base sm:text-lg font-bold text-slate-900 leading-snug">
+              Penerbitan Petunjuk Teknis (Juknis) &amp; Panduan Unggah Dokumen
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-500 leading-relaxed font-normal">
+              Petunjuk Teknis (Juknis) resmi BSSC TA 2026 telah diterbitkan. Pastikan seluruh dokumen persyaratan (KTM, KTP, Transkrip Nilai, dan Surat Pernyataan) diunggah berformat PDF/JPG/PNG dengan ukuran maksimal 2MB per berkas.
+            </p>
+            <div className="pt-2">
               <a
                 href="/Petunjuk_Teknis_BSSC_2026.pdf"
                 download="Petunjuk_Teknis_BSSC_2026.pdf"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-full sm:w-auto px-6 py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-2xl shadow-lg hover:shadow-emerald-900/50 transition-all flex items-center justify-center gap-2.5 border border-emerald-400 text-xs sm:text-sm group"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 hover:bg-blue-100 text-blue-900 border border-blue-200 rounded-xl text-xs font-bold transition-colors"
               >
-                <Download className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                <span>UNDUH DOKUMEN JUKNIS (PDF)</span>
+                <Download className="w-4 h-4" /> Unduh Dokumen Juknis BSSC (PDF)
               </a>
             </div>
           </div>
-        </section>
 
-        {/* ANNOUNCEMENT STATUS & RESULTS SECTION */}
-        <section className="space-y-6">
-          {!isAnnouncementPeriodOpen ? (
-            /* Scheduled Notice before Announcement Release */
-            <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-10 shadow-sm space-y-6">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-5">
-                <div>
-                  <span className="text-[10px] font-extrabold uppercase tracking-wider bg-blue-100 text-blue-800 px-3 py-1 rounded-full">
-                    Tahap Berjalan Saat Ini
-                  </span>
-                  <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight mt-2">
-                    {activeStep?.title || 'Pendaftaran Online'}
-                  </h2>
-                  <p className="text-xs text-slate-500 mt-1 font-normal">
-                    {activeStep?.desc || 'Pembuatan akun, pengisian formulir, & unggah berkas di portal resmi.'}
-                  </p>
-                </div>
-                <div className="shrink-0">
-                  <span className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-blue-50 text-blue-900 border border-blue-200 shadow-xs">
-                    <Clock className="w-4 h-4 text-blue-700" />
-                    {activeStep?.date || '13 - 30 September 2026'}
-                  </span>
-                </div>
-              </div>
-
-              <div className="bg-slate-50 rounded-2xl p-5 border border-slate-200 text-xs sm:text-sm text-slate-700 space-y-2">
-                <p className="leading-relaxed font-normal">
-                  Pengumuman resmi hasil seleksi dan daftar nama-nama penerima beasiswa belum dirilis. Tahapan seleksi saat ini sedang berada pada tahap <strong className="text-slate-900 font-bold">{activeStep?.title}</strong> ({activeStep?.date}).
-                </p>
-                <p className="text-slate-500 text-xs font-normal">
-                  Jadwal pengumuman resmi rilis hasil penetapan penerima beasiswa: <strong className="text-slate-800 font-bold">{pengumumanStep?.date || '16 - 17 Oktober 2026'}</strong>.
-                </p>
-              </div>
-
-              <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-slate-100">
-                <span className="text-xs text-slate-500 font-normal">
-                  Sudah mendaftar beasiswa? Cek status verifikasi pendaftaran Anda.
-                </span>
-                <Link
-                  href="/cek-status"
-                  className="inline-flex items-center gap-2 text-xs font-bold text-white bg-[#0B3A6A] hover:bg-[#082a4d] px-5 py-2.5 rounded-xl shadow-xs transition-all"
-                >
-                  Cek Status Pendaftaran <ArrowRight className="w-4 h-4" />
-                </Link>
-              </div>
+          {/* Card 3: Tahap Seleksi & Verifikasi */}
+          <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-xs hover:shadow-md transition-all space-y-2">
+            <div className="flex items-center gap-2 text-xs text-slate-400 font-medium">
+              <Calendar className="w-3.5 h-3.5 text-slate-400" />
+              <span>{timeline[1]?.date || '1 – 15 Oktober 2026'}</span>
             </div>
-          ) : (
-            /* Recipient Results List when Announcement Date is Reached */
-            <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-6">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-5">
-                <div>
-                  <h3 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-                    <ShieldCheck className="w-6 h-6 text-blue-900" />
-                    Daftar Penerima Beasiswa Sultra Cerdas 2026
-                  </h3>
-                  <p className="text-xs text-slate-500 mt-1 font-normal">
-                    Daftar nama mahasiswa penerima beasiswa yang telah dinyatakan lulus seleksi dan diverifikasi oleh tim verifikator.
-                  </p>
-                </div>
+            <h2 className="text-base sm:text-lg font-bold text-slate-900 leading-snug">
+              Jadwal Seleksi Administrasi &amp; Verifikasi Berkas
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-500 leading-relaxed font-normal">
+              Proses penelitian, verifikasi berkas, dan validasi kualifikasi pendaftar oleh tim penilai Dinas Pendidikan &amp; Kebudayaan Pemprov Sultra. Pendaftar diimbau untuk memantau status pemeriksaan secara berkala melalui fitur Cek Status.
+            </p>
+          </div>
+
+          {/* Card 4: Hasil Seleksi (Jika Tahap Pengumuman Buka) */}
+          {isAnnouncementPeriodOpen && (
+            <div className="bg-emerald-50/80 rounded-2xl border border-emerald-200 p-6 shadow-xs space-y-4">
+              <div className="flex items-center gap-2 text-xs text-emerald-800 font-medium">
+                <Calendar className="w-3.5 h-3.5" />
+                <span>{timeline[2]?.date || '16 Oktober 2026'}</span>
+                <span className="px-2 py-0.5 rounded-md bg-emerald-200 text-emerald-800 text-[10px] font-extrabold uppercase tracking-wider ml-1">
+                  HASIL SELEKSI
+                </span>
+              </div>
+              <div>
+                <h2 className="text-base sm:text-lg font-bold text-slate-900 leading-snug">
+                  Pengumuman Resmi Nama-Nama Penerima Beasiswa Sultra Cerdas 2026
+                </h2>
+                <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-normal mt-1">
+                  Hasil seleksi resmi telah ditetapkan oleh Pemprov Sulawesi Tenggara. Anda dapat mencari nama mahasiswa penerima dan melihat SK resmi di bawah ini.
+                </p>
+              </div>
+
+              <div className="pt-1 flex flex-wrap gap-3">
                 <button
                   onClick={() => setShowSkModal(true)}
-                  className="inline-flex items-center gap-2 px-4 py-2.5 bg-slate-900 text-white font-bold text-xs rounded-xl hover:bg-slate-800 transition-colors shrink-0 shadow-xs"
+                  className="px-4 py-2 bg-emerald-800 hover:bg-emerald-900 text-white font-bold text-xs rounded-xl transition-colors inline-flex items-center gap-2 shadow-xs"
                 >
-                  <Printer className="w-4 h-4 text-amber-400" /> Format SK Resmi Penetapan
+                  <Printer className="w-4 h-4 text-amber-300" /> Cetak Format SK Resmi (PDF)
                 </button>
               </div>
 
-              {/* Filter Bar */}
-              <form onSubmit={handleSearchSubmit} className="flex flex-col sm:flex-row items-center gap-3">
-                <div className="relative flex-1 w-full">
-                  <Search className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="text"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    placeholder="Cari nama mahasiswa, No. Registrasi, atau Perguruan Tinggi..."
-                    className="w-full pl-11 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-[#0B3A6A] focus:outline-none text-slate-900 font-normal placeholder:font-normal placeholder:text-slate-400"
-                  />
-                </div>
-                <select
-                  value={jenjangFilter}
-                  onChange={(e) => setJenjangFilter(e.target.value)}
-                  className="w-full sm:w-48 py-2.5 px-4 bg-slate-50 border border-slate-200 rounded-xl text-xs font-normal text-slate-700 focus:ring-2 focus:ring-[#0B3A6A] focus:outline-none"
-                >
-                  <option value="">Semua Jenjang</option>
-                  <option value="S1">Jenjang S1 / D4</option>
-                  <option value="S2">Jenjang S2</option>
-                  <option value="S3">Jenjang S3</option>
-                </select>
-                <button
-                  type="submit"
-                  className="w-full sm:w-auto px-6 py-2.5 bg-[#0B3A6A] hover:bg-[#082a4d] text-white font-bold text-xs rounded-xl transition-all shadow-xs shrink-0"
-                >
-                  Cari Penerima
-                </button>
-              </form>
+              {/* Filter & Table */}
+              <div className="pt-4 border-t border-emerald-200/60 space-y-4">
+                <form onSubmit={handleSearchSubmit} className="flex flex-col sm:flex-row items-center gap-3">
+                  <div className="relative flex-1 w-full">
+                    <Search className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      placeholder="Cari nama mahasiswa atau nomor registrasi..."
+                      className="w-full pl-11 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-emerald-700 focus:outline-none text-slate-900 font-normal placeholder:font-normal placeholder:text-slate-400"
+                    />
+                  </div>
+                  <select
+                    value={jenjangFilter}
+                    onChange={(e) => setJenjangFilter(e.target.value)}
+                    className="w-full sm:w-40 py-2.5 px-3 bg-white border border-slate-200 rounded-xl text-xs font-normal text-slate-700 focus:ring-2 focus:ring-emerald-700 focus:outline-none"
+                  >
+                    <option value="">Semua Jenjang</option>
+                    <option value="S1">Jenjang S1</option>
+                    <option value="S2">Jenjang S2</option>
+                    <option value="S3">Jenjang S3</option>
+                  </select>
+                </form>
 
-              {/* Recipients Table */}
-              {loadingRecipients ? (
-                <div className="py-16 text-center space-y-3">
-                  <Loader2 className="w-8 h-8 text-[#0B3A6A] animate-spin mx-auto" />
-                  <p className="text-xs text-slate-500 font-normal">Memuat data penerima beasiswa resmi...</p>
-                </div>
-              ) : recipients.length === 0 ? (
-                <div className="py-16 text-center space-y-3 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
-                  <Award className="w-12 h-12 text-slate-300 mx-auto" />
-                  <h4 className="font-bold text-slate-800 text-sm">Belum Ada Data Penerima</h4>
-                  <p className="text-xs text-slate-500 max-w-sm mx-auto font-normal">
-                    Tidak ada data penerima beasiswa yang cocok dengan pencarian <strong>"{searchTerm}"</strong>.
-                  </p>
-                </div>
-              ) : (
-                <div className="overflow-x-auto border border-slate-100 rounded-2xl">
-                  <table className="w-full text-left text-xs">
-                    <thead className="bg-slate-50 text-slate-700 font-bold border-b border-slate-200 uppercase tracking-wider text-[10px]">
-                      <tr>
-                        <th className="py-3.5 px-4">No.</th>
-                        <th className="py-3.5 px-4">No. Registrasi</th>
-                        <th className="py-3.5 px-4">Nama Mahasiswa</th>
-                        <th className="py-3.5 px-4">Jenjang</th>
-                        <th className="py-3.5 px-4">Perguruan Tinggi / Prodi</th>
-                        <th className="py-3.5 px-4 text-center">Status Penetapan</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100 font-normal text-slate-800">
-                      {recipients.map((rec, idx) => (
-                        <tr key={idx} className="hover:bg-slate-50/80 transition-colors">
-                          <td className="py-3.5 px-4 font-bold text-slate-400">{idx + 1}</td>
-                          <td className="py-3.5 px-4 font-mono font-bold text-blue-900">{rec.registrationNo}</td>
-                          <td className="py-3.5 px-4 font-bold text-slate-900">{rec.namaLengkap}</td>
-                          <td className="py-3.5 px-4">
-                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-700">
-                              {rec.jenjangTarget}
-                            </span>
-                          </td>
-                          <td className="py-3.5 px-4">
-                            <p className="font-medium text-slate-900">{rec.institusi}</p>
-                            <p className="text-[10px] text-slate-500">{rec.jurusan}</p>
-                          </td>
-                          <td className="py-3.5 px-4 text-center">
-                            <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[10px] font-bold uppercase bg-emerald-100 text-emerald-800 border border-emerald-200">
-                              <CheckCircle2 className="w-3 h-3 text-emerald-600" /> DITERIMA
-                            </span>
-                          </td>
+                {loadingRecipients ? (
+                  <div className="py-8 text-center space-y-2">
+                    <Loader2 className="w-6 h-6 text-emerald-700 animate-spin mx-auto" />
+                    <p className="text-xs text-slate-500 font-normal">Memuat data penerima...</p>
+                  </div>
+                ) : recipients.length === 0 ? (
+                  <p className="text-xs text-slate-500 italic py-4 text-center">Tidak ada data penerima yang cocok.</p>
+                ) : (
+                  <div className="overflow-x-auto border border-emerald-200 rounded-xl bg-white">
+                    <table className="w-full text-left text-xs">
+                      <thead className="bg-emerald-100/50 text-emerald-950 font-bold border-b border-emerald-200 text-[10px] uppercase">
+                        <tr>
+                          <th className="py-2.5 px-3">No.</th>
+                          <th className="py-2.5 px-3">No. Registrasi</th>
+                          <th className="py-2.5 px-3">Nama Mahasiswa</th>
+                          <th className="py-2.5 px-3">Jenjang</th>
+                          <th className="py-2.5 px-3 text-center">Status</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
+                      </thead>
+                      <tbody className="divide-y divide-emerald-100 text-slate-800">
+                        {recipients.map((rec, idx) => (
+                          <tr key={idx}>
+                            <td className="py-2.5 px-3 font-bold text-slate-400">{idx + 1}</td>
+                            <td className="py-2.5 px-3 font-mono font-bold text-emerald-900">{rec.registrationNo}</td>
+                            <td className="py-2.5 px-3 font-bold text-slate-900">{rec.namaLengkap}</td>
+                            <td className="py-2.5 px-3">{rec.jenjangTarget}</td>
+                            <td className="py-2.5 px-3 text-center font-bold text-emerald-700">DITERIMA</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
             </div>
           )}
-        </section>
+        </div>
       </div>
 
-      {/* Modal Format SK Resmi Penerima Beasiswa */}
+      {/* Modal Format SK Resmi */}
       {showSkModal && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/70 backdrop-blur-xs p-4 animate-in fade-in overflow-y-auto">
           <div className="bg-white rounded-3xl w-[96vw] max-w-4xl shadow-2xl overflow-hidden border border-slate-200 my-8">
@@ -298,7 +267,6 @@ export default function PublicPengumumanPage() {
               </div>
             </div>
 
-            {/* Content Printable SK */}
             <div className="p-8 sm:p-12 space-y-6 text-black font-sans text-xs max-h-[75vh] overflow-y-auto bg-white">
               <div className="text-center border-b-4 border-black pb-4 space-y-1">
                 <h2 className="text-lg font-black uppercase tracking-wider">PEMERINTAH PROVINSI SULAWESI TENGGARA</h2>

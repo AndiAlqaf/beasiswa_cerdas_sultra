@@ -25,12 +25,21 @@ import {
   X
 } from 'lucide-react';
 import { fetchAPI, getUser } from '@/lib/api';
+import { parseAchievementString, formatAchievementItems, DynamicAchievementItem } from '@/lib/achievementHelpers';
+import DynamicAchievementBlock from '@/components/DynamicAchievementBlock';
 
 export default function RegistrationPage() {
   const [currentStep, setCurrentStep] = useState<number>(1);
   const [isSubmitted, setIsSubmitted] = useState<boolean>(false);
   const [registrationCode, setRegistrationCode] = useState<string>('');
   const [loadingProfile, setLoadingProfile] = useState<boolean>(true);
+
+  // 5 Categories Dynamic State
+  const [prestasiAkademikList, setPrestasiAkademikList] = useState<DynamicAchievementItem[]>([]);
+  const [prestasiNonAkademikList, setPrestasiNonAkademikList] = useState<DynamicAchievementItem[]>([]);
+  const [pengalamanOrganisasiList, setPengalamanOrganisasiList] = useState<DynamicAchievementItem[]>([]);
+  const [pengalamanPengabdianList, setPengalamanPengabdianList] = useState<DynamicAchievementItem[]>([]);
+  const [pelatihanSertifikasiList, setPelatihanSertifikasiList] = useState<DynamicAchievementItem[]>([]);
 
   // Signature Canvas State & Refs
   const [showSignatureModal, setShowSignatureModal] = useState<boolean>(false);
@@ -230,17 +239,17 @@ export default function RegistrationPage() {
             ipk: p.ipk || '',
             targetLulus: p.targetLulus || '',
             beasiswaLain: p.beasiswaLain || 'Tidak Ada',
-            smaNama: sma.institusi || '',
-            smaJurusan: sma.jurusan || '',
-            smaTahunLulus: sma.tahunLulus || '',
-            s1Nama: s1.institusi || '',
-            s1Jurusan: s1.jurusan || '',
-            s1TahunLulus: s1.tahunLulus || '',
-            s2Nama: s2.institusi || '',
-            s2Jurusan: s2.jurusan || '',
-            s2TahunLulus: s2.tahunLulus || '',
-            perguruanTinggi: (currentJenjang === 'S3' ? edus.find((e: any) => e.tingkat === 'S3')?.institusi : currentJenjang === 'S2' ? s2.institusi : s1.institusi) || '',
-            fakultasProdi: (currentJenjang === 'S3' ? edus.find((e: any) => e.tingkat === 'S3')?.jurusan : currentJenjang === 'S2' ? s2.jurusan : s1.jurusan) || p.prodiPrioritas || '',
+            smaNama: sma.institusi || p.smaNama || regDraft?.smaNama || '',
+            smaJurusan: sma.jurusan || p.smaJurusan || regDraft?.smaJurusan || '',
+            smaTahunLulus: sma.tahunLulus ? String(sma.tahunLulus) : (p.smaTahunLulus || regDraft?.smaTahunLulus || ''),
+            s1Nama: s1.institusi || p.s1Nama || regDraft?.s1Nama || '',
+            s1Jurusan: s1.jurusan || p.s1Jurusan || regDraft?.s1Jurusan || '',
+            s1TahunLulus: s1.tahunLulus ? String(s1.tahunLulus) : (p.s1TahunLulus || regDraft?.s1TahunLulus || ''),
+            s2Nama: s2.institusi || p.s2Nama || regDraft?.s2Nama || '',
+            s2Jurusan: s2.jurusan || p.s2Jurusan || regDraft?.s2Jurusan || '',
+            s2TahunLulus: s2.tahunLulus ? String(s2.tahunLulus) : (p.s2TahunLulus || regDraft?.s2TahunLulus || ''),
+            perguruanTinggi: p.perguruanTinggi || p.institusi || (currentJenjang === 'S3' ? edus.find((e: any) => e.tingkat === 'S3')?.institusi : currentJenjang === 'S2' ? s2.institusi : s1.institusi) || regDraft?.perguruanTinggi || cachedUser?.institusi || '',
+            fakultasProdi: p.fakultasProdi || p.jurusan || (currentJenjang === 'S3' ? edus.find((e: any) => e.tingkat === 'S3')?.jurusan : currentJenjang === 'S2' ? s2.jurusan : s1.jurusan) || p.prodiPrioritas || regDraft?.prodi || cachedUser?.jurusan || '',
             namaAyah: p.namaAyah || '',
             pekerjaanAyah: p.pekerjaanAyah || '',
             namaIbu: p.namaIbu || '',
@@ -286,6 +295,13 @@ export default function RegistrationPage() {
           }
 
           setFormData(prev => ({ ...prev, ...initialData }));
+
+          // Initialize dynamic achievement lists
+          setPrestasiAkademikList(parseAchievementString(initialData.prestasiAkademik));
+          setPrestasiNonAkademikList(parseAchievementString(initialData.prestasiNonAkademik));
+          setPengalamanOrganisasiList(parseAchievementString(initialData.pengalamanOrganisasi));
+          setPengalamanPengabdianList(parseAchievementString(initialData.pengalamanPengabdian));
+          setPelatihanSertifikasiList(parseAchievementString(initialData.pelatihanSertifikasi));
         }
       } catch (err: any) {
         console.warn('Profile fetch warning:', err.message);
@@ -442,11 +458,11 @@ export default function RegistrationPage() {
           penghasilanOrtu: formData.penghasilanOrtu,
           jumlahTanggungan: formData.jumlahTanggungan,
           kepemilikanBantuan: formData.kepemilikanBantuan,
-          prestasiAkademik: formData.prestasiAkademik,
-          prestasiNonAkademik: formData.prestasiNonAkademik,
-          pengalamanOrganisasi: formData.pengalamanOrganisasi,
-          pengalamanPengabdian: formData.pengalamanPengabdian,
-          pelatihanSertifikasi: formData.pelatihanSertifikasi,
+          prestasiAkademik: formatAchievementItems(prestasiAkademikList),
+          prestasiNonAkademik: formatAchievementItems(prestasiNonAkademikList),
+          pengalamanOrganisasi: formatAchievementItems(pengalamanOrganisasiList),
+          pengalamanPengabdian: formatAchievementItems(pengalamanPengabdianList),
+          pelatihanSertifikasi: formatAchievementItems(pelatihanSertifikasiList),
           prodiPrioritas: formData.fakultasProdi,
           signatureData: sigToSave
         }),
@@ -957,17 +973,28 @@ export default function RegistrationPage() {
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5 text-xs font-medium text-slate-700">
                     {/* SMA / SMK (Shown for all jenjang) */}
+                    {/* SMA / SMK (Shown for all jenjang) */}
                     <div>
-                      <label className="block mb-1 font-semibold">SMA / SMK / MA (Nama Sekolah & Jurusan)</label>
+                      <label className="block mb-1 font-semibold">SMA / SMK / MA (Nama Sekolah)</label>
                       <input
                         type="text"
                         value={formData.smaNama}
                         onChange={(e) => handleInputChange('smaNama', e.target.value)}
-                        placeholder="SMAN 1 Kendari (IPA)"
+                        placeholder="SMAN 1 Kendari"
                         className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-base sm:text-sm focus:ring-2 focus:ring-blue-900 focus:outline-none"
                       />
                     </div>
                     <div>
+                      <label className="block mb-1 font-semibold">SMA / SMK / MA (Jurusan / Peminatan)</label>
+                      <input
+                        type="text"
+                        value={formData.smaJurusan}
+                        onChange={(e) => handleInputChange('smaJurusan', e.target.value)}
+                        placeholder="MIPA / IPS / Kejuruan"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-base sm:text-sm focus:ring-2 focus:ring-blue-900 focus:outline-none"
+                      />
+                    </div>
+                    <div className="sm:col-span-2">
                       <label className="block mb-1 font-semibold">SMA / SMK / MA (Tahun Lulus)</label>
                       <input
                         type="text"
@@ -982,16 +1009,26 @@ export default function RegistrationPage() {
                     {(formData.jenjang === 'S2' || formData.jenjang === 'S3') && (
                       <>
                         <div>
-                          <label className="block mb-1 font-semibold">S1 / D4 (Nama Perguruan Tinggi & Prodi)</label>
+                          <label className="block mb-1 font-semibold">S1 / D4 (Nama Perguruan Tinggi)</label>
                           <input
                             type="text"
                             value={formData.s1Nama}
                             onChange={(e) => handleInputChange('s1Nama', e.target.value)}
-                            placeholder="Universitas Halu Oleo (Teknik Informatika)"
+                            placeholder="Universitas Halu Oleo"
                             className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-base sm:text-sm focus:ring-2 focus:ring-blue-900 focus:outline-none"
                           />
                         </div>
                         <div>
+                          <label className="block mb-1 font-semibold">S1 / D4 (Program Studi / Jurusan)</label>
+                          <input
+                            type="text"
+                            value={formData.s1Jurusan}
+                            onChange={(e) => handleInputChange('s1Jurusan', e.target.value)}
+                            placeholder="Teknik Informatika"
+                            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-base sm:text-sm focus:ring-2 focus:ring-blue-900 focus:outline-none"
+                          />
+                        </div>
+                        <div className="sm:col-span-2">
                           <label className="block mb-1 font-semibold">S1 / D4 (Tahun Lulus)</label>
                           <input
                             type="text"
@@ -1008,16 +1045,26 @@ export default function RegistrationPage() {
                     {formData.jenjang === 'S3' && (
                       <>
                         <div>
-                          <label className="block mb-1 font-semibold">S2 / Magister (Nama Perguruan Tinggi & Prodi)</label>
+                          <label className="block mb-1 font-semibold">S2 / Magister (Nama Perguruan Tinggi)</label>
                           <input
                             type="text"
                             value={formData.s2Nama}
                             onChange={(e) => handleInputChange('s2Nama', e.target.value)}
-                            placeholder="Universitas Gadjah Mada (Magister Ilmu Komputer)"
+                            placeholder="Universitas Gadjah Mada"
                             className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-base sm:text-sm focus:ring-2 focus:ring-blue-900 focus:outline-none"
                           />
                         </div>
                         <div>
+                          <label className="block mb-1 font-semibold">S2 / Magister (Program Studi)</label>
+                          <input
+                            type="text"
+                            value={formData.s2Jurusan}
+                            onChange={(e) => handleInputChange('s2Jurusan', e.target.value)}
+                            placeholder="Magister Ilmu Komputer"
+                            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-base sm:text-sm focus:ring-2 focus:ring-blue-900 focus:outline-none"
+                          />
+                        </div>
+                        <div className="sm:col-span-2">
                           <label className="block mb-1 font-semibold">S2 / Magister (Tahun Lulus)</label>
                           <input
                             type="text"
@@ -1143,65 +1190,59 @@ export default function RegistrationPage() {
                 <div className="space-y-6 max-w-4xl mx-auto">
                   <div className="border-b border-slate-100 pb-4">
                     <h2 className="text-lg sm:text-xl font-bold text-slate-900">Tahap 6: Prestasi & Pengalaman</h2>
-                    <p className="text-xs text-slate-500">Catatkan prestasi dan keaktifan organisasi (Opsional). Jika memiliki <strong>lebih dari 1 prestasi</strong> di bidang yang sama, tuliskan secara berurutan menggunakan penomoran (1, 2, 3...).</p>
+                    <p className="text-xs text-slate-500">Catatkan riwayat prestasi, keaktifan organisasi, pengabdian, dan pelatihan Anda (Opsional). Gunakan tombol + Tambah untuk menambah baris.</p>
                   </div>
 
-                  <div className="space-y-4 text-xs font-medium text-slate-700">
-                    <div>
-                      <div className="flex flex-wrap justify-between items-center mb-1 gap-1">
-                        <label className="font-semibold">Prestasi Akademik (Lomba / Karya Ilmiah / Publikasi)</label>
-                        <span className="text-[11px] text-blue-600 font-normal">Bisa diisi lebih dari 1 (pisahkan dengan Enter / nomor)</span>
-                      </div>
-                      <textarea
-                        rows={3}
-                        value={formData.prestasiAkademik}
-                        onChange={(e) => handleInputChange('prestasiAkademik', e.target.value)}
-                        placeholder="1. Juara 1 Lomba Karya Tulis Ilmiah Nasional 2025&#10;2. Juara 2 Debat Mahasiswa Regional 2024"
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-base sm:text-sm focus:ring-2 focus:ring-blue-900 focus:outline-none leading-relaxed"
-                      ></textarea>
-                    </div>
+                  <div className="space-y-6">
+                    <DynamicAchievementBlock
+                      title="1. Prestasi Akademik (Lomba / Karya Ilmiah / Publikasi)"
+                      subtitle="Tambahkan riwayat prestasi akademik/lomba yang pernah Anda peroleh. (Kosongkan jika tidak ada)"
+                      labelNama="Nama Prestasi / Karya Ilmiah / Publikasi"
+                      placeholderNama="Contoh: Juara 1 Lomba Karya Tulis Ilmiah Nasional"
+                      items={prestasiAkademikList}
+                      onChange={setPrestasiAkademikList}
+                      addButtonText="Tambah Prestasi Akademik"
+                    />
 
-                    <div>
-                      <div className="flex flex-wrap justify-between items-center mb-1 gap-1">
-                        <label className="font-semibold">Prestasi Non-Akademik (Olahraga / Seni / Dll)</label>
-                        <span className="text-[11px] text-blue-600 font-normal">Bisa diisi lebih dari 1 (pisahkan dengan Enter / nomor)</span>
-                      </div>
-                      <textarea
-                        rows={3}
-                        value={formData.prestasiNonAkademik}
-                        onChange={(e) => handleInputChange('prestasiNonAkademik', e.target.value)}
-                        placeholder="1. Juara 2 Bulutangkis Porprov Sultra 2024&#10;2. Juara 1 Festival Seni Tari 2023"
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-base sm:text-sm focus:ring-2 focus:ring-blue-900 focus:outline-none leading-relaxed"
-                      ></textarea>
-                    </div>
+                    <DynamicAchievementBlock
+                      title="2. Prestasi Non-Akademik (Olahraga / Seni / Dll)"
+                      subtitle="Tambahkan riwayat prestasi non-akademik yang pernah Anda peroleh. (Kosongkan jika tidak ada)"
+                      labelNama="Nama Prestasi / Penghargaan Non-Akademik"
+                      placeholderNama="Contoh: Juara 2 Bulutangkis Porprov Sultra"
+                      items={prestasiNonAkademikList}
+                      onChange={setPrestasiNonAkademikList}
+                      addButtonText="Tambah Prestasi Non-Akademik"
+                    />
 
-                    <div>
-                      <div className="flex flex-wrap justify-between items-center mb-1 gap-1">
-                        <label className="font-semibold">Pengalaman Organisasi Kemahasiswaan</label>
-                        <span className="text-[11px] text-blue-600 font-normal">Bisa diisi lebih dari 1 (pisahkan dengan Enter / nomor)</span>
-                      </div>
-                      <textarea
-                        rows={3}
-                        value={formData.pengalamanOrganisasi}
-                        onChange={(e) => handleInputChange('pengalamanOrganisasi', e.target.value)}
-                        placeholder="1. Ketua Himpunan Mahasiswa Jurusan (HMJ) 2025&#10;2. Anggota BEM Fakultas 2024"
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-base sm:text-sm focus:ring-2 focus:ring-blue-900 focus:outline-none leading-relaxed"
-                      ></textarea>
-                    </div>
+                    <DynamicAchievementBlock
+                      title="3. Pengalaman Organisasi Kemahasiswaan"
+                      subtitle="Tambahkan pengalaman keaktifan organisasi kemahasiswaan Anda. (Kosongkan jika tidak ada)"
+                      labelNama="Nama Organisasi & Jabatan / Peran"
+                      placeholderNama="Contoh: Ketua Himpunan Mahasiswa Jurusan (HMJ)"
+                      items={pengalamanOrganisasiList}
+                      onChange={setPengalamanOrganisasiList}
+                      addButtonText="Tambah Pengalaman Organisasi"
+                    />
 
-                    <div>
-                      <div className="flex flex-wrap justify-between items-center mb-1 gap-1">
-                        <label className="font-semibold">Pengalaman Kegiatan Sosial / Pengabdian Masyarakat</label>
-                        <span className="text-[11px] text-blue-600 font-normal">Bisa diisi lebih dari 1 (pisahkan dengan Enter / nomor)</span>
-                      </div>
-                      <textarea
-                        rows={3}
-                        value={formData.pengalamanPengabdian}
-                        onChange={(e) => handleInputChange('pengalamanPengabdian', e.target.value)}
-                        placeholder="1. Relawan Mengajar Desa Pesisir Kolaka 2025&#10;2. Panitia Tanggap Bencana Banjir 2024"
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-base sm:text-sm focus:ring-2 focus:ring-blue-900 focus:outline-none leading-relaxed"
-                      ></textarea>
-                    </div>
+                    <DynamicAchievementBlock
+                      title="4. Pengalaman Kegiatan Sosial / Pengabdian Masyarakat"
+                      subtitle="Tambahkan pengalaman kegiatan sosial/pengabdian di daerah asal. (Kosongkan jika tidak ada)"
+                      labelNama="Nama Kegiatan / Pengabdian Masyarakat"
+                      placeholderNama="Contoh: Relawan Mengajar Desa Pesisir Kolaka"
+                      items={pengalamanPengabdianList}
+                      onChange={setPengalamanPengabdianList}
+                      addButtonText="Tambah Pengalaman Sosial"
+                    />
+
+                    <DynamicAchievementBlock
+                      title="5. Pelatihan / Sertifikasi Relevan"
+                      subtitle="Tambahkan pelatihan atau sertifikasi keahlian yang pernah Anda ikuti. (Kosongkan jika tidak ada)"
+                      labelNama="Nama Pelatihan / Sertifikasi"
+                      placeholderNama="Contoh: Pelatihan Data Analyst / Web Development"
+                      items={pelatihanSertifikasiList}
+                      onChange={setPelatihanSertifikasiList}
+                      addButtonText="Tambah Pelatihan / Sertifikasi"
+                    />
                   </div>
                 </div>
               )}

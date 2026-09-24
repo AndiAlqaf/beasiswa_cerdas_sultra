@@ -117,6 +117,7 @@ async function updateProfile(req, res) {
   try {
     const userId = req.user.id;
     const { 
+      namaLengkap, jenjangTarget,
       tempatLahir, tanggalLahir, gender, noHp, statusPernikahan, alamatDomisili,
       noKk, alamatKtp, akreditasiProdi, nim, semester, ipk, targetLulus,
       beasiswaLain, namaAyah, pekerjaanAyah, namaIbu, pekerjaanIbu,
@@ -125,6 +126,15 @@ async function updateProfile(req, res) {
       pengalamanPengabdian, pelatihanSertifikasi, prodiPrioritas, signatureData
     } = req.body;
     const pool = getPool();
+
+    if (namaLengkap || jenjangTarget) {
+      await pool.execute(`
+        UPDATE users
+        SET nama_lengkap = COALESCE(?, nama_lengkap),
+            jenjang_target = COALESCE(?, jenjang_target)
+        WHERE id = ?
+      `, [namaLengkap || null, jenjangTarget || null, userId]);
+    }
 
     await pool.execute(`
       UPDATE profiles

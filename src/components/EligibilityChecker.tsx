@@ -365,10 +365,10 @@ export default function EligibilityChecker() {
                 {result.isEligible && (
                   <div className="mt-4 pt-3 border-t border-emerald-200 flex justify-end">
                     <Link
-                      href="/daftar"
+                      href="/login"
                       className="px-4 py-2 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs flex items-center gap-2 shadow-xs transition-colors"
                     >
-                      Lanjut Isi Form Pendaftaran
+                      Lanjut ke Halaman Login
                       <ArrowRight className="w-4 h-4" />
                     </Link>
                   </div>

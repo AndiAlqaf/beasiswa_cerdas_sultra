@@ -266,8 +266,8 @@ export default function DashboardPage() {
                   </h3>
                   <p className="text-sm text-slate-500 mt-2 leading-relaxed">
                     {documents.length > 0
-                      ? `Dokumen terverifikasi di server: ${documents.map(d => d.docType).join(', ')}.`
-                      : 'Belum ada berkas tersimpan. Pastikan berkas diunggah.'}
+                      ? 'Seluruh dokumen persyaratan pendaftaran Anda telah berhasil tersimpan dan siap untuk diverifikasi.'
+                      : 'Belum ada berkas tersimpan. Silakan unggah dokumen persyaratan Anda.'}
                   </p>
                 </>
               )}
