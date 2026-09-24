@@ -63,6 +63,27 @@ export interface TimelineStep {
   status: 'completed' | 'active' | 'upcoming';
 }
 
+if (typeof window !== 'undefined') {
+  (window as any).setPhase = (phase: string) => {
+    const config = getStoredScheduleConfig();
+    let mockTime = '';
+    switch(phase.toLowerCase()) {
+      case 'pengumuman': mockTime = config.announcementDate; break;
+      case 'sanggah': mockTime = config.sanggahStart; break;
+      case 'hasil-sanggah': mockTime = config.pengumumanSanggahDate; break;
+      case 'reset': delete (window as any).__MOCK_TIME; break;
+      default: 
+        console.log('Available phases: pengumuman, sanggah, hasil-sanggah, reset'); 
+        return;
+    }
+    if (mockTime) {
+      (window as any).__MOCK_TIME = mockTime;
+    }
+    window.dispatchEvent(new Event('bssc_schedule_updated'));
+    console.log(`%c[BSSC TEST] Phase changed to: ${phase} (Date: ${mockTime || 'Real Time'})`, 'color: #10b981; font-weight: bold;');
+  };
+}
+
 export function getDynamicTimeline(
   config: ScheduleConfig = getStoredScheduleConfig(),
   customNow?: string
@@ -73,7 +94,12 @@ export function getDynamicTimeline(
     return new Date(y, m - 1, d);
   };
 
-  const now = customNow ? parseDate(customNow) : new Date();
+  let mockNow: string | undefined;
+  if (typeof window !== 'undefined') {
+    mockNow = (window as any).__MOCK_TIME;
+  }
+
+  const now = customNow ? parseDate(customNow) : (mockNow ? parseDate(mockNow) : new Date());
   // Zero out time components for date-only comparison
   now.setHours(12, 0, 0, 0);
 

@@ -264,7 +264,7 @@ async function viewDocument(req, res) {
     res.setHeader('Content-Disposition', `inline; filename="${doc.original_name}"`);
     
     // Stream the file
-    res.sendFile(doc.file_path);
+    fs.createReadStream(doc.file_path).pipe(res);
   } catch (err) {
     log(LOG_LEVELS.ERROR, `View document error: ${err.message}`);
     res.status(500).json({ success: false, message: 'Gagal memuat dokumen.' });

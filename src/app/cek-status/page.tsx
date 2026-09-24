@@ -6,6 +6,7 @@ import Footer from '@/components/Footer';
 import Link from 'next/link';
 import { Search, CheckCircle2, Clock, AlertCircle, ShieldCheck, ArrowRight, UserCheck } from 'lucide-react';
 import { fetchAPI } from '@/lib/api';
+import { getStoredScheduleConfig, getDynamicTimeline } from '@/lib/schedule';
 
 export default function CheckStatusPage() {
   const [searchKey, setSearchKey] = useState<string>('');
@@ -26,13 +27,40 @@ export default function CheckStatusPage() {
       });
 
       if (res.success && res.data) {
+        const timeline = getDynamicTimeline(getStoredScheduleConfig());
+        const pengumumanStep = timeline.find((s) => s.id === 'pengumuman');
+        const isAnnouncementPeriodOpen = pengumumanStep
+          ? pengumumanStep.status === 'active' || pengumumanStep.status === 'completed'
+          : false;
+
+        const pengumumanSanggahStep = timeline.find((s) => s.id === 'pengumuman-sanggah');
+        const isPengumumanSanggahPeriodOpen = pengumumanSanggahStep
+          ? pengumumanSanggahStep.status === 'active' || pengumumanSanggahStep.status === 'completed'
+          : false;
+
+        let effectiveStatus = res.data.status;
+        let effectiveNotes = res.data.notes || 'Berkas telah diterima di sistem dan sedang dalam antrean verifikasi.';
+        const isSanggahan = effectiveNotes.includes('[SANGGAHAN MAHASISWA]');
+
+        if (isSanggahan) {
+          if (!isPengumumanSanggahPeriodOpen && (effectiveStatus === 'DITERIMA' || effectiveStatus === 'DITOLAK')) {
+            effectiveStatus = 'VERIFIKASI_BERKAS';
+            effectiveNotes = 'Sanggahan sedang diperiksa. Mohon pantau kembali pada masa pengumuman hasil sanggah.';
+          }
+        } else {
+          if (!isAnnouncementPeriodOpen && (effectiveStatus === 'DITERIMA' || effectiveStatus === 'DITOLAK')) {
+            effectiveStatus = 'VERIFIKASI_BERKAS';
+            effectiveNotes = 'Dokumen pendaftaran sedang diteliti dan divalidasi oleh tim penilai Pemprov Sultra.';
+          }
+        }
+
         setSearchedApp({
           registrationNo: res.data.registrationNo,
           name: res.data.namaLengkap,
           jenjang: res.data.jenjangTarget,
-          status: res.data.status,
+          status: effectiveStatus,
           dateSubmitted: res.data.submittedAt ? new Date(res.data.submittedAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : '-',
-          notes: res.data.notes || 'Berkas telah diterima di sistem dan sedang dalam antrean verifikasi.',
+          notes: effectiveNotes,
         });
       } else {
         setSearchedApp(null);

@@ -112,7 +112,6 @@ export default function RegistrationPage() {
 
   // Form State (Real empty defaults, automatically populated from Backend API)
   const [formData, setFormData] = useState({
-    // Step 1: Kategori
     jenjang: 'S1',
     agreedSemesterRange: true,
 
@@ -186,6 +185,11 @@ export default function RegistrationPage() {
 
   const [isProfileLoaded, setIsProfileLoaded] = useState<boolean>(false);
 
+  const formatAsalDaerah = (asal: string) => {
+    if (!asal) return '-';
+    return asal.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+  };
+
   useEffect(() => {
     async function loadUserProfile() {
       setLoadingProfile(true);
@@ -254,18 +258,18 @@ export default function RegistrationPage() {
             s2TahunLulus: s2.tahunLulus ? String(s2.tahunLulus) : (p.s2TahunLulus || regDraft?.s2TahunLulus || ''),
             perguruanTinggi: p.perguruanTinggi || p.institusi || (currentJenjang === 'S3' ? edus.find((e: any) => e.tingkat === 'S3')?.institusi : currentJenjang === 'S2' ? s2.institusi : s1.institusi) || regDraft?.perguruanTinggi || cachedUser?.institusi || '',
             fakultasProdi: p.fakultasProdi || p.jurusan || (currentJenjang === 'S3' ? edus.find((e: any) => e.tingkat === 'S3')?.jurusan : currentJenjang === 'S2' ? s2.jurusan : s1.jurusan) || p.prodiPrioritas || regDraft?.prodi || cachedUser?.jurusan || '',
-            namaAyah: p.namaAyah || '',
-            pekerjaanAyah: p.pekerjaanAyah || '',
-            namaIbu: p.namaIbu || '',
-            pekerjaanIbu: p.pekerjaanIbu || '',
-            penghasilanOrtu: p.penghasilanOrtu || '< Rp 1.500.000',
-            jumlahTanggungan: p.jumlahTanggungan || '3',
-            kepemilikanBantuan: p.kepemilikanBantuan || 'Tidak Ada',
-            prestasiAkademik: p.prestasiAkademik || '',
-            prestasiNonAkademik: p.prestasiNonAkademik || '',
-            pengalamanOrganisasi: p.pengalamanOrganisasi || '',
-            pengalamanPengabdian: p.pengalamanPengabdian || '',
-            pelatihanSertifikasi: p.pelatihanSertifikasi || '',
+            namaAyah: p.namaAyah || p.nama_ayah || '',
+            pekerjaanAyah: p.pekerjaanAyah || p.pekerjaan_ayah || '',
+            namaIbu: p.namaIbu || p.nama_ibu || '',
+            pekerjaanIbu: p.pekerjaanIbu || p.pekerjaan_ibu || '',
+            penghasilanOrtu: p.penghasilanOrtu || p.penghasilan_ortu || '< Rp 1.500.000',
+            jumlahTanggungan: p.jumlahTanggungan ? String(p.jumlahTanggungan) : '3',
+            kepemilikanBantuan: p.kepemilikanBantuan || p.kepemilikan_bantuan || 'Tidak Ada',
+            prestasiAkademik: p.prestasiAkademik || p.prestasi_akademik || '',
+            prestasiNonAkademik: p.prestasiNonAkademik || p.prestasi_non_akademik || '',
+            pengalamanOrganisasi: p.pengalamanOrganisasi || p.pengalaman_organisasi || '',
+            pengalamanPengabdian: p.pengalamanPengabdian || p.pengalaman_pengabdian || '',
+            pelatihanSertifikasi: p.pelatihanSertifikasi || p.pelatihan_sertifikasi || '',
             filePasfoto: selfieDoc ? selfieDoc.originalName : '',
             fileSuratAktif: ktmDoc ? ktmDoc.originalName : '',
             fileKtp: pendukungDoc ? pendukungDoc.originalName : '',
@@ -1365,7 +1369,7 @@ export default function RegistrationPage() {
                       </div>
                       <div>
                         <span className="text-slate-500 block text-[11px]">Asal Daerah</span>
-                        <strong className="text-slate-900 text-xs sm:text-sm truncate block">{formData.asalDaerah || '-'}</strong>
+                        <strong className="text-slate-900 text-xs sm:text-sm truncate block">{formatAsalDaerah(formData.asalDaerah)}</strong>
                       </div>
                     </div>
 
@@ -1605,7 +1609,7 @@ export default function RegistrationPage() {
                   <tr className="border-b border-slate-200"><td className="w-1/3 p-1.5 font-semibold bg-slate-50">No. Kartu Keluarga (KK)</td><td className="p-1.5 font-mono">: {formData.noKk || '-'}</td></tr>
                   <tr className="border-b border-slate-200"><td className="w-1/3 p-1.5 font-semibold bg-slate-50">Tempat, Tanggal Lahir</td><td className="p-1.5">: {formData.tempatLahir}, {formData.tanggalLahir}</td></tr>
                   <tr className="border-b border-slate-200"><td className="w-1/3 p-1.5 font-semibold bg-slate-50">Jenis Kelamin</td><td className="p-1.5">: {formData.jenisKelamin}</td></tr>
-                  <tr className="border-b border-slate-200"><td className="w-1/3 p-1.5 font-semibold bg-slate-50">Asal Daerah (Kab/Kota)</td><td className="p-1.5">: {formData.asalDaerah}</td></tr>
+                  <tr className="border-b border-slate-200"><td className="w-1/3 p-1.5 font-semibold bg-slate-50">Asal Daerah (Kab/Kota)</td><td className="p-1.5">: {formatAsalDaerah(formData.asalDaerah)}</td></tr>
                   <tr className="border-b border-slate-200"><td className="w-1/3 p-1.5 font-semibold bg-slate-50">Alamat KTP</td><td className="p-1.5">: {formData.alamatKtp}</td></tr>
                   <tr className="border-b border-slate-200"><td className="w-1/3 p-1.5 font-semibold bg-slate-50">Alamat Domisili</td><td className="p-1.5">: {formData.alamatDomisili}</td></tr>
                   <tr className="border-b border-slate-200"><td className="w-1/3 p-1.5 font-semibold bg-slate-50">No. HP / WhatsApp</td><td className="p-1.5">: {formData.noHp}</td></tr>

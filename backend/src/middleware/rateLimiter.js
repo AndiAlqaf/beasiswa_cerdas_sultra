@@ -13,7 +13,7 @@ const env = require('../config/env');
  */
 const generalLimiter = rateLimit({
   windowMs: env.RATE_LIMIT_WINDOW_MS,
-  max: env.RATE_LIMIT_MAX,
+  max: env.IS_PRODUCTION ? env.RATE_LIMIT_MAX : 5000,
   standardHeaders: true,  // Return rate limit info in `RateLimit-*` headers
   legacyHeaders: false,   // Disable `X-RateLimit-*` headers
   message: {
@@ -35,7 +35,7 @@ const generalLimiter = rateLimit({
  */
 const authLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute window for quick recovery & testing
-  max: 5,              // Max 5 attempts
+  max: env.IS_PRODUCTION ? 5 : 500,              // Max 5 attempts
   standardHeaders: true,
   legacyHeaders: false,
   handler: (req, res) => {
@@ -56,7 +56,7 @@ const authLimiter = rateLimit({
  */
 const statusCheckLimiter = rateLimit({
   windowMs: env.RATE_LIMIT_WINDOW_MS,
-  max: 10,
+  max: env.IS_PRODUCTION ? 10 : 1000,
   standardHeaders: true,
   legacyHeaders: false,
   message: {

@@ -56,14 +56,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 flex">
+    <div className="min-h-screen bg-slate-50 flex overflow-x-hidden print:overflow-visible print:bg-white print:min-h-0">
       {/* Sidebar Mobile Overlay */}
       {sidebarOpen && (
         <div className="fixed inset-0 bg-slate-900/50 z-40 lg:hidden" onClick={() => setSidebarOpen(false)}></div>
       )}
 
       {/* Sidebar */}
-      <aside className={`fixed top-0 left-0 h-full w-64 bg-[#0B3A6A] text-white border-r border-[#134983] z-50 transform transition-transform duration-300 lg:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+      <aside className={`fixed top-0 left-0 h-full w-64 bg-[#0B3A6A] text-white border-r border-[#134983] z-50 transform transition-transform duration-300 lg:translate-x-0 print:hidden ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="p-6 flex items-center justify-between border-b border-[#134983]">
           <Link href="/" className="flex items-center gap-3 group">
             <img src="/logo sultra.webp" alt="Pemprov Sultra" className="w-10 h-10 object-contain shrink-0 bg-white rounded-full p-1" />
@@ -101,9 +101,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       </aside>
 
       {/* Main Content */}
-      <div className="flex-1 lg:ml-64 flex flex-col min-h-screen">
+      <div className="flex-1 lg:ml-64 flex flex-col min-h-screen min-w-0 max-w-full print:ml-0 print:p-0 print:min-h-0 print:block">
         {/* Top Header */}
-        <header className="h-20 bg-white border-b border-slate-200 flex items-center justify-between px-4 sm:px-8 sticky top-0 z-30">
+        <header className="h-20 bg-white border-b border-slate-200 flex items-center justify-between px-4 sm:px-8 sticky top-0 z-30 print:hidden">
           <button onClick={() => setSidebarOpen(true)} className="lg:hidden p-2 -ml-2 rounded-xl text-slate-600 hover:bg-slate-100">
             <Menu className="w-6 h-6" />
           </button>

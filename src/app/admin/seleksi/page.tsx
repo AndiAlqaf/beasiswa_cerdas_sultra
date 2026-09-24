@@ -59,6 +59,11 @@ export default function SeleksiPage() {
     'Dokumen persyaratan utama (Surat Pernyataan / Esai) tidak dilampirkan.',
   ];
 
+  const formatAsalDaerah = (asal: string) => {
+    if (!asal) return '-';
+    return asal.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+  };
+
   const handleToggleTemplate = (tmpl: string) => {
     if (!rejectReason) {
       setRejectReason(`- ${tmpl}`);
@@ -544,92 +549,120 @@ export default function SeleksiPage() {
 
       {/* Printable CV - Only visible during print */}
       {applicantDetail && (
-        <div className="hidden print:block p-8 font-sans text-black max-w-4xl mx-auto bg-white min-h-screen">
-          <div className="text-center mb-8 border-b-4 border-black pb-6">
-            <h1 className="text-2xl font-black uppercase tracking-wider mb-2">Formulir Pendaftaran Beasiswa Sultra Cerdas 2026</h1>
-            <p className="text-lg">Nomor Registrasi: <span className="font-bold font-mono px-3 py-1 bg-gray-100 border border-black inline-block ml-2">{applicantDetail.application?.registrationNo || '-'}</span></p>
+        <div className="hidden print:block p-8 font-serif text-slate-900 max-w-4xl mx-auto bg-white min-h-screen">
+          {/* Kop Surat Resmi */}
+          <div className="text-center font-serif border-b-4 border-slate-900 pb-3 mb-1">
+            <h3 className="text-sm font-bold uppercase tracking-wider text-slate-900">Pemerintah Provinsi Sulawesi Tenggara</h3>
+            <p className="text-xs font-bold uppercase text-slate-800">Panitia Seleksi Program Beasiswa Sultra Cerdas 2026</p>
+            <p className="text-[10px] text-slate-600 italic">Kompleks Bumi Praja Anduonohu, Kota Kendari | Website: beasiswasultra.go.id</p>
           </div>
-          
-          <div className="space-y-6 text-sm">
-            <section>
-              <h2 className="font-bold text-lg border-b-2 border-black mb-3 uppercase bg-gray-100 px-2 py-1">1. Data Diri & Kependudukan</h2>
+          <div className="border-b border-slate-900 mb-6"></div>
+
+          {/* Title & Document Ref */}
+          <div className="text-center space-y-1 mb-6">
+            <h1 className="text-base font-black uppercase tracking-wider underline text-slate-900">FORMULIR BUKTI PENDAFTARAN BEASISWA MAHASISWA</h1>
+            <p className="text-xs font-bold text-slate-800">NOMOR REGISTRASI: <span className="font-mono text-sm px-2 py-0.5 bg-slate-100 border border-slate-400 inline-block font-black">{applicantDetail.application?.registrationNo || '-'}</span></p>
+          </div>
+
+          <div className="space-y-4 text-xs font-sans">
+            {/* Section 1 */}
+            <div className="border border-slate-400 overflow-hidden">
+              <div className="bg-slate-100 px-3 py-1 font-bold uppercase text-slate-900 border-b border-slate-400 flex justify-between">
+                <span>I. IDENTITAS DIRI PENDAFTAR</span>
+                <span>JENJANG TARGET: {applicantDetail.user?.jenjangTarget || '-'}</span>
+              </div>
               <table className="w-full text-left border-collapse">
                 <tbody>
-                  <tr><td className="w-1/3 py-1.5 font-semibold">Nama Lengkap</td><td>: {applicantDetail.user?.namaLengkap}</td></tr>
-                  <tr><td className="w-1/3 py-1.5 font-semibold">NIK</td><td>: {applicantDetail.user?.nik}</td></tr>
-                  <tr><td className="w-1/3 py-1.5 font-semibold">No. KK</td><td>: {applicantDetail.profile?.noKk || '-'}</td></tr>
-                  <tr><td className="w-1/3 py-1.5 font-semibold">Tempat, Tanggal Lahir</td><td>: {applicantDetail.profile?.tempatLahir || '-'}, {applicantDetail.profile?.tanggalLahir ? applicantDetail.profile.tanggalLahir.split('T')[0] : '-'}</td></tr>
-                  <tr><td className="w-1/3 py-1.5 font-semibold">Jenis Kelamin</td><td>: {applicantDetail.profile?.gender || '-'}</td></tr>
-                  <tr><td className="w-1/3 py-1.5 font-semibold">Alamat KTP</td><td>: {applicantDetail.profile?.alamatKtp || '-'}</td></tr>
-                  <tr><td className="w-1/3 py-1.5 font-semibold">Alamat Domisili</td><td>: {applicantDetail.profile?.alamatDomisili || '-'}</td></tr>
-                  <tr><td className="w-1/3 py-1.5 font-semibold">No. Handphone (WA)</td><td>: {applicantDetail.profile?.noHp || '-'}</td></tr>
-                  <tr><td className="w-1/3 py-1.5 font-semibold">Email</td><td>: {applicantDetail.user?.email || '-'}</td></tr>
+                  <tr className="border-b border-slate-200"><td className="w-1/3 p-1.5 font-semibold bg-slate-50">Nama Lengkap (KTP)</td><td className="p-1.5 font-bold">: {applicantDetail.user?.namaLengkap || '-'}</td></tr>
+                  <tr className="border-b border-slate-200"><td className="w-1/3 p-1.5 font-semibold bg-slate-50">NIK Mahasiswa</td><td className="p-1.5 font-mono">: {applicantDetail.user?.nik || '-'}</td></tr>
+                  <tr className="border-b border-slate-200"><td className="w-1/3 p-1.5 font-semibold bg-slate-50">No. Kartu Keluarga (KK)</td><td className="p-1.5 font-mono">: {applicantDetail.profile?.noKk || '-'}</td></tr>
+                  <tr className="border-b border-slate-200"><td className="w-1/3 p-1.5 font-semibold bg-slate-50">Tempat, Tanggal Lahir</td><td className="p-1.5">: {applicantDetail.profile?.tempatLahir || '-'}, {applicantDetail.profile?.tanggalLahir ? applicantDetail.profile.tanggalLahir.split('T')[0] : '-'}</td></tr>
+                  <tr className="border-b border-slate-200"><td className="w-1/3 p-1.5 font-semibold bg-slate-50">Jenis Kelamin</td><td className="p-1.5">: {applicantDetail.profile?.gender || '-'}</td></tr>
+                  <tr className="border-b border-slate-200"><td className="w-1/3 p-1.5 font-semibold bg-slate-50">Asal Daerah (Kab/Kota)</td><td className="p-1.5">: {formatAsalDaerah(applicantDetail.profile?.asalDaerah || '')}</td></tr>
+                  <tr className="border-b border-slate-200"><td className="w-1/3 p-1.5 font-semibold bg-slate-50">Alamat KTP</td><td className="p-1.5">: {applicantDetail.profile?.alamatKtp || '-'}</td></tr>
+                  <tr className="border-b border-slate-200"><td className="w-1/3 p-1.5 font-semibold bg-slate-50">Alamat Domisili</td><td className="p-1.5">: {applicantDetail.profile?.alamatDomisili || '-'}</td></tr>
+                  <tr className="border-b border-slate-200"><td className="w-1/3 p-1.5 font-semibold bg-slate-50">No. HP / WhatsApp</td><td className="p-1.5">: {applicantDetail.profile?.noHp || '-'}</td></tr>
+                  <tr><td className="w-1/3 p-1.5 font-semibold bg-slate-50">Email Aktif</td><td className="p-1.5">: {applicantDetail.user?.email || '-'}</td></tr>
                 </tbody>
               </table>
-            </section>
-            
-            <section>
-              <h2 className="font-bold text-lg border-b-2 border-black mb-3 uppercase bg-gray-100 px-2 py-1">2. Data Akademik</h2>
+            </div>
+
+            {/* Section 2 */}
+            <div className="border border-slate-400 overflow-hidden">
+              <div className="bg-slate-100 px-3 py-1 font-bold uppercase text-slate-900 border-b border-slate-400">
+                II. DATA AKADEMIK & PERGURUAN TINGGI
+              </div>
               <table className="w-full text-left border-collapse">
                 <tbody>
-                  <tr><td className="w-1/3 py-1.5 font-semibold">Jenjang Beasiswa</td><td>: {applicantDetail.user?.jenjangTarget}</td></tr>
-                  {applicantDetail.education && applicantDetail.education.length > 0 ? (
-                    <>
-                      <tr><td className="w-1/3 py-1.5 font-semibold">Perguruan Tinggi</td><td>: {applicantDetail.education[0].institusi || '-'}</td></tr>
-                      <tr><td className="w-1/3 py-1.5 font-semibold">Fakultas / Program Studi</td><td>: {applicantDetail.education[0].jurusan || '-'}</td></tr>
-                    </>
+                  <tr className="border-b border-slate-200"><td className="w-1/3 p-1.5 font-semibold bg-slate-50">Perguruan Tinggi</td><td className="p-1.5 font-bold">: {applicantDetail.education && applicantDetail.education.length > 0 ? applicantDetail.education[0].institusi : '-'}</td></tr>
+                  <tr className="border-b border-slate-200"><td className="w-1/3 p-1.5 font-semibold bg-slate-50">Fakultas / Program Studi</td><td className="p-1.5">: {applicantDetail.education && applicantDetail.education.length > 0 ? applicantDetail.education[0].jurusan : '-'}</td></tr>
+                  <tr className="border-b border-slate-200"><td className="w-1/3 p-1.5 font-semibold bg-slate-50">Akreditasi Prodi</td><td className="p-1.5">: {applicantDetail.profile?.akreditasiProdi || '-'}</td></tr>
+                  <tr className="border-b border-slate-200"><td className="w-1/3 p-1.5 font-semibold bg-slate-50">NIM Mahasiswa</td><td className="p-1.5 font-mono">: {applicantDetail.profile?.nim || '-'}</td></tr>
+                  <tr className="border-b border-slate-200"><td className="w-1/3 p-1.5 font-semibold bg-slate-50">Semester Saat Ini</td><td className="p-1.5">: Semester {applicantDetail.profile?.semester || '-'}</td></tr>
+                  <tr className="border-b border-slate-200"><td className="w-1/3 p-1.5 font-semibold bg-slate-50">IPK Kumulatif Terakhir</td><td className="p-1.5 font-bold">: {applicantDetail.profile?.ipk || '-'}</td></tr>
+                  <tr><td className="w-1/3 p-1.5 font-semibold bg-slate-50">Target Tahun Lulus</td><td className="p-1.5">: {applicantDetail.profile?.targetLulus || '-'}</td></tr>
+                </tbody>
+              </table>
+            </div>
+
+            {/* Section 3 */}
+            <div className="border border-slate-400 overflow-hidden">
+              <div className="bg-slate-100 px-3 py-1 font-bold uppercase text-slate-900 border-b border-slate-400">
+                III. ORANG TUA / EKONOMI KELUARGA
+              </div>
+              <table className="w-full text-left border-collapse">
+                <tbody>
+                  <tr className="border-b border-slate-200"><td className="w-1/3 p-1.5 font-semibold bg-slate-50">Nama Ayah / Ibu</td><td className="p-1.5">: {applicantDetail.profile?.namaAyah || '-'} / {applicantDetail.profile?.namaIbu || '-'}</td></tr>
+                  <tr className="border-b border-slate-200"><td className="w-1/3 p-1.5 font-semibold bg-slate-50">Pekerjaan Orang Tua</td><td className="p-1.5">: {applicantDetail.profile?.pekerjaanAyah || '-'} / {applicantDetail.profile?.pekerjaanIbu || '-'}</td></tr>
+                  <tr className="border-b border-slate-200"><td className="w-1/3 p-1.5 font-semibold bg-slate-50">Penghasilan Orang Tua</td><td className="p-1.5">: {applicantDetail.profile?.penghasilanOrtu || '-'}</td></tr>
+                  <tr><td className="w-1/3 p-1.5 font-semibold bg-slate-50">Jumlah Tanggungan</td><td className="p-1.5">: {applicantDetail.profile?.jumlahTanggungan || '0'} Orang</td></tr>
+                </tbody>
+              </table>
+            </div>
+
+            {/* Section 4 - Prestasi */}
+            {(applicantDetail.profile?.prestasiAkademik || applicantDetail.profile?.prestasiNonAkademik || applicantDetail.profile?.pengalamanOrganisasi) && (
+              <div className="border border-slate-400 overflow-hidden">
+                <div className="bg-slate-100 px-3 py-1 font-bold uppercase text-slate-900 border-b border-slate-400">
+                  IV. PRESTASI & PENGALAMAN ORGANISASI
+                </div>
+                <table className="w-full text-left border-collapse">
+                  <tbody>
+                    {applicantDetail.profile?.prestasiAkademik && <tr className="border-b border-slate-200"><td className="w-1/3 p-1.5 font-semibold bg-slate-50">Prestasi Akademik</td><td className="p-1.5 whitespace-pre-line">: {applicantDetail.profile.prestasiAkademik}</td></tr>}
+                    {applicantDetail.profile?.prestasiNonAkademik && <tr className="border-b border-slate-200"><td className="w-1/3 p-1.5 font-semibold bg-slate-50">Prestasi Non-Akademik</td><td className="p-1.5 whitespace-pre-line">: {applicantDetail.profile.prestasiNonAkademik}</td></tr>}
+                    {applicantDetail.profile?.pengalamanOrganisasi && <tr><td className="w-1/3 p-1.5 font-semibold bg-slate-50">Pengalaman Organisasi</td><td className="p-1.5 whitespace-pre-line">: {applicantDetail.profile.pengalamanOrganisasi}</td></tr>}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {/* Statement Box */}
+            <div className="p-3 border-2 border-slate-900 text-[10px] leading-relaxed text-justify bg-slate-50 font-serif">
+              <p className="font-bold mb-1 uppercase">PERNYATAAN TANGGUNG JAWAB MUTLAK (SPTJM):</p>
+              <p>
+                Saya yang bertanda tangan di bawah ini menyatakan dengan sesungguhnya bahwa seluruh data, informasi, dan dokumen berkas persyaratan yang saya sampaikan adalah <strong>BENAR, SAH, dan DAPAT DIPERTANGGUNGJAWABKAN</strong>. Apabila di kemudian hari terbukti memberikan data palsu atau terbukti menerima pendanaan beasiswa ganda (double funding), saya bersedia menerima sanksi pembatalan status penerima beasiswa dan sanggup mengembalikan seluruh dana beasiswa yang telah diterima ke Kas Daerah Provinsi Sulawesi Tenggara.
+              </p>
+            </div>
+
+            {/* Signature Block */}
+            <div className="pt-4 flex justify-end items-end">
+              <div className="text-center w-64 space-y-1">
+                <p className="text-xs">Kendari, {applicantDetail.application?.submittedAt ? new Date(applicantDetail.application.submittedAt).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' }) : new Date().toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                <p className="text-xs font-semibold mb-1">Pemohon / Pendaftar Beasiswa,</p>
+                
+                {/* Signature Display */}
+                <div className="h-16 flex items-center justify-center my-1">
+                  {applicantDetail.application?.signature_url ? (
+                    <img src={applicantDetail.application.signature_url} alt="Tanda Tangan Digital" className="max-h-16 max-w-full object-contain" crossOrigin="anonymous" />
                   ) : (
-                     <>
-                      <tr><td className="w-1/3 py-1.5 font-semibold">Perguruan Tinggi</td><td>: -</td></tr>
-                      <tr><td className="w-1/3 py-1.5 font-semibold">Fakultas / Program Studi</td><td>: -</td></tr>
-                     </>
+                    <div className="text-[10px] text-slate-400 italic">
+                      (Tanda Tangan Digital)
+                    </div>
                   )}
-                  <tr><td className="w-1/3 py-1.5 font-semibold">Akreditasi Prodi</td><td>: {applicantDetail.profile?.akreditasiProdi || '-'}</td></tr>
-                  <tr><td className="w-1/3 py-1.5 font-semibold">NIM</td><td>: {applicantDetail.profile?.nim || '-'}</td></tr>
-                  <tr><td className="w-1/3 py-1.5 font-semibold">Semester</td><td>: {applicantDetail.profile?.semester || '-'}</td></tr>
-                  <tr><td className="w-1/3 py-1.5 font-semibold">IPK Kumulatif</td><td>: {applicantDetail.profile?.ipk || '-'}</td></tr>
-                  <tr><td className="w-1/3 py-1.5 font-semibold">Target Tahun Lulus</td><td>: {applicantDetail.profile?.targetLulus || '-'}</td></tr>
-                  <tr><td className="w-1/3 py-1.5 font-semibold">Beasiswa Lain</td><td>: {applicantDetail.profile?.beasiswaLain || '-'}</td></tr>
-                </tbody>
-              </table>
-            </section>
+                </div>
 
-            <section>
-              <h2 className="font-bold text-lg border-b-2 border-black mb-3 uppercase bg-gray-100 px-2 py-1">3. Data Keluarga & Ekonomi</h2>
-              <table className="w-full text-left border-collapse">
-                <tbody>
-                  <tr><td className="w-1/3 py-1.5 font-semibold">Nama Ayah</td><td>: {applicantDetail.profile?.namaAyah || '-'}</td></tr>
-                  <tr><td className="w-1/3 py-1.5 font-semibold">Pekerjaan Ayah</td><td>: {applicantDetail.profile?.pekerjaanAyah || '-'}</td></tr>
-                  <tr><td className="w-1/3 py-1.5 font-semibold">Nama Ibu</td><td>: {applicantDetail.profile?.namaIbu || '-'}</td></tr>
-                  <tr><td className="w-1/3 py-1.5 font-semibold">Pekerjaan Ibu</td><td>: {applicantDetail.profile?.pekerjaanIbu || '-'}</td></tr>
-                  <tr><td className="w-1/3 py-1.5 font-semibold">Rata-rata Penghasilan</td><td>: {applicantDetail.profile?.penghasilanOrtu || '-'}</td></tr>
-                  <tr><td className="w-1/3 py-1.5 font-semibold">Jumlah Tanggungan</td><td>: {applicantDetail.profile?.jumlahTanggungan || '-'}</td></tr>
-                  <tr><td className="w-1/3 py-1.5 font-semibold">Kepemilikan Bantuan</td><td>: {applicantDetail.profile?.kepemilikanBantuan || '-'}</td></tr>
-                </tbody>
-              </table>
-            </section>
-
-            <section>
-              <h2 className="font-bold text-lg border-b-2 border-black mb-3 uppercase bg-gray-100 px-2 py-1">4. Riwayat & Prestasi</h2>
-              <table className="w-full text-left border-collapse">
-                <tbody>
-                  <tr><td className="w-1/3 py-1.5 font-semibold">Prestasi Akademik</td><td>: {applicantDetail.profile?.prestasiAkademik || '-'}</td></tr>
-                  <tr><td className="w-1/3 py-1.5 font-semibold">Prestasi Non-Akademik</td><td>: {applicantDetail.profile?.prestasiNonAkademik || '-'}</td></tr>
-                  <tr><td className="w-1/3 py-1.5 font-semibold">Pengalaman Organisasi</td><td>: {applicantDetail.profile?.pengalamanOrganisasi || '-'}</td></tr>
-                  <tr><td className="w-1/3 py-1.5 font-semibold">Pelatihan/Sertifikasi</td><td>: {applicantDetail.profile?.pelatihanSertifikasi || '-'}</td></tr>
-                </tbody>
-              </table>
-            </section>
-
-            <section className="mt-8 p-4 border-2 border-black text-xs text-justify">
-              <p><strong>PERNYATAAN:</strong> Saya yang bertanda tangan di bawah ini menyatakan dengan sesungguhnya bahwa seluruh data dan dokumen yang terlampir pada pendaftaran ini adalah <strong>BENAR, SAH, dan DAPAT DIPERTANGGUNGJAWABKAN</strong>. Apabila di kemudian hari terbukti memberikan data fiktif atau menerima pendanaan ganda (double funding), saya bersedia menerima sanksi pembatalan status penerima beasiswa dan wajib mengembalikan seluruh dana beasiswa yang telah diterima ke Kas Daerah Pemerintah Provinsi Sulawesi Tenggara.</p>
-            </section>
-            
-            <div className="mt-12 flex justify-end">
-              <div className="text-center w-64">
-                <p>Pendaftar Beasiswa,</p>
-                <p className="mt-20 border-b-2 border-black font-bold uppercase">{applicantDetail.user?.namaLengkap}</p>
-                <p className="mt-1">NIK. {applicantDetail.user?.nik}</p>
+                <p className="font-bold underline uppercase text-slate-900">{applicantDetail.user?.namaLengkap || '-'}</p>
+                <p className="text-[10px] text-slate-700 font-mono">NIK. {applicantDetail.user?.nik || '-'}</p>
               </div>
             </div>
           </div>

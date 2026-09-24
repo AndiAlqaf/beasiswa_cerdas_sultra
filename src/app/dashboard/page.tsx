@@ -97,9 +97,30 @@ export default function DashboardPage() {
     ? pengumumanStep.status === 'active' || pengumumanStep.status === 'completed'
     : false;
 
-  const effectiveStatus = (!isAnnouncementPeriodOpen && (application?.status === 'DITERIMA' || application?.status === 'DITOLAK'))
-    ? 'VERIFIKASI_BERKAS'
-    : application?.status;
+  const sanggahStep = timeline.find((s) => s.id === 'sanggah');
+  const isSanggahPeriodOpen = sanggahStep ? sanggahStep.status === 'active' : false;
+
+  const pengumumanSanggahStep = timeline.find((s) => s.id === 'pengumuman-sanggah');
+  const isPengumumanSanggahPeriodOpen = pengumumanSanggahStep
+    ? pengumumanSanggahStep.status === 'active' || pengumumanSanggahStep.status === 'completed'
+    : false;
+
+  const isSanggahan = application?.notes?.includes('[SANGGAHAN MAHASISWA]');
+
+  let effectiveStatus = application?.status;
+  let effectiveNotes = application?.notes;
+
+  if (isSanggahan) {
+    if (!isPengumumanSanggahPeriodOpen && (application?.status === 'DITERIMA' || application?.status === 'DITOLAK')) {
+      effectiveStatus = 'VERIFIKASI_BERKAS';
+      effectiveNotes = 'Sanggahan sedang diperiksa. Mohon pantau kembali pada masa pengumuman hasil sanggah.';
+    }
+  } else {
+    if (!isAnnouncementPeriodOpen && (application?.status === 'DITERIMA' || application?.status === 'DITOLAK')) {
+      effectiveStatus = 'VERIFIKASI_BERKAS';
+      effectiveNotes = undefined; // Sembunyikan catatan penolakan jika belum waktunya
+    }
+  }
 
   const userName = user?.namaLengkap || user?.email || 'Peserta';
   const hasSubmitted = !!application?.registrationNo;
@@ -118,7 +139,7 @@ export default function DashboardPage() {
       case 'DITOLAK':
         return {
           title: 'Belum Lolos Seleksi',
-          desc: application?.notes || 'Mohon maaf, berkas pendaftaran Anda belum memenuhi kualifikasi seleksi.',
+          desc: effectiveNotes || 'Mohon maaf, berkas pendaftaran Anda belum memenuhi kualifikasi seleksi.',
           badgeBg: 'bg-rose-100 text-rose-800',
           icon: XCircle,
           iconBg: 'bg-rose-50 text-rose-600',
@@ -235,10 +256,10 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {application?.notes && (
+          {effectiveNotes && (
             <div className="pt-3 mt-3 border-t border-slate-100">
               <p className="text-xs text-slate-600 font-medium">
-                <strong>Catatan:</strong> {application.notes}
+                <strong>Catatan:</strong> {effectiveNotes}
               </p>
             </div>
           )}
@@ -286,7 +307,7 @@ export default function DashboardPage() {
       </div>
 
       {/* SANGGAHAN SECTION (Jika Status DITOLAK dan Masa Sanggah Buka) */}
-      {isAnnouncementPeriodOpen && application?.status === 'DITOLAK' && (
+      {isSanggahPeriodOpen && effectiveStatus === 'DITOLAK' && !isSanggahan && (
         <div className="bg-rose-50 rounded-3xl border-2 border-rose-200 p-6 sm:p-8 shadow-md space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-rose-100 pb-5">
             <div className="flex items-center gap-3">
@@ -314,7 +335,7 @@ export default function DashboardPage() {
               Catatan Alasan Penolakan dari Tim Verifikator:
             </p>
             <div className="p-3 bg-rose-50/70 border border-rose-200 rounded-xl text-xs text-rose-950 leading-relaxed font-medium whitespace-pre-line">
-              {application.notes || 'Berkas belum memenuhi kualifikasi seleksi administrasi.'}
+              {effectiveNotes || 'Berkas belum memenuhi kualifikasi seleksi administrasi.'}
             </div>
           </div>
 
