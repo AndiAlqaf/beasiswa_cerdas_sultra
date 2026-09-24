@@ -57,8 +57,7 @@ export default function AdminDashboardPage() {
   return (
     <div className="space-y-6">
       {/* Welcome Section */}
-      <div className="bg-gradient-to-r from-[#0B3A6A] to-[#134983] rounded-2xl p-6 sm:p-8 text-white shadow-lg relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-20 -mt-20"></div>
+      <div className="bg-[#0B3A6A] rounded-2xl p-6 sm:p-8 text-white shadow-lg relative overflow-hidden">
         <div className="relative z-10">
           <h2 className="text-2xl sm:text-3xl font-bold mb-2">Selamat Datang, Admin! 👋</h2>
           <p className="text-blue-100 max-w-2xl">

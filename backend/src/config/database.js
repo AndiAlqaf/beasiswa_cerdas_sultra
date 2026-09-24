@@ -108,7 +108,7 @@ async function runMigrations() {
     CREATE TABLE IF NOT EXISTS documents (
       id CHAR(36) PRIMARY KEY,
       user_id CHAR(36) NOT NULL,
-      doc_type ENUM('ktm', 'pendukung', 'selfie') NOT NULL,
+      doc_type VARCHAR(100) NOT NULL,
       original_name VARCHAR(255) NOT NULL,
       stored_name VARCHAR(255) NOT NULL,
       mime_type VARCHAR(50) NOT NULL,
@@ -194,7 +194,8 @@ async function runMigrations() {
     'pengalaman_organisasi TEXT NULL',
     'pengalaman_pengabdian TEXT NULL',
     'pelatihan_sertifikasi TEXT NULL',
-    'prodi_prioritas VARCHAR(255) NULL'
+    'prodi_prioritas VARCHAR(255) NULL',
+    'signature_data LONGTEXT NULL'
   ];
 
   for (const colDef of columnsToAdd) {
@@ -206,6 +207,13 @@ async function runMigrations() {
         console.error(`[DB] Error adding column ${colName}:`, e);
       }
     }
+  }
+
+  // Ensure documents.doc_type is VARCHAR(100) instead of ENUM
+  try {
+    await migrationConn.query(`ALTER TABLE documents MODIFY COLUMN doc_type VARCHAR(100) NOT NULL`);
+  } catch (e) {
+    console.error(`[DB] Migration doc_type modify error:`, e.message);
   }
 
   await migrationConn.end();

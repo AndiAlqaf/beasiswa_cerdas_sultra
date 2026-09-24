@@ -9,12 +9,15 @@ const express = require('express');
 const router = express.Router();
 const { statusCheckLimiter } = require('../middleware/rateLimiter');
 const { nikCheckValidation } = require('../middleware/validator');
-const { healthCheck, checkStatus } = require('../controllers/public.controller');
+const { healthCheck, checkStatus, getAcceptedRecipients } = require('../controllers/public.controller');
 
 // Health check (no rate limit)
 router.get('/health', healthCheck);
 
 // Public status check (rate limited)
 router.get('/cek-status/:nik', statusCheckLimiter, nikCheckValidation, checkStatus);
+
+// Official recipients list (public)
+router.get('/announcements/recipients', getAcceptedRecipients);
 
 module.exports = router;

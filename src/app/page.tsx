@@ -53,7 +53,7 @@ export default function LandingPage() {
             transition={{ duration: 0.8, ease: "easeOut", delay: 0.2 }}
             className="text-lg sm:text-xl text-slate-300 max-w-2xl mb-12 leading-relaxed font-light"
           >
-            Program bantuan operasional pendidikan APBD Pemprov Sultra bagi mahasiswa aktif berprestasi jenjang S1/D4, S2, dan S3 yang memiliki dedikasi tinggi membangun daerah.
+            Program bantuan stimulan biaya pendidikan dari APBD Pemprov Sulawesi Tenggara selama 2 semester bagi mahasiswa aktif berprestasi jenjang D4/S1, S2, dan S3 yang berdedikasi tinggi dalam membangun daerah.
           </motion.p>
 
           {/* Action Buttons */}

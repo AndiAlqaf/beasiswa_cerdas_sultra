@@ -31,6 +31,88 @@ export default function SeleksiPage() {
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [jenjangFilter, setJenjangFilter] = useState<string>('');
 
+  // Custom Toast/Notification Modal State
+  const [toast, setToast] = useState<{
+    title?: string;
+    message: string;
+    type: 'success' | 'error' | 'warning';
+  } | null>(null);
+
+  const showNotification = (message: string, type: 'success' | 'error' | 'warning' = 'success', title?: string) => {
+    setToast({
+      title: title || (type === 'success' ? 'Berhasil!' : type === 'error' ? 'Terjadi Kesalahan' : 'Pemberitahuan'),
+      message,
+      type,
+    });
+  };
+
+  // Rejection Modal State
+  const [showRejectModal, setShowRejectModal] = useState<boolean>(false);
+  const [rejectReason, setRejectReason] = useState<string>('');
+  const [submittingReject, setSubmittingReject] = useState<boolean>(false);
+
+  const REJECTION_TEMPLATES = [
+    'Transkrip Nilai buram, terpotong, atau tidak terbaca dengan jelas.',
+    'Surat Keterangan Aktif Kuliah / KTM tidak valid atau belum disahkan pejabat berwenang.',
+    'IPK Kumulatif yang diinput tidak sesuai dengan transkrip nilai resmi.',
+    'Dokumen Kartu Tanda Penduduk (KTP) / KK tidak sesuai dengan domisili Sultra.',
+    'Dokumen persyaratan utama (Surat Pernyataan / Esai) tidak dilampirkan.',
+  ];
+
+  const handleToggleTemplate = (tmpl: string) => {
+    if (!rejectReason) {
+      setRejectReason(`- ${tmpl}`);
+      return;
+    }
+
+    if (rejectReason.includes(tmpl)) {
+      const lines = rejectReason.split('\n').filter(line => !line.includes(tmpl));
+      setRejectReason(lines.join('\n').trim());
+    } else {
+      const trimmed = rejectReason.trim();
+      if (!trimmed.startsWith('- ') && !trimmed.includes('\n- ')) {
+        setRejectReason(`- ${trimmed}\n- ${tmpl}`);
+      } else {
+        setRejectReason(`${trimmed}\n- ${tmpl}`);
+      }
+    }
+  };
+
+  const handleOpenRejectModal = () => {
+    setRejectReason('');
+    setShowRejectModal(true);
+  };
+
+  const handleConfirmReject = async () => {
+    if (!selectedApplicant) return;
+    if (!rejectReason.trim()) {
+      showNotification('Harap tuliskan alasan penolakan terlebih dahulu agar pendaftar dapat mengetahuinya.', 'warning', 'Alasan Diperlukan');
+      return;
+    }
+
+    setSubmittingReject(true);
+    try {
+      const id = selectedApplicant.userId || selectedApplicant.id;
+      await fetchAPI(`/admin/applicants/${id}/verify`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          status: 'DITOLAK',
+          notes: rejectReason.trim(),
+        }),
+      });
+
+      setShowRejectModal(false);
+      setSelectedApplicant(null);
+      setApplicantDetail(null);
+      loadApplicants();
+      showNotification('Status pendaftar berhasil diubah menjadi DITOLAK.', 'success', 'Status Berhasil Diubah');
+    } catch (err: any) {
+      showNotification(err.message || 'Gagal mengubah status pendaftaran.', 'error', 'Gagal Update Status');
+    } finally {
+      setSubmittingReject(false);
+    }
+  };
+
   const handleViewDocument = async (userId: string, docId: string) => {
     try {
       const token = localStorage.getItem('bssc_access_token');
@@ -48,7 +130,7 @@ export default function SeleksiPage() {
       window.open(url, '_blank');
       setTimeout(() => window.URL.revokeObjectURL(url), 60000);
     } catch (err: any) {
-      alert(err.message);
+      showNotification(err.message || 'Gagal membuka dokumen.', 'error', 'Gagal Membuka Dokumen');
     }
   };
 
@@ -85,7 +167,7 @@ export default function SeleksiPage() {
         setApplicantDetail(res.data);
       }
     } catch (err: any) {
-      alert(err.message || 'Gagal memuat detail berkas pendaftar.');
+      showNotification(err.message || 'Gagal memuat detail berkas pendaftar.', 'error', 'Gagal Memuat Detail');
     } finally {
       setLoadingDetail(false);
     }
@@ -316,23 +398,9 @@ export default function SeleksiPage() {
                 Tutup
               </button>
               <button 
-                onClick={async () => {
-                  if (!selectedApplicant) return;
-                  try {
-                    const id = selectedApplicant.userId || selectedApplicant.id;
-                    await fetchAPI(`/admin/applicants/${id}/verify`, {
-                      method: 'PATCH',
-                      body: JSON.stringify({ status: 'DITOLAK', notes: 'Berkas belum memenuhi kualifikasi administrasi.' }),
-                    });
-                    alert('Status berhasil diubah menjadi DITOLAK.');
-                    setSelectedApplicant(null);
-                    setApplicantDetail(null);
-                    loadApplicants();
-                  } catch (err: any) {
-                    alert(err.message || 'Gagal mengubah status.');
-                  }
-                }}
-                className="px-5 py-2.5 bg-rose-100 text-rose-700 font-medium rounded-xl hover:bg-rose-200 transition-colors flex items-center gap-2 shadow-sm"
+                type="button"
+                onClick={handleOpenRejectModal}
+                className="px-5 py-2.5 bg-rose-100 text-rose-700 font-medium rounded-xl hover:bg-rose-200 transition-colors flex items-center gap-2 shadow-sm font-semibold"
               >
                 <XCircle className="w-4 h-4" /> Tolak
               </button>
@@ -345,18 +413,129 @@ export default function SeleksiPage() {
                       method: 'PATCH',
                       body: JSON.stringify({ status: 'DITERIMA', notes: 'Berkas lengkap dan dinyatakan lolos verifikasi.' }),
                     });
-                    alert('Status berhasil diubah menjadi DITERIMA.');
                     setSelectedApplicant(null);
                     setApplicantDetail(null);
                     loadApplicants();
+                    showNotification('Status pendaftar berhasil diubah menjadi DITERIMA!', 'success', 'Status Berhasil Diubah');
                   } catch (err: any) {
-                    alert(err.message || 'Gagal mengubah status.');
+                    showNotification(err.message || 'Gagal mengubah status.', 'error', 'Gagal Update Status');
                   }
                 }}
-                className="px-5 py-2.5 bg-emerald-600 text-white font-medium rounded-xl hover:bg-emerald-700 transition-colors flex items-center gap-2 shadow-sm"
+                className="px-5 py-2.5 bg-emerald-600 text-white font-medium rounded-xl hover:bg-emerald-700 transition-colors flex items-center gap-2 shadow-sm font-semibold"
               >
                 <CheckCircle2 className="w-4 h-4" /> Loloskan
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Alasan Penolakan Pendaftaran */}
+      {showRejectModal && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-in fade-in">
+          <div className="bg-white rounded-3xl w-[94vw] max-w-lg shadow-2xl overflow-hidden border border-slate-200">
+            {/* Modal Header */}
+            <div className="bg-rose-600 text-white p-5 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-white/10 rounded-xl">
+                  <XCircle className="w-5 h-5 text-rose-100" />
+                </div>
+                <div>
+                  <h3 className="text-base font-extrabold">Alasan Penolakan Pendaftaran</h3>
+                  <p className="text-xs text-rose-100">Pendaftar: {selectedApplicant?.namaLengkap || selectedApplicant?.email}</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowRejectModal(false)}
+                className="text-rose-200 hover:text-white transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-5 sm:p-6 space-y-4">
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-2.5 text-amber-900 text-xs leading-relaxed">
+                <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                <span>
+                  Alasan penolakan ini akan <strong>ditampilkan di akun mahasiswa</strong> agar mahasiswa yang ditolak dapat mengajukan <strong>sanggahan / perbaikan berkas</strong> pada masa sanggah.
+                </span>
+              </div>
+
+              {/* Template Quick Chips */}
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-bold text-slate-700">Pilih Template Alasan (Bisa Pilih &gt; 1):</label>
+                  {rejectReason && (
+                    <button
+                      type="button"
+                      onClick={() => setRejectReason('')}
+                      className="text-[10px] text-rose-600 font-semibold hover:underline"
+                    >
+                      Reset Alasan
+                    </button>
+                  )}
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {REJECTION_TEMPLATES.map((tmpl, idx) => {
+                    const isSelected = rejectReason.includes(tmpl);
+                    return (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => handleToggleTemplate(tmpl)}
+                        className={`px-2.5 py-1 text-[11px] font-medium rounded-lg transition-all text-left flex items-center gap-1 ${
+                          isSelected
+                            ? 'bg-rose-600 text-white font-semibold shadow-sm'
+                            : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                        }`}
+                      >
+                        {isSelected ? '✓' : '+'} {tmpl.slice(0, 38)}...
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Reason Textarea */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">Catatan / Alasan Penolakan Spesifik *</label>
+                <textarea
+                  rows={4}
+                  value={rejectReason}
+                  onChange={(e) => setRejectReason(e.target.value)}
+                  placeholder="Tuliskan catatan spesifik alasan berkas ditolak (misal: Transkrip Nilai buram atau belum berstempel basah fakultas)..."
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs focus:ring-2 focus:ring-rose-500 focus:outline-none leading-relaxed text-slate-900"
+                ></textarea>
+              </div>
+
+              {/* Footer Actions */}
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setShowRejectModal(false)}
+                  className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
+                >
+                  Batal
+                </button>
+                <button
+                  type="button"
+                  disabled={submittingReject || !rejectReason.trim()}
+                  onClick={handleConfirmReject}
+                  className="px-5 py-2.5 text-xs font-extrabold text-white bg-rose-600 hover:bg-rose-700 disabled:bg-slate-300 disabled:cursor-not-allowed rounded-xl shadow-md transition-all flex items-center gap-1.5"
+                >
+                  {submittingReject ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" /> Memproses...
+                    </>
+                  ) : (
+                    <>
+                      <XCircle className="w-4 h-4" /> Konfirmasi Tolak Pendaftaran
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -453,6 +632,35 @@ export default function SeleksiPage() {
                 <p className="mt-1">NIK. {applicantDetail.user?.nik}</p>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Custom Notification Modal Pop-up */}
+      {toast && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-in fade-in">
+          <div className="bg-white rounded-3xl w-[90vw] max-w-sm shadow-2xl overflow-hidden border border-slate-100 p-6 text-center animate-in zoom-in-95">
+            <div className={`w-14 h-14 rounded-2xl mx-auto flex items-center justify-center mb-4 ${
+              toast.type === 'success' ? 'bg-emerald-100 text-emerald-600' :
+              toast.type === 'error' ? 'bg-rose-100 text-rose-600' :
+              'bg-amber-100 text-amber-600'
+            }`}>
+              {toast.type === 'success' && <CheckCircle2 className="w-8 h-8" />}
+              {toast.type === 'error' && <XCircle className="w-8 h-8" />}
+              {toast.type === 'warning' && <AlertCircle className="w-8 h-8" />}
+            </div>
+            <h3 className="text-lg font-bold text-slate-900 mb-1">{toast.title}</h3>
+            <p className="text-xs text-slate-600 leading-relaxed mb-6">{toast.message}</p>
+            <button
+              onClick={() => setToast(null)}
+              className={`w-full py-2.5 px-4 font-bold text-xs text-white rounded-xl transition-all shadow-md ${
+                toast.type === 'success' ? 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-200' :
+                toast.type === 'error' ? 'bg-rose-600 hover:bg-rose-700 shadow-rose-200' :
+                'bg-slate-900 hover:bg-slate-800 shadow-slate-200'
+              }`}
+            >
+              OK
+            </button>
           </div>
         </div>
       )}

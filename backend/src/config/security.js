@@ -61,8 +61,8 @@ module.exports = {
   ],
 
   // Request body size limits
-  JSON_BODY_LIMIT: '10kb',
-  URL_ENCODED_LIMIT: '10kb',
+  JSON_BODY_LIMIT: '5mb',
+  URL_ENCODED_LIMIT: '5mb',
 
   // Valid roles
   ROLES: {

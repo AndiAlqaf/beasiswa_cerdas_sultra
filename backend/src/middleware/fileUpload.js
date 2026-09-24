@@ -54,10 +54,14 @@ function getExtFromMime(mimeType) {
  */
 function createStorage(docType) {
   const subDir = docType === 'selfie' ? 'selfies' : docType;
+  const targetDir = path.join(env.UPLOAD_DIR, subDir);
+  if (!fs.existsSync(targetDir)) {
+    fs.mkdirSync(targetDir, { recursive: true });
+  }
   
   return multer.diskStorage({
     destination: (_req, _file, cb) => {
-      cb(null, path.join(env.UPLOAD_DIR, subDir));
+      cb(null, targetDir);
     },
     filename: (_req, file, cb) => {
       // Always rename to UUID — prevents path traversal & overwrites
@@ -118,10 +122,9 @@ function validateMagicBytes(filePath, declaredMime) {
 /**
  * Create upload middleware for a specific document type
  * @param {string} docType - 'selfie' | 'ktm' | 'pendukung'
- * @param {string} fieldName - Form field name
  * @returns {Function} Express middleware
  */
-function createUploadMiddleware(docType, fieldName) {
+function createUploadMiddleware(docType) {
   const maxSize = MAX_FILE_SIZES[docType] || env.MAX_FILE_SIZE;
   
   const upload = multer({
@@ -130,9 +133,9 @@ function createUploadMiddleware(docType, fieldName) {
     limits: {
       fileSize: maxSize,
       files: 1, // Only 1 file per request
-      fields: 5, // Max 5 non-file fields
+      fields: 10,
     },
-  }).single(fieldName);
+  }).any();
 
   return (req, res, next) => {
     upload(req, res, (err) => {
@@ -152,7 +155,7 @@ function createUploadMiddleware(docType, fieldName) {
           }
           return res.status(400).json({
             success: false,
-            message: 'Error saat mengunggah file.',
+            message: `Error saat mengunggah file (${err.message}).`,
           });
         }
         // Custom error from fileFilter
@@ -160,6 +163,10 @@ function createUploadMiddleware(docType, fieldName) {
           success: false,
           message: err.message,
         });
+      }
+
+      if (req.files && req.files.length > 0) {
+        req.file = req.files[0];
       }
 
       // If file was uploaded, validate magic bytes

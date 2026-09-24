@@ -25,7 +25,7 @@ async function getProfile(req, res) {
              p.beasiswa_lain, p.nama_ayah, p.pekerjaan_ayah, p.nama_ibu, p.pekerjaan_ibu,
              p.penghasilan_ortu, p.jumlah_tanggungan, p.kepemilikan_bantuan,
              p.prestasi_akademik, p.prestasi_non_akademik, p.pengalaman_organisasi,
-             p.pengalaman_pengabdian, p.pelatihan_sertifikasi, p.prodi_prioritas
+             p.pengalaman_pengabdian, p.pelatihan_sertifikasi, p.prodi_prioritas, p.signature_data
       FROM users u
       LEFT JOIN profiles p ON p.user_id = u.id
       WHERE u.id = ?
@@ -45,6 +45,20 @@ async function getProfile(req, res) {
       'SELECT id, doc_type, original_name, mime_type, file_size, uploaded_at FROM documents WHERE user_id = ?',
       [userId]
     );
+
+    const [appRows] = await pool.execute(
+      'SELECT id, registration_no, status, notes, submitted_at, verified_at FROM applications WHERE user_id = ?',
+      [userId]
+    );
+
+    const application = appRows.length > 0 ? {
+      id: appRows[0].id,
+      registrationNo: appRows[0].registration_no,
+      status: appRows[0].status,
+      notes: appRows[0].notes,
+      submittedAt: appRows[0].submitted_at,
+      verifiedAt: appRows[0].verified_at
+    } : null;
 
     res.json({
       success: true,
@@ -79,13 +93,15 @@ async function getProfile(req, res) {
           pengalamanOrganisasi: user.pengalaman_organisasi,
           pengalamanPengabdian: user.pengalaman_pengabdian,
           pelatihanSertifikasi: user.pelatihan_sertifikasi,
-          prodiPrioritas: user.prodi_prioritas
+          prodiPrioritas: user.prodi_prioritas,
+          signatureData: user.signature_data
         },
         education,
         documents: documents.map(doc => ({
           id: doc.id, docType: doc.doc_type, originalName: doc.original_name,
           mimeType: doc.mime_type, fileSize: doc.file_size, uploadedAt: doc.uploaded_at,
         })),
+        application
       },
     });
   } catch (err) {
@@ -106,7 +122,7 @@ async function updateProfile(req, res) {
       beasiswaLain, namaAyah, pekerjaanAyah, namaIbu, pekerjaanIbu,
       penghasilanOrtu, jumlahTanggungan, kepemilikanBantuan,
       prestasiAkademik, prestasiNonAkademik, pengalamanOrganisasi,
-      pengalamanPengabdian, pelatihanSertifikasi, prodiPrioritas
+      pengalamanPengabdian, pelatihanSertifikasi, prodiPrioritas, signatureData
     } = req.body;
     const pool = getPool();
 
@@ -138,7 +154,8 @@ async function updateProfile(req, res) {
           pengalaman_organisasi = COALESCE(?, pengalaman_organisasi),
           pengalaman_pengabdian = COALESCE(?, pengalaman_pengabdian),
           pelatihan_sertifikasi = COALESCE(?, pelatihan_sertifikasi),
-          prodi_prioritas = COALESCE(?, prodi_prioritas)
+          prodi_prioritas = COALESCE(?, prodi_prioritas),
+          signature_data = COALESCE(?, signature_data)
       WHERE user_id = ?
     `, [
       tempatLahir || null, tanggalLahir || null, gender || null,
@@ -149,6 +166,7 @@ async function updateProfile(req, res) {
       penghasilanOrtu || null, jumlahTanggungan || null, kepemilikanBantuan || null,
       prestasiAkademik || null, prestasiNonAkademik || null, pengalamanOrganisasi || null,
       pengalamanPengabdian || null, pelatihanSertifikasi || null, prodiPrioritas || null,
+      signatureData || null,
       userId,
     ]);
 
@@ -215,7 +233,7 @@ function uploadDocument(docType) {
 
       // Remove old document of same type
       const [oldDocs] = await pool.execute(
-        'SELECT id, file_path FROM documents WHERE user_id = ? AND doc_type = ?',
+        'SELECT id, file_path FROM documents WHERE user_id = ? AND LOWER(doc_type) = LOWER(?)',
         [userId, docType]
       );
 
@@ -331,4 +349,90 @@ async function submitApplication(req, res) {
   }
 }
 
-module.exports = { getProfile, updateProfile, updateEducation, uploadDocument, getApplication, submitApplication };
+/**
+ * POST /api/v1/applicant/application/appeal
+ */
+async function submitAppeal(req, res) {
+  try {
+    const userId = req.user.id;
+    const { appealNotes } = req.body;
+    const pool = getPool();
+
+    if (!appealNotes || !appealNotes.trim()) {
+      return res.status(400).json({ success: false, message: 'Harap isi penjelasan / alasan sanggahan Anda.' });
+    }
+
+    const [appRows] = await pool.execute(
+      'SELECT id, registration_no, status, notes FROM applications WHERE user_id = ?',
+      [userId]
+    );
+
+    if (appRows.length === 0) {
+      return res.status(404).json({ success: false, message: 'Pendaftaran tidak ditemukan.' });
+    }
+
+    const app = appRows[0];
+    if (app.status !== 'DITOLAK') {
+      return res.status(400).json({ success: false, message: 'Sanggahan hanya dapat diajukan jika status pendaftaran DITOLAK.' });
+    }
+
+    const newNotes = `[SANGGAHAN MAHASISWA]: ${appealNotes.trim()}\n--- (Catatan Verifikator Sebelumnya: ${app.notes || '-'})`;
+
+    await pool.execute(
+      `UPDATE applications SET status = 'VERIFIKASI_BERKAS', notes = ? WHERE id = ?`,
+      [newNotes, app.id]
+    );
+
+    auditLog({
+      action: 'APPLICATION_APPEALED',
+      userId,
+      ipAddress: getClientIp(req),
+      details: { registrationNo: app.registration_no, appealNotes },
+      requestId: req.requestId,
+    });
+
+    res.json({
+      success: true,
+      message: 'Sanggahan berhasil dikirim! Berkas Anda akan diperiksa dan diverifikasi ulang oleh tim verifikator.',
+      data: { status: 'VERIFIKASI_BERKAS', notes: newNotes },
+    });
+  } catch (err) {
+    log(LOG_LEVELS.ERROR, `Submit appeal error: ${err.message}`);
+    res.status(500).json({ success: false, message: 'Gagal mengirimkan sanggahan.' });
+  }
+}
+
+/**
+ * GET /api/v1/applicant/documents/:docId/view
+ */
+async function viewDocument(req, res) {
+  try {
+    const userId = req.user.id;
+    const { docId } = req.params;
+    const pool = getPool();
+    const fs = require('fs');
+
+    const [docRows] = await pool.execute(
+      'SELECT file_path, original_name, mime_type FROM documents WHERE id = ? AND user_id = ?',
+      [docId, userId]
+    );
+
+    if (docRows.length === 0) {
+      return res.status(404).json({ success: false, message: 'Dokumen tidak ditemukan.' });
+    }
+
+    const doc = docRows[0];
+    if (!fs.existsSync(doc.file_path)) {
+      return res.status(404).json({ success: false, message: 'File tidak ditemukan di server.' });
+    }
+
+    res.setHeader('Content-Type', doc.mime_type || 'application/octet-stream');
+    res.setHeader('Content-Disposition', `inline; filename="${doc.original_name}"`);
+    fs.createReadStream(doc.file_path).pipe(res);
+  } catch (err) {
+    log(LOG_LEVELS.ERROR, `Applicant view document error: ${err.message}`);
+    res.status(500).json({ success: false, message: 'Gagal memuat file dokumen.' });
+  }
+}
+
+module.exports = { getProfile, updateProfile, updateEducation, uploadDocument, getApplication, submitApplication, submitAppeal, viewDocument };

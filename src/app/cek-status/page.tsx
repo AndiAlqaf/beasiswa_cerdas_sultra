@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import Link from 'next/link';
 import { Search, CheckCircle2, Clock, AlertCircle, ShieldCheck, ArrowRight, UserCheck } from 'lucide-react';
 import { fetchAPI } from '@/lib/api';
 
@@ -155,12 +156,30 @@ export default function CheckStatusPage() {
                 </div>
 
                 {/* Official Status Notes */}
-                <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-2">
-                  <div className="flex items-center gap-2 text-slate-900 font-bold text-xs">
-                    <ShieldCheck className="w-4 h-4 text-blue-900" />
+                <div className={`p-5 rounded-2xl border space-y-3 ${
+                  searchedApp.status === 'DITOLAK'
+                    ? 'bg-rose-50 border-rose-200 text-rose-950'
+                    : 'bg-slate-50 border-slate-200 text-slate-900'
+                }`}>
+                  <div className="flex items-center gap-2 font-bold text-xs">
+                    <ShieldCheck className={`w-4 h-4 ${searchedApp.status === 'DITOLAK' ? 'text-rose-600' : 'text-blue-900'}`} />
                     Catatan Resmi Tim Verifikator:
                   </div>
-                  <p className="text-xs text-slate-600 leading-relaxed">{searchedApp.notes}</p>
+                  <p className="text-xs leading-relaxed font-medium whitespace-pre-line">{searchedApp.notes || 'Berkas belum memenuhi kualifikasi seleksi administrasi.'}</p>
+                  
+                  {searchedApp.status === 'DITOLAK' && (
+                    <div className="pt-3 border-t border-rose-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                      <p className="text-[11px] text-rose-800 font-semibold">
+                        Ingin mengajukan sanggahan &amp; memperbarui berkas yang ditolak?
+                      </p>
+                      <Link
+                        href="/login"
+                        className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl transition-colors shadow-sm shrink-0"
+                      >
+                        Masuk Portal Mahasiswa &amp; Kirim Sanggahan →
+                      </Link>
+                    </div>
+                  )}
                 </div>
               </div>
             ) : (

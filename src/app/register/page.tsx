@@ -38,6 +38,7 @@ export default function RegisterPage() {
 
   // Form State
   const [showPassword, setShowPassword] = useState<boolean>(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState<boolean>(false);
   
   // Step 1: Akun & NIM/NIK & Jenjang Target Beasiswa
   const [jenjangTarget, setJenjangTarget] = useState<string>('S1');
@@ -219,6 +220,11 @@ export default function RegisterPage() {
   const handleRegisterAccount = async () => {
     if (!email || !password || !namaLengkap || !nimNik || !prodiPrioritas) {
       setError('Harap lengkapi semua bidang bertanda bintang (*), termasuk Program Studi Prioritas.');
+      return;
+    }
+    const cleanNik = nimNik.replace(/\D/g, '');
+    if (cleanNik.length !== 16) {
+      setError('NIK Mahasiswa wajib diisi tepat 16 digit angka (saat ini: ' + cleanNik.length + ' digit).');
       return;
     }
     if (!isSemesterConfirmed) {
@@ -494,10 +500,11 @@ export default function RegisterPage() {
                     <input
                       type="text"
                       required
+                      maxLength={16}
                       value={nimNik}
-                      onChange={(e) => setNimNik(e.target.value)}
+                      onChange={(e) => setNimNik(e.target.value.replace(/\D/g, '').slice(0, 16))}
                       placeholder="Masukkan 16 Digit NIK"
-                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-base focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0B3A6A] transition-all text-slate-900"
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-base focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0B3A6A] transition-all text-slate-900 font-mono tracking-wider"
                     />
                   </div>
 
@@ -520,42 +527,49 @@ export default function RegisterPage() {
                       <label className="block text-sm font-bold text-slate-800 mb-1.5">
                         Password *
                       </label>
-                      <input
-                        type={showPassword ? 'text' : 'password'}
-                        required
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        placeholder="Minimal 6 karakter"
-                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-base focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0B3A6A] transition-all text-slate-900"
-                      />
+                      <div className="relative">
+                        <input
+                          type={showPassword ? 'text' : 'password'}
+                          required
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          placeholder="Minimal 6 karakter"
+                          className="w-full pl-4 pr-11 py-3 bg-slate-50 border border-slate-200 rounded-xl text-base focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0B3A6A] transition-all text-slate-900"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 focus:outline-none"
+                          tabIndex={-1}
+                        >
+                          {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                        </button>
+                      </div>
                     </div>
 
                     <div>
                       <label className="block text-sm font-bold text-slate-800 mb-1.5">
                         Konfirmasi Password *
                       </label>
-                      <input
-                        type={showPassword ? 'text' : 'password'}
-                        required
-                        value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
-                        placeholder="Ulangi password"
-                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-base focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0B3A6A] transition-all text-slate-900"
-                      />
+                      <div className="relative">
+                        <input
+                          type={showConfirmPassword ? 'text' : 'password'}
+                          required
+                          value={confirmPassword}
+                          onChange={(e) => setConfirmPassword(e.target.value)}
+                          placeholder="Ulangi password"
+                          className="w-full pl-4 pr-11 py-3 bg-slate-50 border border-slate-200 rounded-xl text-base focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0B3A6A] transition-all text-slate-900"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                          className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 focus:outline-none"
+                          tabIndex={-1}
+                        >
+                          {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                        </button>
+                      </div>
                     </div>
-                  </div>
-
-                  <div className="flex items-center gap-2 pt-1">
-                    <input
-                      type="checkbox"
-                      id="showPass"
-                      checked={showPassword}
-                      onChange={(e) => setShowPassword(e.target.checked)}
-                      className="w-4 h-4 rounded text-[#0B3A6A] focus:ring-[#0B3A6A]"
-                    />
-                    <label htmlFor="showPass" className="text-sm font-medium text-slate-600 cursor-pointer">
-                      Tampilkan Password
-                    </label>
                   </div>
 
                   <div className="pt-2">

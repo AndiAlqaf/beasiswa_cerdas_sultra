@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { CheckCircle2, Clock, FileText, Calendar, ChevronRight, AlertCircle, Award, XCircle, ArrowRight } from 'lucide-react';
+import { CheckCircle2, Clock, FileText, Calendar, ChevronRight, AlertCircle, Award, XCircle, ArrowRight, Send, Loader2, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
 import { getUser, fetchAPI } from '@/lib/api';
 
@@ -10,6 +10,44 @@ export default function DashboardPage() {
   const [application, setApplication] = useState<any>(null);
   const [documents, setDocuments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Sanggahan State
+  const [appealText, setAppealText] = useState('');
+  const [submittingAppeal, setSubmittingAppeal] = useState(false);
+  const [toast, setToast] = useState<{ title: string; message: string; type: 'success' | 'error' } | null>(null);
+
+  const handleSendAppeal = async () => {
+    if (!appealText.trim()) {
+      setToast({ title: 'Perhatian', message: 'Harap isi penjelasan sanggahan Anda terlebih dahulu.', type: 'error' });
+      return;
+    }
+    setSubmittingAppeal(true);
+    try {
+      const res = await fetchAPI('/applicant/application/appeal', {
+        method: 'POST',
+        body: JSON.stringify({ appealNotes: appealText.trim() }),
+      });
+      if (res.success) {
+        setToast({
+          title: 'Sanggahan Terkirim!',
+          message: 'Sanggahan Anda berhasil diajukan. Berkas Anda akan diverifikasi ulang oleh tim verifikator.',
+          type: 'success',
+        });
+        setApplication((prev: any) => ({
+          ...prev,
+          status: 'VERIFIKASI_BERKAS',
+          notes: res.data?.notes || prev.notes,
+        }));
+        setAppealText('');
+      } else {
+        throw new Error(res.message || 'Gagal mengirimkan sanggahan');
+      }
+    } catch (err: any) {
+      setToast({ title: 'Gagal Kirim Sanggahan', message: err.message || 'Terjadi kesalahan sistem.', type: 'error' });
+    } finally {
+      setSubmittingAppeal(false);
+    }
+  };
 
   useEffect(() => {
     const cachedUser = getUser();
@@ -98,9 +136,7 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6 w-full max-w-7xl mx-auto">
       {/* Welcome Banner */}
-      <div className="bg-gradient-to-r from-blue-900 to-slate-900 rounded-3xl p-8 sm:p-10 text-white relative overflow-hidden shadow-md">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none"></div>
-        <div className="absolute bottom-0 right-20 w-40 h-40 bg-emerald-500/20 rounded-full blur-3xl translate-y-1/2 pointer-events-none"></div>
+      <div className="bg-[#0B3A6A] rounded-3xl p-8 sm:p-10 text-white relative overflow-hidden shadow-md">
         <div className="relative z-10 max-w-2xl">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-blue-200 text-xs font-semibold mb-3 backdrop-blur-xs">
             <span>Portal Mahasiswa Sultra Cerdas</span>
@@ -233,6 +269,97 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* SANGGAHAN SECTION (Jika Status DITOLAK) */}
+      {application?.status === 'DITOLAK' && (
+        <div className="bg-rose-50 rounded-3xl border-2 border-rose-200 p-6 sm:p-8 shadow-md space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-rose-100 pb-5">
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-rose-600 text-white rounded-2xl shadow-md shadow-rose-200">
+                <RefreshCw className="w-6 h-6 animate-pulse" />
+              </div>
+              <div>
+                <span className="text-[10px] font-extrabold uppercase tracking-wider bg-rose-100 text-rose-800 px-3 py-1 rounded-full border border-rose-200">
+                  Masa Sanggah &amp; Perbaikan Berkas
+                </span>
+                <h3 className="text-xl font-black text-slate-900 mt-1">Formulir Pengajuan Sanggahan</h3>
+              </div>
+            </div>
+            <Link
+              href="/dashboard/berkas"
+              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-900 text-white font-bold text-xs rounded-xl hover:bg-slate-800 transition-colors shadow-sm"
+            >
+              <FileText className="w-4 h-4 text-blue-300" /> Perbaiki / Unggah Berkas Baru
+            </Link>
+          </div>
+
+          <div className="bg-white p-5 rounded-2xl border border-rose-100 space-y-2">
+            <p className="text-xs font-bold text-rose-900 flex items-center gap-1.5">
+              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+              Catatan Alasan Penolakan dari Tim Verifikator:
+            </p>
+            <div className="p-3 bg-rose-50/70 border border-rose-200 rounded-xl text-xs text-rose-950 leading-relaxed font-medium whitespace-pre-line">
+              {application.notes || 'Berkas belum memenuhi kualifikasi seleksi administrasi.'}
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <label className="block text-xs font-bold text-slate-800">
+              Penjelasan / Alasan Sanggahan Anda *
+            </label>
+            <textarea
+              rows={4}
+              value={appealText}
+              onChange={(e) => setAppealText(e.target.value)}
+              placeholder="Tuliskan alasan sanggahan dan perbaikan berkas (misal: 'Saya telah mengunggah kembali dokumen Transkrip Nilai yang sudah berstempel basah pada menu Kelola Berkas...')"
+              className="w-full px-4 py-3 rounded-2xl border border-slate-300 text-xs focus:ring-2 focus:ring-rose-500 focus:outline-none leading-relaxed text-slate-900 bg-white"
+            ></textarea>
+            <p className="text-[11px] text-slate-500 italic">
+              * Setelah mengirimkan sanggahan, status pendaftaran Anda akan berubah kembali menjadi <strong>VERIFIKASI BERKAS</strong> untuk diperiksa ulang oleh Admin.
+            </p>
+          </div>
+
+          <div className="flex justify-end pt-2">
+            <button
+              type="button"
+              disabled={submittingAppeal || !appealText.trim()}
+              onClick={handleSendAppeal}
+              className="px-6 py-3 bg-rose-600 hover:bg-rose-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-black text-xs rounded-2xl shadow-lg shadow-rose-200 transition-all flex items-center gap-2"
+            >
+              {submittingAppeal ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" /> Memproses Sanggahan...
+                </>
+              ) : (
+                <>
+                  <Send className="w-4 h-4" /> Kirim Pengajuan Sanggahan
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Toast Popup */}
+      {toast && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-in fade-in">
+          <div className="bg-white rounded-3xl w-[90vw] max-w-sm shadow-2xl overflow-hidden border border-slate-100 p-6 text-center animate-in zoom-in-95">
+            <div className={`w-14 h-14 rounded-2xl mx-auto flex items-center justify-center mb-4 ${
+              toast.type === 'success' ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'
+            }`}>
+              {toast.type === 'success' ? <CheckCircle2 className="w-8 h-8" /> : <XCircle className="w-8 h-8" />}
+            </div>
+            <h3 className="text-lg font-bold text-slate-900 mb-1">{toast.title}</h3>
+            <p className="text-xs text-slate-600 leading-relaxed mb-6">{toast.message}</p>
+            <button
+              onClick={() => setToast(null)}
+              className="w-full py-2.5 px-4 font-bold text-xs text-white bg-slate-900 hover:bg-slate-800 rounded-xl transition-all shadow-md"
+            >
+              OK
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
