@@ -16,8 +16,10 @@ import {
   UserCheck,
   ShieldCheck,
   AlertCircle,
+  AlertTriangle,
   FileText,
   FileCheck,
+  XCircle,
   Loader2
 } from 'lucide-react';
 import { fetchAPI, setTokens } from '@/lib/api';
@@ -40,12 +42,12 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState<boolean>(false);
   
-  // Step 1: Akun & NIM/NIK & Jenjang Target Beasiswa
+  // Step 1: Akun & NIK & Jenjang Target Beasiswa
   const [jenjangTarget, setJenjangTarget] = useState<string>('S1');
   const [prodiPrioritas, setProdiPrioritas] = useState<string>('');
   const [isSemesterConfirmed, setIsSemesterConfirmed] = useState<boolean>(false);
   const [namaLengkap, setNamaLengkap] = useState<string>('');
-  const [nimNik, setNimNik] = useState<string>('');
+  const [nik, setNimNik] = useState<string>('');
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [confirmPassword, setConfirmPassword] = useState<string>('');
@@ -55,6 +57,22 @@ export default function RegisterPage() {
   const [isCameraActive, setIsCameraActive] = useState<boolean>(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+
+  const [isDetectingFace, setIsDetectingFace] = useState(false);
+  const [faceModelLoaded, setFaceModelLoaded] = useState(false);
+  const [readyToSelfie, setReadyToSelfie] = useState(false);
+  const [livenessStatus, setLivenessStatus] = useState<'searching' | 'detected' | 'right' | 'left' | 'up' | 'down' | 'smiling'>('searching');
+  const faceApiRef = useRef<any>(null);
+  const [modelLoadError, setModelLoadError] = useState('');
+  const [retryCount, setRetryCount] = useState(0);
+  const [isBypassed, setIsBypassed] = useState(false);
+  const [guideChecked, setGuideChecked] = useState(false);
+
+  const missedFaceCountRef = useRef(0);
+  const yawHistoryRef = useRef<number[]>([]);
+  const baselineYawRef = useRef<number | null>(null);
 
   // Step 3: Data Diri
   const [tempatLahir, setTempatLahir] = useState<string>('');
@@ -118,7 +136,7 @@ export default function RegisterPage() {
         if (d.prodiPrioritas) setProdiPrioritas(d.prodiPrioritas);
         if (d.isSemesterConfirmed !== undefined) setIsSemesterConfirmed(d.isSemesterConfirmed);
         if (d.namaLengkap) setNamaLengkap(d.namaLengkap);
-        if (d.nimNik) setNimNik(d.nimNik);
+        if (d.nik) setNimNik(d.nik);
         if (d.email) setEmail(d.email);
         if (d.capturedImage) setCapturedImage(d.capturedImage);
         if (d.tempatLahir) setTempatLahir(d.tempatLahir);
@@ -148,7 +166,7 @@ export default function RegisterPage() {
         prodiPrioritas,
         isSemesterConfirmed,
         namaLengkap,
-        nimNik,
+        nik,
         email,
         capturedImage,
         tempatLahir,
@@ -171,7 +189,7 @@ export default function RegisterPage() {
     prodiPrioritas,
     isSemesterConfirmed,
     namaLengkap,
-    nimNik,
+    nik,
     email,
     capturedImage,
     tempatLahir,
@@ -183,71 +201,190 @@ export default function RegisterPage() {
     educationList
   ]);
 
-  // Camera Management
-  const startCamera = async () => {
+  // Camera Management & Liveness Detection
+  const startCamera = React.useCallback(async () => {
     setCameraError(null);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { width: 640, height: 480, facingMode: 'user' }
       });
+      streamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
+        videoRef.current.play();
         setIsCameraActive(true);
       }
     } catch (err: any) {
       console.error('Camera access error:', err);
-      setCameraError('Kamera tidak dapat diakses atau diizin ditolak. Gunakan simulasi / upload foto selfie.');
+      setCameraError('Kamera tidak dapat diakses atau izin ditolak. Pastikan izin kamera diberikan.');
       setIsCameraActive(false);
     }
-  };
+  }, []);
 
-  const stopCamera = () => {
-    if (videoRef.current && videoRef.current.srcObject) {
-      const stream = videoRef.current.srcObject as MediaStream;
-      stream.getTracks().forEach((track) => track.stop());
-      videoRef.current.srcObject = null;
+  const stopCamera = React.useCallback(() => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
     }
     setIsCameraActive(false);
-  };
-
-  const takeSnapshot = () => {
-    if (videoRef.current) {
-      const canvas = document.createElement('canvas');
-      canvas.width = videoRef.current.videoWidth || 640;
-      canvas.height = videoRef.current.videoHeight || 480;
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
-        setCapturedImage(canvas.toDataURL('image/png'));
-        stopCamera();
-      }
-    } else {
-      // Fallback simulated photo
-      setCapturedImage('https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=600&q=80');
-    }
-  };
-
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setCapturedImage(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
+  }, []);
 
   useEffect(() => {
-    if (currentStep === 2 && !capturedImage) {
-      startCamera();
-    } else {
-      stopCamera();
+    if (currentStep === 2 && !faceModelLoaded) {
+      setModelLoadError('');
+      import('@vladmandic/face-api').then(async faceapi => {
+        faceApiRef.current = faceapi;
+        try {
+          // @ts-ignore
+          await faceapi.tf.setBackend('webgl');
+          // @ts-ignore
+          await faceapi.tf.ready();
+          await faceapi.nets.tinyFaceDetector.loadFromUri('/models');
+          await faceapi.nets.faceExpressionNet.loadFromUri('/models');
+          await faceapi.nets.faceLandmark68Net.loadFromUri('/models');
+          setFaceModelLoaded(true);
+        } catch (err: any) {
+          console.error('Face model load error:', err);
+          setModelLoadError('Gagal mengunduh file model deteksi wajah. Pastikan file model sudah tersedia di folder public/models.');
+        }
+      }).catch(err => {
+        console.error('Error importing face-api:', err);
+        setModelLoadError('Gagal mengunduh modul deteksi wajah. Periksa koneksi internet Anda.');
+      });
     }
-    return () => {
+  }, [currentStep, faceModelLoaded, retryCount]);
+
+  useEffect(() => {
+    if (!capturedImage && isCameraActive) {
+      setLivenessStatus('searching');
+      baselineYawRef.current = null;
+      yawHistoryRef.current = [];
+      missedFaceCountRef.current = 0;
+    }
+  }, [capturedImage, isCameraActive]);
+
+  useEffect(() => {
+    if (currentStep === 2 && !isCameraActive) {
+      startCamera();
+    }
+  }, [currentStep, isCameraActive, startCamera]);
+
+  useEffect(() => {
+    if (currentStep !== 2 || !readyToSelfie || capturedImage || !isCameraActive || !faceModelLoaded || !faceApiRef.current || isBypassed) return;
+
+    let isChecking = false;
+    const interval = setInterval(async () => {
+      if (isChecking) return;
+      const video = videoRef.current;
+      if (!video) return;
+
+      isChecking = true;
+      try {
+        const faceapi = faceApiRef.current;
+        const detection = await faceapi
+          .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.25 }))
+          .withFaceLandmarks()
+          .withFaceExpressions();
+
+        if (!detection) {
+          missedFaceCountRef.current++;
+          if (missedFaceCountRef.current > 15) {
+            setLivenessStatus('searching');
+            baselineYawRef.current = null;
+            yawHistoryRef.current = [];
+          }
+        } else {
+          missedFaceCountRef.current = 0;
+          const lm = detection.landmarks.positions;
+
+          const cheekLeft = lm[0];
+          const cheekRight = lm[16];
+          const noseTip = lm[30];
+
+          const dxLeft = noseTip.x - cheekLeft.x;
+          const dxRight = cheekRight.x - noseTip.x;
+          const yawRatio = dxLeft / dxRight;
+
+          if (yawHistoryRef.current.length < 10) {
+            yawHistoryRef.current.push(yawRatio);
+            if (yawHistoryRef.current.length === 10) {
+              const avgYaw = yawHistoryRef.current.reduce((a, b) => a + b, 0) / 10;
+              baselineYawRef.current = avgYaw;
+              setLivenessStatus('right'); 
+            } else {
+              setLivenessStatus('searching');
+            }
+            isChecking = false;
+            return;
+          }
+
+          const currentBaselineYaw = baselineYawRef.current || 1.0;
+          const YAW_RIGHT_THRESHOLD = currentBaselineYaw * 1.20;
+          const YAW_LEFT_THRESHOLD = currentBaselineYaw * 0.80;
+
+          if (livenessStatus === 'right') {
+            if (yawRatio < YAW_LEFT_THRESHOLD) {
+              setLivenessStatus('left'); 
+            }
+          } else if (livenessStatus === 'left') {
+            if (yawRatio > YAW_RIGHT_THRESHOLD) {
+              setLivenessStatus('smiling'); 
+            }
+          } else if (livenessStatus === 'smiling') {
+            if (detection.expressions.happy > 0.8) {
+              clearInterval(interval);
+              capturePhoto();
+            }
+          }
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        isChecking = false;
+      }
+    }, 100);
+
+    return () => clearInterval(interval);
+  }, [currentStep, readyToSelfie, capturedImage, isCameraActive, faceModelLoaded, isBypassed, livenessStatus]);
+
+  const capturePhoto = React.useCallback(async () => {
+    if (!videoRef.current || !canvasRef.current) return;
+    const canvas = canvasRef.current;
+    const video = videoRef.current;
+
+    setIsDetectingFace(true);
+    try {
+      let width = video.videoWidth || 640;
+      let height = video.videoHeight || 480;
+      const MAX_DIM = 640;
+      if (width > height && width > MAX_DIM) {
+        height = Math.round(height * MAX_DIM / width);
+        width = MAX_DIM;
+      } else if (height > MAX_DIM) {
+        width = Math.round(width * MAX_DIM / height);
+        height = MAX_DIM;
+      }
+
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.translate(canvas.width, 0);
+        ctx.scale(-1, 1);
+        ctx.drawImage(video, 0, 0, width, height);
+      }
+      setCapturedImage(canvas.toDataURL('image/webp', 0.75));
       stopCamera();
-    };
-  }, [currentStep]);
+      setCameraError(null);
+    } catch (err) {
+      console.error(err);
+      setCameraError('Terjadi kesalahan saat menangkap foto.');
+    } finally {
+      setIsDetectingFace(false);
+    }
+  }, [stopCamera]);
+
+  useEffect(() => { return () => { stopCamera(); }; }, [stopCamera]);
 
   // Education Card handlers
   const handleAddEducation = () => {
@@ -335,11 +472,11 @@ export default function RegisterPage() {
   const [error, setError] = useState<string | null>(null);
 
   const handleRegisterAccount = async () => {
-    if (!email || !password || !namaLengkap || !nimNik || !prodiPrioritas) {
+    if (!email || !password || !namaLengkap || !nik || !prodiPrioritas) {
       setError('Harap lengkapi semua bidang bertanda bintang (*), termasuk Program Studi Prioritas.');
       return;
     }
-    const cleanNik = nimNik.replace(/\D/g, '');
+    const cleanNik = nik.replace(/\D/g, '');
     if (cleanNik.length !== 16) {
       setError('NIK Mahasiswa wajib diisi tepat 16 digit angka (saat ini: ' + cleanNik.length + ' digit).');
       return;
@@ -361,7 +498,7 @@ export default function RegisterPage() {
         skipAuth: true,
         body: JSON.stringify({
           email,
-          nik: nimNik,
+          nik: nik,
           password,
           confirmPassword,
           namaLengkap,
@@ -485,7 +622,7 @@ export default function RegisterPage() {
                   LANGKAH {currentStep} DARI {totalSteps}
                 </span>
                 <span className="text-xs text-slate-500 font-medium">
-                  {currentStep === 1 && 'Akun & NIM/NIK'}
+                  {currentStep === 1 && 'Akun & NIK'}
                   {currentStep === 2 && 'Foto Selfie'}
                   {currentStep === 3 && 'Data Diri'}
                   {currentStep === 4 && 'Pendidikan'}
@@ -514,7 +651,7 @@ export default function RegisterPage() {
               </div>
             )}
 
-            {/* STEP 1: AKUN & NIP / NIM / NIK */}
+            {/* STEP 1: AKUN & NIP / NIK */}
             {currentStep === 1 && (
               <div className="space-y-6">
                 <div>
@@ -576,7 +713,7 @@ export default function RegisterPage() {
                     value={prodiPrioritas}
                     onChange={(e) => setProdiPrioritas(e.target.value)}
                     required
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0B3A6A] transition-all text-slate-900 font-medium"
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0B3A6A] transition-all text-slate-900 font-normal"
                   >
                     <option value="">-- Pilih Program Studi Prioritas ({jenjangTarget}) --</option>
                     {(['Pendidikan', 'Kesehatan', 'Agromaritim', 'Infrastruktur'] as const).map((cat) => {
@@ -621,7 +758,7 @@ export default function RegisterPage() {
                       type="text"
                       required
                       maxLength={16}
-                      value={nimNik}
+                      value={nik}
                       onChange={(e) => setNimNik(e.target.value.replace(/\D/g, '').slice(0, 16))}
                       placeholder="Masukkan 16 Digit NIK"
                       className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0B3A6A] transition-all text-slate-900 font-normal placeholder:font-normal placeholder:text-slate-400 font-mono tracking-wider"
@@ -755,88 +892,269 @@ export default function RegisterPage() {
                     Foto Selfie (Verifikasi Wajah)
                   </h1>
                   <p className="text-sm text-slate-500 mt-1">
-                    Posisikan wajah Anda pada area oval untuk verifikasi identitas fisik.
+                    Verifikasi identitas fisik secara langsung melalui liveness detection.
                   </p>
                 </div>
 
                 <div className="flex flex-col items-center justify-center">
-                  <div className="relative w-full max-w-sm h-80 bg-slate-900 rounded-3xl overflow-hidden shadow-inner flex items-center justify-center border-4 border-slate-100">
-                    {capturedImage ? (
+                  {!readyToSelfie && (
+                    <>
+                      <div className="fixed inset-0 bg-black/60 z-50 transition-opacity backdrop-blur-sm" />
+                      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                        <div className="bg-white rounded-3xl shadow-2xl max-w-xl w-full overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                          {/* Header */}
+                          <div className="bg-slate-50 p-6 flex items-center gap-4 border-b border-slate-100">
+                            <div className="w-12 h-12 rounded-2xl bg-[#0B3A6A]/10 flex items-center justify-center shrink-0 shadow-inner">
+                              <Camera className="w-6 h-6 text-[#0B3A6A]" />
+                            </div>
+                            <div>
+                              <h3 className="text-xl font-bold text-slate-800">Verifikasi Keaktifan Wajah</h3>
+                              <p className="text-xs text-slate-500 mt-0.5">Ikuti panduan berikut agar proses pendaftaran berjalan lancar.</p>
+                            </div>
+                          </div>
+
+                          {/* Body */}
+                          <div className="p-6 space-y-5">
+                            {/* Liveness Steps Banner */}
+                            <div className="bg-slate-50 border border-slate-200/60 rounded-2xl p-4">
+                              <h4 className="text-xs font-bold text-slate-700 mb-3 uppercase tracking-wider">Tahapan Verifikasi</h4>
+                              <div className="grid grid-cols-3 gap-3 text-center">
+                                <div className="bg-white border border-slate-100 rounded-xl p-3 shadow-sm flex flex-col items-center">
+                                  <span className="bg-[#0B3A6A]/10 text-[#0B3A6A] font-bold rounded-full w-6 h-6 flex items-center justify-center text-xs mb-1">1</span>
+                                  <span className="text-xs font-semibold text-slate-700">Posisikan Wajah</span>
+                                  <span className="text-[10px] text-slate-400 mt-0.5">Pas di dalam garis panduan</span>
+                                </div>
+                                <div className="bg-white border border-slate-100 rounded-xl p-3 shadow-sm flex flex-col items-center">
+                                  <span className="bg-[#0B3A6A]/10 text-[#0B3A6A] font-bold rounded-full w-6 h-6 flex items-center justify-center text-xs mb-1">2</span>
+                                  <span className="text-xs font-semibold text-slate-700">Kedip & Hadap Samping</span>
+                                  <span className="text-[10px] text-slate-400 mt-0.5">Kedip, lalu tengok kanan/kiri</span>
+                                </div>
+                                <div className="bg-white border border-slate-100 rounded-xl p-3 shadow-sm flex flex-col items-center">
+                                  <span className="bg-emerald-600/10 text-emerald-600 font-bold rounded-full w-6 h-6 flex items-center justify-center text-xs mb-1">3</span>
+                                  <span className="text-xs font-semibold text-slate-700">Tersenyum</span>
+                                  <span className="text-[10px] text-slate-400 mt-0.5">Foto terambil otomatis</span>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              {/* DOs */}
+                              <div className="bg-emerald-50/50 border border-emerald-100 rounded-2xl p-4">
+                                <h4 className="flex items-center gap-2 text-emerald-800 font-bold mb-3 text-sm">
+                                  <CheckCircle2 className="w-5 h-5 text-emerald-600" /> Boleh (Dianjurkan)
+                                </h4>
+                                <ul className="space-y-2">
+                                  <li className="text-xs text-emerald-700 flex items-start gap-1.5">
+                                    <span className="text-emerald-500 font-bold shrink-0">✔</span>
+                                    <span>Gunakan pakaian rapi dan berkerah resmi.</span>
+                                  </li>
+                                  <li className="text-xs text-emerald-700 flex items-start gap-1.5">
+                                    <span className="text-emerald-500 font-bold shrink-0">✔</span>
+                                    <span>Posisi wajah tegak lurus menghadap kamera.</span>
+                                  </li>
+                                  <li className="text-xs text-emerald-700 flex items-start gap-1.5">
+                                    <span className="text-emerald-500 font-bold shrink-0">✔</span>
+                                    <span>Pencahayaan ruangan cukup terang dan merata.</span>
+                                  </li>
+                                </ul>
+                              </div>
+
+                              {/* DONTs */}
+                              <div className="bg-rose-50/50 border border-rose-100 rounded-2xl p-4">
+                                <h4 className="flex items-center gap-2 text-rose-800 font-bold mb-3 text-sm">
+                                  <XCircle className="w-5 h-5 text-rose-600" /> Tidak Boleh
+                                </h4>
+                                <ul className="space-y-2">
+                                  <li className="text-xs text-rose-700 flex items-start gap-1.5">
+                                    <span className="text-rose-500 font-bold shrink-0">✖</span>
+                                    <span>Menggunakan kacamata hitam, masker, atau penutup wajah.</span>
+                                  </li>
+                                  <li className="text-xs text-rose-700 flex items-start gap-1.5">
+                                    <span className="text-rose-500 font-bold shrink-0">✖</span>
+                                    <span>Mengambil foto dari layar HP lain atau foto cetak.</span>
+                                  </li>
+                                  <li className="text-xs text-rose-700 flex items-start gap-1.5">
+                                    <span className="text-rose-500 font-bold shrink-0">✖</span>
+                                    <span>Posisi kepala miring atau keluar dari batas area.</span>
+                                  </li>
+                                </ul>
+                              </div>
+                            </div>
+
+                            {/* Garis Bantu Warning & Checkbox Agreement */}
+                            <div className="bg-amber-50/60 border border-amber-200/80 rounded-2xl p-4 space-y-3 mt-4">
+                              <p className="text-xs text-amber-800 font-medium leading-relaxed flex items-start gap-2">
+                                <AlertTriangle className="w-4.5 h-4.5 text-amber-600 shrink-0 mt-0.5" />
+                                <span>
+                                  <strong>PENTING:</strong> Wajah Anda wajib diposisikan pas di dalam <strong>Garis Bantu (Siluet)</strong> yang muncul di kamera nanti. Jika posisi wajah melenceng atau keluar garis bantu, sistem AI tidak akan merespons atau gagal melakukan deteksi liveness.
+                                </span>
+                              </p>
+                              <label className="flex items-start gap-2.5 pt-3 border-t border-amber-200/50 cursor-pointer select-none">
+                                <input
+                                  type="checkbox"
+                                  checked={guideChecked}
+                                  onChange={(e) => setGuideChecked(e.target.checked)}
+                                  className="rounded text-[#0B3A6A] focus:ring-[#0B3A6A] w-4.5 h-4.5 mt-0.5 shrink-0"
+                                />
+                                <span className="text-xs font-semibold text-slate-700 leading-snug">
+                                  Saya memahami bahwa wajah harus disesuaikan dengan siluet garis bantu agar sistem deteksi wajah dapat mengenali saya.
+                                </span>
+                              </label>
+                            </div>
+                          </div>
+
+                          {/* Actions */}
+                          <div className="p-6 border-t border-slate-100 bg-slate-50/50 flex flex-col items-center gap-3">
+                            {modelLoadError ? (
+                              <div className="w-full space-y-3">
+                                <div className="bg-rose-50 border border-rose-200 text-rose-800 text-xs rounded-xl p-4 leading-relaxed font-medium">
+                                  <p className="font-bold mb-1 flex items-center gap-1.5 text-sm text-rose-700">
+                                    <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+                                    Gagal Memuat Model AI
+                                  </p>
+                                  {modelLoadError}
+                                </div>
+                                <div className="flex gap-2">
+                                  <button
+                                    onClick={() => setRetryCount(prev => prev + 1)}
+                                    className="px-6 py-3 bg-[#0B3A6A] hover:bg-[#082a4d] text-white flex-1 text-sm rounded-xl font-semibold shadow-md"
+                                  >
+                                    Coba Lagi
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      setIsBypassed(true);
+                                      setFaceModelLoaded(true);
+                                      setReadyToSelfie(true);
+                                    }}
+                                    className="px-4 py-3 border border-slate-300 text-slate-600 rounded-xl text-xs font-semibold"
+                                  >
+                                    Lewati (Gunakan Kamera Biasa)
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <>
+                                <button
+                                  onClick={() => setReadyToSelfie(true)}
+                                  disabled={!faceModelLoaded || !guideChecked}
+                                  className="w-full py-3.5 bg-[#0B3A6A] hover:bg-[#082a4d] text-white rounded-xl text-base font-semibold shadow-md disabled:opacity-60 disabled:cursor-not-allowed"
+                                >
+                                  {!faceModelLoaded ? (
+                                    <span className="flex items-center justify-center gap-2">
+                                      <Loader2 className="w-5 h-5 animate-spin" />
+                                      Memuat sistem deteksi wajah...
+                                    </span>
+                                  ) : (
+                                    'Saya Sudah Siap Foto'
+                                  )}
+                                </button>
+                                {!faceModelLoaded && (
+                                  <p className="text-[11px] text-slate-400 text-center">Harap tunggu, model AI sedang diunduh dan diproses...</p>
+                                )}
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  {!capturedImage ? (
+                    <div className="relative w-full max-w-sm aspect-[3/4] bg-slate-900 rounded-3xl overflow-hidden shadow-inner ring-4 ring-slate-100">
+                      <video
+                        ref={videoRef}
+                        autoPlay
+                        playsInline
+                        muted
+                        className="absolute inset-0 w-full h-full object-cover transform scale-x-[-1]"
+                      />
+                      <canvas ref={canvasRef} className="hidden" />
+                      
+                      {/* Overlay Silhouette */}
+                      <div className="absolute inset-0 pointer-events-none flex items-center justify-center opacity-60">
+                        <svg viewBox="0 0 100 100" className="w-full h-full absolute inset-0" preserveAspectRatio="none">
+                          <path d="M50 15 C35 15 25 30 25 50 C25 70 35 75 50 75 C65 75 75 70 75 50 C75 30 65 15 50 15 Z" fill="none" stroke="white" strokeWidth="1.5" strokeDasharray="3 3" />
+                          <path d="M15 100 C15 85 30 80 50 80 C70 80 85 85 85 100" fill="none" stroke="white" strokeWidth="1.5" strokeDasharray="3 3" />
+                        </svg>
+                      </div>
+
+                      {isCameraActive && !isBypassed && (
+                        <div className="absolute bottom-6 left-0 right-0 px-4 flex justify-center pointer-events-none">
+                          <div className={`px-4 py-2.5 rounded-full text-xs sm:text-sm font-bold shadow-lg flex items-center gap-2 transition-all duration-300 ${livenessStatus === 'searching' ? 'bg-orange-500 text-white animate-bounce' :
+                            livenessStatus === 'detected' ? 'bg-indigo-600 text-white animate-pulse' :
+                              livenessStatus === 'smiling' ? 'bg-emerald-600 text-white animate-pulse' :
+                                'bg-blue-600 text-white animate-pulse'
+                            }`}>
+                            {livenessStatus === 'searching' && (
+                              <><Loader2 className="w-4 h-4 animate-spin" /> Mencari Wajah...</>
+                            )}
+                            {livenessStatus === 'detected' && (
+                              <>👁 Silakan KEDIPKAN MATA</>
+                            )}
+                            {livenessStatus === 'right' && (
+                              <>👉 Silakan HADAP KANAN</>
+                            )}
+                            {livenessStatus === 'left' && (
+                              <>👈 Silakan HADAP KIRI</>
+                            )}
+                            {livenessStatus === 'smiling' && (
+                              <><CheckCircle2 className="w-4 h-4 text-white animate-pulse" /> 😊 Silakan TERSENYUM</>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {isCameraActive && isBypassed && (
+                        <div className="absolute bottom-6 left-0 right-0 px-4 flex justify-center z-10">
+                          <button
+                            onClick={capturePhoto}
+                            className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg flex items-center gap-2 rounded-full font-semibold pointer-events-auto transition-transform hover:scale-105"
+                          >
+                            <Camera className="w-4 h-4" /> Ambil Foto Sekarang
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="relative w-full max-w-sm aspect-[3/4] bg-slate-900 rounded-3xl overflow-hidden shadow-inner ring-4 ring-slate-100">
                       <img
                         src={capturedImage}
                         alt="Hasil Foto Selfie"
-                        className="w-full h-full object-cover scale-x-[-1]"
+                        className="w-full h-full object-cover"
                       />
-                    ) : (
-                      <>
-                        <video
-                          ref={videoRef}
-                          autoPlay
-                          playsInline
-                          muted
-                          className="w-full h-full object-cover scale-x-[-1]"
-                        />
-                        {/* Oval dashed face overlay guide */}
-                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                          <div className="w-48 h-64 border-4 border-dashed border-white/80 rounded-[50%] shadow-lg animate-pulse flex flex-col justify-between items-center py-4">
-                            <span className="bg-black/60 text-white text-[10px] font-semibold px-2.5 py-0.5 rounded-full backdrop-blur-sm">
-                              Posisikan Wajah Di Sini
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Live detection badge overlay */}
-                        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10">
-                          <div className="bg-emerald-600 text-white text-xs font-bold px-4 py-2 rounded-full shadow-lg flex items-center gap-2 border border-emerald-400/30">
-                            <CheckCircle2 className="w-4 h-4 text-emerald-200" />
-                            <span>😊 Silakan TERSENYUM</span>
-                          </div>
-                        </div>
-                      </>
-                    )}
-                  </div>
-
-                  {cameraError && (
-                    <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800 flex items-center gap-2 max-w-sm">
-                      <AlertCircle className="w-4 h-4 shrink-0 text-amber-600" />
-                      <span>{cameraError}</span>
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end justify-between p-6">
+                        <button
+                          onClick={() => {
+                            setCapturedImage(null);
+                            startCamera();
+                          }}
+                          className="px-4 py-2 border border-white/30 bg-white/20 hover:bg-white/30 text-white rounded-xl backdrop-blur-md text-sm font-semibold transition-colors flex items-center gap-2"
+                        >
+                          <RefreshCw className="w-4 h-4" /> Ulangi
+                        </button>
+                      </div>
                     </div>
                   )}
 
-                  {/* Camera action buttons */}
-                  <div className="mt-4 flex flex-wrap gap-3 justify-center">
-                    {!capturedImage ? (
-                      <>
-                        <button
-                          type="button"
-                          onClick={takeSnapshot}
-                          className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-sm shadow flex items-center gap-2 transition-colors"
-                        >
-                          <Camera className="w-4 h-4" /> Ambil Foto Selfie
-                        </button>
-                        <label className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-sm cursor-pointer flex items-center gap-2 transition-colors">
-                          <Upload className="w-4 h-4" /> Unggah Foto
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={handleFileUpload}
-                            className="hidden"
-                          />
-                        </label>
-                      </>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setCapturedImage(null);
-                          startCamera();
-                        }}
-                        className="px-5 py-2.5 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-xl text-sm shadow flex items-center gap-2 transition-colors"
-                      >
-                        <RefreshCw className="w-4 h-4" /> Foto Ulang
-                      </button>
-                    )}
-                  </div>
+                  {(isCameraActive || capturedImage) && (
+                    <div className="max-w-sm w-full bg-amber-50 border border-amber-200 rounded-2xl p-4 flex gap-2.5 items-start mt-4 shadow-sm">
+                      <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                      <div>
+                        <p className="font-bold text-xs text-amber-800">⚠ Peringatan Anti-Pemalsuan Foto</p>
+                        <p className="text-[11px] text-slate-600 mt-1 leading-relaxed">
+                          Sistem mendeteksi dan memblokir wajah dari foto cetak/layar HP. Segala bentuk pemalsuan akan mengakibatkan <strong>diskualifikasi permanen</strong>.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {cameraError && (
+                    <div className="mt-3 p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-800 flex items-center gap-2 max-w-sm">
+                      <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
+                      <span>{cameraError}</span>
+                    </div>
+                  )}
                 </div>
 
                 {error && (
@@ -849,17 +1167,24 @@ export default function RegisterPage() {
                 <div className="flex items-center justify-between pt-6 border-t border-slate-100">
                   <button
                     type="button"
-                    onClick={prevStep}
-                    className="px-6 py-3 border border-slate-300 text-slate-700 font-bold rounded-xl hover:bg-slate-100 text-sm transition-colors"
+                    onClick={() => {
+                      setCurrentStep(1);
+                      stopCamera();
+                    }}
+                    className="py-3.5 px-6 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold rounded-xl shadow-sm transition-all flex items-center gap-2"
                   >
-                    Kembali
+                    <ArrowLeft className="w-4 h-4" /> Kembali
                   </button>
                   <button
                     type="button"
-                    onClick={validateAndNextStep}
-                    className="px-6 py-3 bg-[#0B3A6A] hover:bg-[#082a4d] text-white font-bold rounded-xl shadow text-sm transition-all flex items-center gap-2"
+                    disabled={!capturedImage}
+                    onClick={() => {
+                      validateAndNextStep();
+                      stopCamera();
+                    }}
+                    className="py-3.5 px-6 bg-[#0B3A6A] hover:bg-[#082a4d] text-white font-bold rounded-xl shadow-md transition-all flex items-center gap-2 disabled:opacity-50"
                   >
-                    Lanjut <ArrowRight className="w-4 h-4" />
+                    Lanjut Isi Data Diri <ArrowRight className="w-4 h-4" />
                   </button>
                 </div>
               </div>
@@ -1036,7 +1361,7 @@ export default function RegisterPage() {
                             onChange={(e) =>
                               handleEducationChange(edu.id, 'tingkat', e.target.value)
                             }
-                            className="w-full px-3.5 py-3 bg-slate-50 border border-slate-200 rounded-xl text-base text-slate-700 font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0B3A6A] transition-all"
+                            className="w-full px-3.5 py-3 bg-slate-50 border border-slate-200 rounded-xl text-base text-slate-700 font-normal focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0B3A6A] transition-all"
                           >
                             <option value="SMA">SMA / SMK / MA</option>
                             <option value="D3">D3</option>
@@ -1058,7 +1383,7 @@ export default function RegisterPage() {
                               handleEducationChange(edu.id, 'institusi', e.target.value)
                             }
                             placeholder="Contoh: Universitas Halu Oleo"
-                            className="w-full px-3.5 py-3 bg-slate-50 border border-slate-200 rounded-xl text-base text-slate-700 font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0B3A6A] transition-all placeholder:text-slate-400 placeholder:font-normal"
+                            className="w-full px-3.5 py-3 bg-slate-50 border border-slate-200 rounded-xl text-base text-slate-700 font-normal focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0B3A6A] transition-all placeholder:text-slate-400 placeholder:font-normal"
                           />
                         </div>
                       </div>
@@ -1076,7 +1401,7 @@ export default function RegisterPage() {
                               handleEducationChange(edu.id, 'jurusan', e.target.value)
                             }
                             placeholder="Contoh: Teknik Informatika"
-                            className="w-full px-3.5 py-3 bg-slate-50 border border-slate-200 rounded-xl text-base text-slate-700 font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0B3A6A] transition-all placeholder:text-slate-400 placeholder:font-normal"
+                            className="w-full px-3.5 py-3 bg-slate-50 border border-slate-200 rounded-xl text-base text-slate-700 font-normal focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0B3A6A] transition-all placeholder:text-slate-400 placeholder:font-normal"
                           />
                         </div>
 
@@ -1092,7 +1417,7 @@ export default function RegisterPage() {
                               handleEducationChange(edu.id, 'tahunMulai', e.target.value)
                             }
                             placeholder="YYYY"
-                            className="w-full px-3.5 py-3 bg-slate-50 border border-slate-200 rounded-xl text-base text-slate-700 font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0B3A6A] transition-all placeholder:text-slate-400 placeholder:font-normal"
+                            className="w-full px-3.5 py-3 bg-slate-50 border border-slate-200 rounded-xl text-base text-slate-700 font-normal focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0B3A6A] transition-all placeholder:text-slate-400 placeholder:font-normal"
                           />
                         </div>
 
@@ -1107,7 +1432,7 @@ export default function RegisterPage() {
                               handleEducationChange(edu.id, 'tahunLulus', e.target.value)
                             }
                             placeholder="YYYY"
-                            className="w-full px-3.5 py-3 bg-slate-50 border border-slate-200 rounded-xl text-base text-slate-700 font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0B3A6A] transition-all placeholder:text-slate-400 placeholder:font-normal"
+                            className="w-full px-3.5 py-3 bg-slate-50 border border-slate-200 rounded-xl text-base text-slate-700 font-normal focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0B3A6A] transition-all placeholder:text-slate-400 placeholder:font-normal"
                           />
                           <p className="text-xs text-red-600 mt-1.5 font-semibold">
                             *Kosongkan jika masih menempuh studi
@@ -1316,8 +1641,8 @@ export default function RegisterPage() {
                 <span className="font-semibold text-slate-800">{email || '-'}</span>
               </div>
               <div className="flex justify-between text-xs text-slate-500">
-                <span>NIM / NIK:</span>
-                <span className="font-semibold text-slate-800">{nimNik || '-'}</span>
+                <span>NIK:</span>
+                <span className="font-semibold text-slate-800">{nik || '-'}</span>
               </div>
               {fileKtmName && (
                 <div className="flex justify-between text-xs text-slate-500">

@@ -48,21 +48,25 @@ export default function RegistrationPage() {
   const [hasDrawnSignature, setHasDrawnSignature] = useState<boolean>(false);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
-  // Canvas drawing handlers
+  // Canvas drawing handlers — accurately scaled with display bounds to prevent offset
   const getCanvasCoords = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
     if (!canvasRef.current) return { x: 0, y: 0 };
-    const rect = canvasRef.current.getBoundingClientRect();
+    const canvas = canvasRef.current;
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = rect.width > 0 ? canvas.width / rect.width : 1;
+    const scaleY = rect.height > 0 ? canvas.height / rect.height : 1;
+
     if ('touches' in e && e.touches.length > 0) {
       const touch = e.touches[0];
       return {
-        x: touch.clientX - rect.left,
-        y: touch.clientY - rect.top
+        x: (touch.clientX - rect.left) * scaleX,
+        y: (touch.clientY - rect.top) * scaleY
       };
     }
     const mouseEvent = e as React.MouseEvent<HTMLCanvasElement>;
     return {
-      x: mouseEvent.clientX - rect.left,
-      y: mouseEvent.clientY - rect.top
+      x: (mouseEvent.clientX - rect.left) * scaleX,
+      y: (mouseEvent.clientY - rect.top) * scaleY
     };
   };
 
@@ -242,9 +246,9 @@ export default function RegistrationPage() {
             smaNama: sma.institusi || p.smaNama || regDraft?.smaNama || '',
             smaJurusan: sma.jurusan || p.smaJurusan || regDraft?.smaJurusan || '',
             smaTahunLulus: sma.tahunLulus ? String(sma.tahunLulus) : (p.smaTahunLulus || regDraft?.smaTahunLulus || ''),
-            s1Nama: s1.institusi || p.s1Nama || regDraft?.s1Nama || '',
-            s1Jurusan: s1.jurusan || p.s1Jurusan || regDraft?.s1Jurusan || '',
-            s1TahunLulus: s1.tahunLulus ? String(s1.tahunLulus) : (p.s1TahunLulus || regDraft?.s1TahunLulus || ''),
+            s1Nama: (currentJenjang === 'S2' || currentJenjang === 'S3') ? (s1.institusi || p.s1Nama || regDraft?.s1Nama || '') : '',
+            s1Jurusan: (currentJenjang === 'S2' || currentJenjang === 'S3') ? (s1.jurusan || p.s1Jurusan || regDraft?.s1Jurusan || '') : '',
+            s1TahunLulus: (currentJenjang === 'S2' || currentJenjang === 'S3') ? (s1.tahunLulus ? String(s1.tahunLulus) : (p.s1TahunLulus || regDraft?.s1TahunLulus || '')) : '',
             s2Nama: s2.institusi || p.s2Nama || regDraft?.s2Nama || '',
             s2Jurusan: s2.jurusan || p.s2Jurusan || regDraft?.s2Jurusan || '',
             s2TahunLulus: s2.tahunLulus ? String(s2.tahunLulus) : (p.s2TahunLulus || regDraft?.s2TahunLulus || ''),

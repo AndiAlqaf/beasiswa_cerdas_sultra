@@ -314,48 +314,7 @@ export default function BerkasPage() {
         })}
       </div>
 
-      {/* Daftar Seluruh Berkas Tersimpan */}
-      {documents.length > 0 && (
-        <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-4 mt-8">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-            <div className="flex items-center gap-2">
-              <FileBadge className="w-5 h-5 text-blue-600" />
-              <h3 className="font-bold text-slate-900 text-base">Daftar Seluruh Berkas Tersimpan di Server ({documents.length})</h3>
-            </div>
-            <span className="text-[10px] font-mono bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-full font-bold border border-emerald-200">
-              Terverifikasi Server
-            </span>
-          </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-            {documents.map((doc) => (
-              <div key={doc.id} className="bg-slate-50 border border-slate-200 p-4 rounded-2xl flex flex-col justify-between">
-                <div>
-                  <div className="flex items-center justify-between gap-2 mb-1.5">
-                    <span className="text-[9px] font-extrabold uppercase tracking-wider bg-blue-100 text-blue-800 px-2 py-0.5 rounded">
-                      {doc.docType}
-                    </span>
-                    <span className="text-[10px] text-slate-400 font-mono">{formatSize(doc.fileSize)}</span>
-                  </div>
-                  <p className="text-xs font-bold text-slate-900 truncate" title={doc.originalName}>
-                    📄 {doc.originalName}
-                  </p>
-                  <p className="text-[10px] text-slate-500 mt-1">
-                    {new Date(doc.uploadedAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => handleViewDocument(doc.id)}
-                  className="mt-3 w-full py-1.5 px-2 bg-white border border-slate-200 hover:bg-slate-100 text-slate-800 text-[11px] font-bold rounded-xl transition-colors flex items-center justify-center gap-1"
-                >
-                  <ExternalLink className="w-3 h-3 text-blue-600" /> Lihat File
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* Toast Notification Dialog */}
       {toast && (

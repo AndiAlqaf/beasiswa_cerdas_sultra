@@ -172,11 +172,11 @@ export default function ProfilPage() {
           tahunLulus: parseInt(form.smaTahunLulus) || null,
         });
       }
-      if (form.perguruanTinggi || form.s1Nama) {
+      if ((form.jenjangTarget === 'S2' || form.jenjangTarget === 'S3') && (form.s1Nama)) {
         eduList.push({
           tingkat: 'S1',
-          institusi: form.perguruanTinggi || form.s1Nama,
-          jurusan: form.fakultasProdi || form.s1Jurusan,
+          institusi: form.s1Nama,
+          jurusan: form.s1Jurusan,
           tahunLulus: parseInt(form.s1TahunLulus) || null,
         });
       }
@@ -209,16 +209,26 @@ export default function ProfilPage() {
     }
   };
 
-  // Canvas Handlers
+  // Canvas Handlers — accurately scaled with display bounds to prevent offset
   const getCanvasCoords = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
     if (!canvasRef.current) return { x: 0, y: 0 };
-    const rect = canvasRef.current.getBoundingClientRect();
+    const canvas = canvasRef.current;
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = rect.width > 0 ? canvas.width / rect.width : 1;
+    const scaleY = rect.height > 0 ? canvas.height / rect.height : 1;
+
     if ('touches' in e && e.touches.length > 0) {
       const touch = e.touches[0];
-      return { x: touch.clientX - rect.left, y: touch.clientY - rect.top };
+      return {
+        x: (touch.clientX - rect.left) * scaleX,
+        y: (touch.clientY - rect.top) * scaleY,
+      };
     }
     const mouseEvent = e as React.MouseEvent<HTMLCanvasElement>;
-    return { x: mouseEvent.clientX - rect.left, y: mouseEvent.clientY - rect.top };
+    return {
+      x: (mouseEvent.clientX - rect.left) * scaleX,
+      y: (mouseEvent.clientY - rect.top) * scaleY,
+    };
   };
 
   const startDrawing = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
@@ -357,7 +367,7 @@ export default function ProfilPage() {
                 required
                 value={form.namaLengkap}
                 onChange={(e) => setForm((prev) => ({ ...prev, namaLengkap: e.target.value }))}
-                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:bg-white focus:ring-2 focus:ring-[#0B3A6A] focus:outline-none"
+                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-normal text-slate-900 focus:bg-white focus:ring-2 focus:ring-[#0B3A6A] focus:outline-none"
               />
             </div>
 
@@ -369,7 +379,7 @@ export default function ProfilPage() {
                 maxLength={16}
                 value={form.nik}
                 onChange={(e) => setForm((prev) => ({ ...prev, nik: e.target.value.replace(/\D/g, '') }))}
-                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono font-medium text-slate-900 focus:bg-white focus:ring-2 focus:ring-[#0B3A6A] focus:outline-none"
+                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono font-normal text-slate-900 focus:bg-white focus:ring-2 focus:ring-[#0B3A6A] focus:outline-none"
               />
             </div>
 
@@ -382,7 +392,7 @@ export default function ProfilPage() {
                 placeholder="16 digit Nomor KK"
                 value={form.noKk}
                 onChange={(e) => setForm((prev) => ({ ...prev, noKk: e.target.value.replace(/\D/g, '') }))}
-                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono font-medium text-slate-900 focus:bg-white focus:ring-2 focus:ring-[#0B3A6A] focus:outline-none placeholder:font-normal placeholder:text-slate-400"
+                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono font-normal text-slate-900 focus:bg-white focus:ring-2 focus:ring-[#0B3A6A] focus:outline-none placeholder:font-normal placeholder:text-slate-400"
               />
             </div>
 
@@ -394,7 +404,7 @@ export default function ProfilPage() {
                 placeholder="Contoh: Kendari"
                 value={form.tempatLahir}
                 onChange={(e) => setForm((prev) => ({ ...prev, tempatLahir: e.target.value }))}
-                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:bg-white focus:ring-2 focus:ring-[#0B3A6A] focus:outline-none placeholder:font-normal placeholder:text-slate-400"
+                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-normal text-slate-900 focus:bg-white focus:ring-2 focus:ring-[#0B3A6A] focus:outline-none placeholder:font-normal placeholder:text-slate-400"
               />
             </div>
 
@@ -405,7 +415,7 @@ export default function ProfilPage() {
                 required
                 value={form.tanggalLahir}
                 onChange={(e) => setForm((prev) => ({ ...prev, tanggalLahir: e.target.value }))}
-                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:bg-white focus:ring-2 focus:ring-[#0B3A6A] focus:outline-none"
+                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-normal text-slate-900 focus:bg-white focus:ring-2 focus:ring-[#0B3A6A] focus:outline-none"
               />
             </div>
 
@@ -414,7 +424,7 @@ export default function ProfilPage() {
               <select
                 value={form.gender}
                 onChange={(e) => setForm((prev) => ({ ...prev, gender: e.target.value }))}
-                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:bg-white focus:ring-2 focus:ring-[#0B3A6A] focus:outline-none"
+                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-normal text-slate-900 focus:bg-white focus:ring-2 focus:ring-[#0B3A6A] focus:outline-none"
               >
                 <option value="Laki-laki">Laki-laki</option>
                 <option value="Perempuan">Perempuan</option>
@@ -426,7 +436,7 @@ export default function ProfilPage() {
               <select
                 value={form.statusPernikahan}
                 onChange={(e) => setForm((prev) => ({ ...prev, statusPernikahan: e.target.value }))}
-                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:bg-white focus:ring-2 focus:ring-[#0B3A6A] focus:outline-none"
+                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-normal text-slate-900 focus:bg-white focus:ring-2 focus:ring-[#0B3A6A] focus:outline-none"
               >
                 <option value="Belum Menikah">Belum Menikah</option>
                 <option value="Menikah">Menikah</option>
@@ -456,7 +466,7 @@ export default function ProfilPage() {
                 placeholder="Contoh: +62 882020802944"
                 value={form.noHp}
                 onChange={(e) => setForm((prev) => ({ ...prev, noHp: e.target.value }))}
-                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:bg-white focus:ring-2 focus:ring-[#0B3A6A] focus:outline-none placeholder:font-normal placeholder:text-slate-400"
+                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-normal text-slate-900 focus:bg-white focus:ring-2 focus:ring-[#0B3A6A] focus:outline-none placeholder:font-normal placeholder:text-slate-400"
               />
             </div>
 
@@ -465,7 +475,7 @@ export default function ProfilPage() {
               <select
                 value={form.asalDaerah}
                 onChange={(e) => setForm((prev) => ({ ...prev, asalDaerah: e.target.value }))}
-                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:bg-white focus:ring-2 focus:ring-[#0B3A6A] focus:outline-none"
+                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-normal text-slate-900 focus:bg-white focus:ring-2 focus:ring-[#0B3A6A] focus:outline-none"
               >
                 {SULTRA_DISTRICTS.map((d) => (
                   <option key={d.code} value={d.code}>
@@ -535,7 +545,7 @@ export default function ProfilPage() {
                 placeholder="Contoh: Universitas Halu Oleo"
                 value={form.perguruanTinggi}
                 onChange={(e) => setForm((prev) => ({ ...prev, perguruanTinggi: e.target.value }))}
-                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:bg-white focus:ring-2 focus:ring-[#0B3A6A] focus:outline-none placeholder:font-normal placeholder:text-slate-400"
+                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-normal text-slate-900 focus:bg-white focus:ring-2 focus:ring-[#0B3A6A] focus:outline-none placeholder:font-normal placeholder:text-slate-400"
               />
             </div>
 
@@ -547,7 +557,7 @@ export default function ProfilPage() {
                 placeholder="Contoh: FKIP / Pendidikan Matematika"
                 value={form.fakultasProdi}
                 onChange={(e) => setForm((prev) => ({ ...prev, fakultasProdi: e.target.value }))}
-                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:bg-white focus:ring-2 focus:ring-[#0B3A6A] focus:outline-none placeholder:font-normal placeholder:text-slate-400"
+                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-normal text-slate-900 focus:bg-white focus:ring-2 focus:ring-[#0B3A6A] focus:outline-none placeholder:font-normal placeholder:text-slate-400"
               />
             </div>
 
@@ -559,7 +569,7 @@ export default function ProfilPage() {
                 placeholder="Contoh: A1I122045"
                 value={form.nim}
                 onChange={(e) => setForm((prev) => ({ ...prev, nim: e.target.value }))}
-                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono font-medium text-slate-900 focus:bg-white focus:ring-2 focus:ring-[#0B3A6A] focus:outline-none placeholder:font-normal placeholder:text-slate-400"
+                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono font-normal text-slate-900 focus:bg-white focus:ring-2 focus:ring-[#0B3A6A] focus:outline-none placeholder:font-normal placeholder:text-slate-400"
               />
             </div>
 
@@ -568,7 +578,7 @@ export default function ProfilPage() {
               <select
                 value={form.semester}
                 onChange={(e) => setForm((prev) => ({ ...prev, semester: parseInt(e.target.value) }))}
-                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:bg-white focus:ring-2 focus:ring-[#0B3A6A] focus:outline-none"
+                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-normal text-slate-900 focus:bg-white focus:ring-2 focus:ring-[#0B3A6A] focus:outline-none"
               >
                 {[1, 2, 3, 4, 5, 6, 7, 8].map((s) => (
                   <option key={s} value={s}>Semester {s}</option>
@@ -587,7 +597,7 @@ export default function ProfilPage() {
                 placeholder="Contoh: 3.50"
                 value={form.ipk}
                 onChange={(e) => setForm((prev) => ({ ...prev, ipk: e.target.value }))}
-                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:bg-white focus:ring-2 focus:ring-[#0B3A6A] focus:outline-none placeholder:font-normal placeholder:text-slate-400"
+                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-normal text-slate-900 focus:bg-white focus:ring-2 focus:ring-[#0B3A6A] focus:outline-none placeholder:font-normal placeholder:text-slate-400"
               />
             </div>
 
@@ -596,7 +606,7 @@ export default function ProfilPage() {
               <select
                 value={form.akreditasiProdi}
                 onChange={(e) => setForm((prev) => ({ ...prev, akreditasiProdi: e.target.value }))}
-                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:bg-white focus:ring-2 focus:ring-[#0B3A6A] focus:outline-none"
+                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-normal text-slate-900 focus:bg-white focus:ring-2 focus:ring-[#0B3A6A] focus:outline-none"
               >
                 <option value="Unggul">Unggul / A</option>
                 <option value="Baik Sekali">Baik Sekali / B</option>
@@ -611,7 +621,7 @@ export default function ProfilPage() {
                 placeholder="Contoh: 2027"
                 value={form.targetLulus}
                 onChange={(e) => setForm((prev) => ({ ...prev, targetLulus: e.target.value }))}
-                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:bg-white focus:ring-2 focus:ring-[#0B3A6A] focus:outline-none placeholder:font-normal placeholder:text-slate-400"
+                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-normal text-slate-900 focus:bg-white focus:ring-2 focus:ring-[#0B3A6A] focus:outline-none placeholder:font-normal placeholder:text-slate-400"
               />
             </div>
 
@@ -620,7 +630,7 @@ export default function ProfilPage() {
               <select
                 value={form.beasiswaLain}
                 onChange={(e) => setForm((prev) => ({ ...prev, beasiswaLain: e.target.value }))}
-                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:bg-white focus:ring-2 focus:ring-[#0B3A6A] focus:outline-none"
+                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-normal text-slate-900 focus:bg-white focus:ring-2 focus:ring-[#0B3A6A] focus:outline-none"
               >
                 <option value="Tidak Ada">Tidak Ada (Bukan Double Funding)</option>
                 <option value="Ada">Ya, Sedang Menerima Beasiswa Penuh</option>
@@ -651,7 +661,7 @@ export default function ProfilPage() {
                   placeholder="Contoh: SMAN 1 Kendari"
                   value={form.smaNama}
                   onChange={(e) => setForm((prev) => ({ ...prev, smaNama: e.target.value }))}
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:bg-white focus:ring-2 focus:ring-[#0B3A6A] focus:outline-none placeholder:font-normal placeholder:text-slate-400"
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-normal text-slate-900 focus:bg-white focus:ring-2 focus:ring-[#0B3A6A] focus:outline-none placeholder:font-normal placeholder:text-slate-400"
                 />
               </div>
 
@@ -662,7 +672,7 @@ export default function ProfilPage() {
                   placeholder="Contoh: MIPA"
                   value={form.smaJurusan}
                   onChange={(e) => setForm((prev) => ({ ...prev, smaJurusan: e.target.value }))}
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:bg-white focus:ring-2 focus:ring-[#0B3A6A] focus:outline-none placeholder:font-normal placeholder:text-slate-400"
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-normal text-slate-900 focus:bg-white focus:ring-2 focus:ring-[#0B3A6A] focus:outline-none placeholder:font-normal placeholder:text-slate-400"
                 />
               </div>
 
@@ -673,7 +683,7 @@ export default function ProfilPage() {
                   placeholder="Contoh: 2023"
                   value={form.smaTahunLulus}
                   onChange={(e) => setForm((prev) => ({ ...prev, smaTahunLulus: e.target.value }))}
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:bg-white focus:ring-2 focus:ring-[#0B3A6A] focus:outline-none placeholder:font-normal placeholder:text-slate-400"
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-normal text-slate-900 focus:bg-white focus:ring-2 focus:ring-[#0B3A6A] focus:outline-none placeholder:font-normal placeholder:text-slate-400"
                 />
               </div>
             </div>
@@ -689,7 +699,7 @@ export default function ProfilPage() {
                       placeholder="Nama Kampus S1"
                       value={form.s1Nama}
                       onChange={(e) => setForm((prev) => ({ ...prev, s1Nama: e.target.value }))}
-                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:bg-white focus:ring-2 focus:ring-[#0B3A6A] focus:outline-none"
+                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-normal text-slate-900 focus:bg-white focus:ring-2 focus:ring-[#0B3A6A] focus:outline-none"
                     />
                   </div>
                   <div>
@@ -699,7 +709,7 @@ export default function ProfilPage() {
                       placeholder="Jurusan S1"
                       value={form.s1Jurusan}
                       onChange={(e) => setForm((prev) => ({ ...prev, s1Jurusan: e.target.value }))}
-                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:bg-white focus:ring-2 focus:ring-[#0B3A6A] focus:outline-none"
+                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-normal text-slate-900 focus:bg-white focus:ring-2 focus:ring-[#0B3A6A] focus:outline-none"
                     />
                   </div>
                   <div>
@@ -709,7 +719,7 @@ export default function ProfilPage() {
                       placeholder="Tahun Lulus S1"
                       value={form.s1TahunLulus}
                       onChange={(e) => setForm((prev) => ({ ...prev, s1TahunLulus: e.target.value }))}
-                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:bg-white focus:ring-2 focus:ring-[#0B3A6A] focus:outline-none"
+                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-normal text-slate-900 focus:bg-white focus:ring-2 focus:ring-[#0B3A6A] focus:outline-none"
                     />
                   </div>
                 </div>
@@ -738,7 +748,7 @@ export default function ProfilPage() {
                 placeholder="Nama Lengkap Ayah"
                 value={form.namaAyah}
                 onChange={(e) => setForm((prev) => ({ ...prev, namaAyah: e.target.value }))}
-                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:bg-white focus:ring-2 focus:ring-[#0B3A6A] focus:outline-none placeholder:font-normal placeholder:text-slate-400"
+                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-normal text-slate-900 focus:bg-white focus:ring-2 focus:ring-[#0B3A6A] focus:outline-none placeholder:font-normal placeholder:text-slate-400"
               />
             </div>
 
@@ -749,7 +759,7 @@ export default function ProfilPage() {
                 placeholder="Contoh: Petani / PNS / Wiraswasta"
                 value={form.pekerjaanAyah}
                 onChange={(e) => setForm((prev) => ({ ...prev, pekerjaanAyah: e.target.value }))}
-                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:bg-white focus:ring-2 focus:ring-[#0B3A6A] focus:outline-none placeholder:font-normal placeholder:text-slate-400"
+                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-normal text-slate-900 focus:bg-white focus:ring-2 focus:ring-[#0B3A6A] focus:outline-none placeholder:font-normal placeholder:text-slate-400"
               />
             </div>
 
@@ -760,7 +770,7 @@ export default function ProfilPage() {
                 placeholder="Nama Lengkap Ibu"
                 value={form.namaIbu}
                 onChange={(e) => setForm((prev) => ({ ...prev, namaIbu: e.target.value }))}
-                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:bg-white focus:ring-2 focus:ring-[#0B3A6A] focus:outline-none placeholder:font-normal placeholder:text-slate-400"
+                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-normal text-slate-900 focus:bg-white focus:ring-2 focus:ring-[#0B3A6A] focus:outline-none placeholder:font-normal placeholder:text-slate-400"
               />
             </div>
 
@@ -771,7 +781,7 @@ export default function ProfilPage() {
                 placeholder="Contoh: Ibu Rumah Tangga / Pedagang"
                 value={form.pekerjaanIbu}
                 onChange={(e) => setForm((prev) => ({ ...prev, pekerjaanIbu: e.target.value }))}
-                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:bg-white focus:ring-2 focus:ring-[#0B3A6A] focus:outline-none placeholder:font-normal placeholder:text-slate-400"
+                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-normal text-slate-900 focus:bg-white focus:ring-2 focus:ring-[#0B3A6A] focus:outline-none placeholder:font-normal placeholder:text-slate-400"
               />
             </div>
 
@@ -780,7 +790,7 @@ export default function ProfilPage() {
               <select
                 value={form.penghasilanOrtu}
                 onChange={(e) => setForm((prev) => ({ ...prev, penghasilanOrtu: e.target.value }))}
-                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:bg-white focus:ring-2 focus:ring-[#0B3A6A] focus:outline-none"
+                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-normal text-slate-900 focus:bg-white focus:ring-2 focus:ring-[#0B3A6A] focus:outline-none"
               >
                 <option value="< Rp 1.500.000">&lt; Rp 1.500.000 / bulan</option>
                 <option value="Rp 1.500.000 - Rp 3.000.000">Rp 1.500.000 – Rp 3.000.000 / bulan</option>
@@ -794,7 +804,7 @@ export default function ProfilPage() {
               <select
                 value={form.kepemilikanBantuan}
                 onChange={(e) => setForm((prev) => ({ ...prev, kepemilikanBantuan: e.target.value }))}
-                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:bg-white focus:ring-2 focus:ring-[#0B3A6A] focus:outline-none"
+                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-normal text-slate-900 focus:bg-white focus:ring-2 focus:ring-[#0B3A6A] focus:outline-none"
               >
                 <option value="Tidak Ada">Tidak Ada</option>
                 <option value="KIP Kuliah">KIP Kuliah</option>

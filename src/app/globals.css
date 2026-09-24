@@ -28,7 +28,62 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans), sans-serif;
+  font-weight: 400;
 }
+
+/* ============================================================
+   SISTEM TIPOGRAFI GLOBAL — Rubik Font Weight Hierarchy
+   Berlaku di seluruh halaman Beasiswa Cerdas Sultra
+   ============================================================ */
+
+/* --- Heading --- */
+h1 { font-weight: 700; }       /* Bold   — judul halaman utama  */
+h2 { font-weight: 700; }       /* Bold   — judul seksi besar    */
+h3 { font-weight: 600; }       /* Semibold — sub-judul / card   */
+h4 { font-weight: 600; }       /* Semibold — label grup / title */
+h5, h6 { font-weight: 600; }
+
+/* --- Paragraf & teks umum --- */
+p, span, li {
+  font-weight: 400;             /* Regular — konten/body text    */
+}
+
+/* --- Label form --- */
+label {
+  font-weight: 600;             /* Semibold — identifikasi field */
+}
+
+/* --- Input, Textarea, Select ---
+   Nilai yang diketik user → Regular agar tidak berat/bold */
+input,
+textarea,
+select {
+  font-weight: 400;             /* Regular — nilai yang diisi    */
+  font-family: var(--font-sans), sans-serif;
+}
+
+/* --- Placeholder — selalu Regular + lebih redup --- */
+input::placeholder,
+textarea::placeholder {
+  font-weight: 400;
+  color: #94a3b8; /* slate-400 */
+}
+
+/* --- Tombol / Button --- */
+button {
+  font-weight: 600;             /* Semibold — CTA harus tegas    */
+  font-family: var(--font-sans), sans-serif;
+}
+
+/* --- Teks helper / hint di bawah field --- */
+small {
+  font-weight: 400;
+}
+
+/* ============================================================
+   Override khusus: class Tailwind font-* tetap dihormati
+   (Tailwind inline class akan override CSS global ini)
+   ============================================================ */
 
 /* Utility to hide scrollbars while maintaining scroll functionality */
 .no-scrollbar::-webkit-scrollbar,

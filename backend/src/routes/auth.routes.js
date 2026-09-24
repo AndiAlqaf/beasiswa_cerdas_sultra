@@ -14,9 +14,9 @@ const { authLimiter } = require('../middleware/rateLimiter');
 const { registerValidation, loginValidation, refreshValidation } = require('../middleware/validator');
 const { authenticate } = require('../middleware/auth');
 
-// Rate-limited auth endpoints (rate limit removed as requested)
-router.post('/register', registerValidation, register);
-router.post('/login', loginValidation, login);
+// Rate-limited auth endpoints
+router.post('/register', authLimiter, registerValidation, register);
+router.post('/login', authLimiter, loginValidation, login);
 router.post('/refresh', refreshValidation, refresh);
 router.post('/logout', authenticate, logout);
 

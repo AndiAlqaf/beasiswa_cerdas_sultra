@@ -2,14 +2,28 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { ShieldCheck, Menu, X, ArrowRight, Search } from 'lucide-react';
+import { getAccessToken, getUser } from '@/lib/api';
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeHash, setActiveHash] = useState('');
   const pathname = usePathname();
+  const router = useRouter();
+
+  // Baca localStorage saat klik — tidak ada race condition
+  const handlePortalClick = () => {
+    const token = getAccessToken();
+    const user = getUser();
+    if (token && user) {
+      router.push(user.role === 'admin' ? '/admin' : '/dashboard');
+    } else {
+      router.push('/login');
+    }
+    setMobileMenuOpen(false);
+  };
 
   useEffect(() => {
     // Set initial hash on load
@@ -168,13 +182,13 @@ export default function Navbar() {
               <span>Cek Status</span>
             </Link>
 
-            <Link
-              href="/login"
-              className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-blue-900 hover:bg-blue-950 shadow-xs transition-all hover:shadow flex items-center gap-1.5 group whitespace-nowrap"
+            <button
+              onClick={handlePortalClick}
+              className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-blue-900 hover:bg-blue-950 shadow-xs transition-all hover:shadow flex items-center gap-1.5 group whitespace-nowrap cursor-pointer"
             >
               <span>Masuk Portal</span>
               <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5 shrink-0" />
-            </Link>
+            </button>
           </div>
 
           {/* Mobile Menu Button */}
@@ -220,14 +234,13 @@ export default function Navbar() {
               <Search className="w-4 h-4" />
               Cek Status Pendaftaran
             </Link>
-            <Link
-              href="/login"
-              onClick={() => setMobileMenuOpen(false)}
-              className="w-full px-4 py-2.5 rounded-xl text-center font-bold text-white bg-blue-900 hover:bg-blue-950 transition-colors flex items-center justify-center gap-2 text-xs"
+            <button
+              onClick={handlePortalClick}
+              className="w-full px-4 py-2.5 rounded-xl text-center font-bold text-white bg-blue-900 hover:bg-blue-950 transition-colors flex items-center justify-center gap-2 text-xs cursor-pointer"
             >
               Masuk Portal Mahasiswa
               <ArrowRight className="w-4 h-4" />
-            </Link>
+            </button>
           </div>
         </div>
       )}

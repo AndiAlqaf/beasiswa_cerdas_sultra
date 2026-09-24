@@ -148,7 +148,7 @@ export default function PendaftarPage() {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Cari nama, No. Registrasi, atau Universitas..." 
-              className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-colors"
+              className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-normal text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-colors"
             />
           </div>
           <div className="flex gap-2 flex-wrap sm:flex-nowrap">
@@ -383,7 +383,7 @@ export default function PendaftarPage() {
             <div className="p-5 border-t border-slate-100 bg-slate-50 flex justify-end gap-3">
               <button 
                 onClick={() => window.print()}
-                className="px-5 py-2.5 bg-slate-800 text-white font-medium rounded-xl hover:bg-slate-900 transition-colors flex items-center gap-2"
+                className="px-5 py-2.5 bg-slate-800 text-white font-normal rounded-xl hover:bg-slate-900 transition-colors flex items-center gap-2"
               >
                 <Printer className="w-4 h-4" /> Cetak Formulir
               </button>

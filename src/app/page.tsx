@@ -2,8 +2,10 @@
 
 import React from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { ArrowRight, Info, ShieldCheck, GraduationCap, Download, FileText } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { getAccessToken, getUser } from '@/lib/api';
 
 import Navbar from '@/components/Navbar';
 import FlowchartDiagram from '@/components/FlowchartDiagram';
@@ -15,6 +17,18 @@ import Footer from '@/components/Footer';
 import AnnouncementPopup from '@/components/AnnouncementPopup';
 
 export default function LandingPage() {
+  const router = useRouter();
+
+  const handlePortalClick = () => {
+    const token = getAccessToken();
+    const user = getUser();
+    if (token && user) {
+      router.push(user.role === 'admin' ? '/admin' : '/dashboard');
+    } else {
+      router.push('/login');
+    }
+  };
+
   return (
     <main className="min-h-screen bg-slate-50 text-slate-900 font-sans antialiased">
       <AnnouncementPopup />
@@ -63,13 +77,13 @@ export default function LandingPage() {
             transition={{ duration: 0.8, ease: "easeOut", delay: 0.4 }}
             className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto"
           >
-            <Link
-              href="/login"
-              className="w-full sm:w-auto px-8 py-4 text-sm font-bold text-white bg-blue-600 hover:bg-blue-500 transition-colors flex items-center justify-center gap-3 border border-blue-500 rounded-xl shadow-lg hover:shadow-xl group"
+            <button
+              onClick={handlePortalClick}
+              className="w-full sm:w-auto px-8 py-4 text-sm font-bold text-white bg-blue-600 hover:bg-blue-500 transition-colors flex items-center justify-center gap-3 border border-blue-500 rounded-xl shadow-lg hover:shadow-xl group cursor-pointer"
             >
               MASUK PORTAL
               <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
-            </Link>
+            </button>
             <Link
               href="/#jadwal"
               className="w-full sm:w-auto px-8 py-4 text-sm font-bold text-white border border-white/30 hover:border-white hover:bg-white/10 transition-colors flex items-center justify-center gap-3 rounded-xl backdrop-blur-sm group"

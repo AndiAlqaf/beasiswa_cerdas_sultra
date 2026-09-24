@@ -30,18 +30,20 @@ const generalLimiter = rateLimit({
 });
 
 /**
- * Auth rate limiter — 5 requests per 15 minutes per IP
+ * Auth rate limiter — 5 requests per 1 minute (or window) per IP
  * Specifically for login/register to prevent brute force
  */
 const authLimiter = rateLimit({
-  windowMs: env.RATE_LIMIT_WINDOW_MS,
-  max: env.AUTH_RATE_LIMIT_MAX,
+  windowMs: 60 * 1000, // 1 minute window for quick recovery & testing
+  max: 5,              // Max 5 attempts
   standardHeaders: true,
   legacyHeaders: false,
-  message: {
-    success: false,
-    message: 'Terlalu banyak percobaan login/registrasi. Coba lagi dalam 15 menit.',
-    retryAfter: Math.ceil(env.RATE_LIMIT_WINDOW_MS / 1000),
+  handler: (req, res) => {
+    res.status(429).json({
+      success: false,
+      message: 'Terlalu banyak percobaan login gagal. Percobaan dibatasi sementara untuk keamanan akun Anda.',
+      retryAfter: 60,
+    });
   },
   keyGenerator: (req) => {
     return req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip;

@@ -75,9 +75,9 @@ module.exports = {
     /data:text\/html/i,
   ],
 
-  // Request body size limits
-  JSON_BODY_LIMIT: '5mb',
-  URL_ENCODED_LIMIT: '5mb',
+  // Request body size limits — 10MB to comfortably support canvas signature base64 & rich profile data
+  JSON_BODY_LIMIT: '10mb',
+  URL_ENCODED_LIMIT: '10mb',
 
   // Valid roles
   ROLES: {

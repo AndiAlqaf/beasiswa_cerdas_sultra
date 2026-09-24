@@ -191,7 +191,7 @@ export default function SeleksiPage() {
           <select 
             value={jenjangFilter}
             onChange={(e) => setJenjangFilter(e.target.value)}
-            className="px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm w-full sm:w-auto"
+            className="px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-xl text-sm font-normal focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm w-full sm:w-auto"
           >
             <option value="">Semua Jenjang</option>
             <option value="S1">S1 / D4</option>
@@ -205,7 +205,7 @@ export default function SeleksiPage() {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Cari pendaftar..." 
-              className="pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm w-full sm:w-64"
+              className="pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-normal text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm w-full sm:w-64"
             />
           </div>
         </form>
@@ -387,13 +387,13 @@ export default function SeleksiPage() {
             <div className="p-5 border-t border-slate-100 bg-slate-50 flex justify-end gap-3">
               <button 
                 onClick={() => window.print()}
-                className="px-5 py-2.5 bg-slate-800 text-white font-medium rounded-xl hover:bg-slate-900 transition-colors flex items-center gap-2 mr-auto"
+                className="px-5 py-2.5 bg-slate-800 text-white font-normal rounded-xl hover:bg-slate-900 transition-colors flex items-center gap-2 mr-auto"
               >
                 <Printer className="w-4 h-4" /> Cetak Formulir
               </button>
               <button 
                 onClick={() => { setSelectedApplicant(null); setApplicantDetail(null); }}
-                className="px-5 py-2.5 bg-slate-200 text-slate-700 font-medium rounded-xl hover:bg-slate-300 transition-colors"
+                className="px-5 py-2.5 bg-slate-200 text-slate-700 font-normal rounded-xl hover:bg-slate-300 transition-colors"
               >
                 Tutup
               </button>

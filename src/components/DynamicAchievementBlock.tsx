@@ -79,7 +79,7 @@ export default function DynamicAchievementBlock({
                 value={item.tahun}
                 onChange={(e) => handleItemChange(item.id, 'tahun', e.target.value.replace(/\D/g, ''))}
                 placeholder="2025"
-                className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-mono text-center font-medium text-slate-900 focus:ring-2 focus:ring-[#0B3A6A] focus:outline-none placeholder:font-normal placeholder:text-slate-400"
+                className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-mono text-center font-normal text-slate-900 focus:ring-2 focus:ring-[#0B3A6A] focus:outline-none placeholder:font-normal placeholder:text-slate-400"
               />
             </div>
             <div className="col-span-1 flex justify-center">

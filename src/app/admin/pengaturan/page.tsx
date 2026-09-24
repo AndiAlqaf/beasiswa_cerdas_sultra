@@ -111,7 +111,7 @@ export default function PengaturanPage() {
                     type="text"
                     value={generalConfig.programName}
                     onChange={(e) => setGeneralConfig({ ...generalConfig, programName: e.target.value })}
-                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-900"
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-normal text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-900"
                   />
                 </div>
                 
@@ -121,7 +121,7 @@ export default function PengaturanPage() {
                     type="text"
                     value={generalConfig.academicYear}
                     onChange={(e) => setGeneralConfig({ ...generalConfig, academicYear: e.target.value })}
-                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-900"
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-normal text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-900"
                   />
                 </div>
 
@@ -175,7 +175,7 @@ export default function PengaturanPage() {
                     type="date"
                     value={scheduleConfig.openDate}
                     onChange={(e) => setScheduleConfig({ ...scheduleConfig, openDate: e.target.value })}
-                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-900"
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-normal text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-900"
                   />
                 </div>
                 <div className="space-y-1.5">
@@ -184,7 +184,7 @@ export default function PengaturanPage() {
                     type="date"
                     value={scheduleConfig.closeDate}
                     onChange={(e) => setScheduleConfig({ ...scheduleConfig, closeDate: e.target.value })}
-                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-900"
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-normal text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-900"
                   />
                 </div>
                 <div className="space-y-1.5">
@@ -193,7 +193,7 @@ export default function PengaturanPage() {
                     type="date"
                     value={scheduleConfig.selectionStart}
                     onChange={(e) => setScheduleConfig({ ...scheduleConfig, selectionStart: e.target.value })}
-                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-900"
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-normal text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-900"
                   />
                 </div>
                 <div className="space-y-1.5">
@@ -202,7 +202,7 @@ export default function PengaturanPage() {
                     type="date"
                     value={scheduleConfig.announcementDate}
                     onChange={(e) => setScheduleConfig({ ...scheduleConfig, announcementDate: e.target.value })}
-                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-900"
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-normal text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-900"
                   />
                 </div>
                 <div className="space-y-1.5">
@@ -211,7 +211,7 @@ export default function PengaturanPage() {
                     type="date"
                     value={scheduleConfig.sanggahStart || '2026-10-19'}
                     onChange={(e) => setScheduleConfig({ ...scheduleConfig, sanggahStart: e.target.value })}
-                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-900"
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-normal text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-900"
                   />
                 </div>
                 <div className="space-y-1.5">
@@ -220,7 +220,7 @@ export default function PengaturanPage() {
                     type="date"
                     value={scheduleConfig.sanggahEnd || '2026-10-21'}
                     onChange={(e) => setScheduleConfig({ ...scheduleConfig, sanggahEnd: e.target.value })}
-                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-900"
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-normal text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-900"
                   />
                 </div>
               </div>
@@ -248,7 +248,7 @@ export default function PengaturanPage() {
                     type="text"
                     value={reqConfig.minIpkS1}
                     onChange={(e) => setReqConfig({ ...reqConfig, minIpkS1: e.target.value })}
-                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-900"
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-normal text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-900"
                   />
                 </div>
                 <div className="space-y-1.5">
@@ -257,7 +257,7 @@ export default function PengaturanPage() {
                     type="text"
                     value={reqConfig.minIpkS2}
                     onChange={(e) => setReqConfig({ ...reqConfig, minIpkS2: e.target.value })}
-                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-900"
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-normal text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-900"
                   />
                 </div>
                 <div className="space-y-1.5">
@@ -266,7 +266,7 @@ export default function PengaturanPage() {
                     type="text"
                     value={reqConfig.minIpkS3}
                     onChange={(e) => setReqConfig({ ...reqConfig, minIpkS3: e.target.value })}
-                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-900"
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-normal text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-900"
                   />
                 </div>
               </div>

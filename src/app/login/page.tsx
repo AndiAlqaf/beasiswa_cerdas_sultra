@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, ShieldCheck, Mail, Lock, Eye, EyeOff, ArrowRight, AlertCircle, Loader2 } from 'lucide-react';
-import { fetchAPI, setTokens } from '@/lib/api';
+import { ArrowLeft, ShieldCheck, Mail, Lock, Eye, EyeOff, ArrowRight, AlertCircle, Loader2, Clock } from 'lucide-react';
+import { fetchAPI, setTokens, getAccessToken, getUser } from '@/lib/api';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -13,9 +13,50 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [lockoutSeconds, setLockoutSeconds] = useState<number | null>(null);
+  const [failedCount, setFailedCount] = useState<number>(0);
+  const [checkingAuth, setCheckingAuth] = useState(true);
+
+  // Auto-redirect if already logged in
+  useEffect(() => {
+    const token = getAccessToken();
+    const user = getUser();
+    if (token && user) {
+      if (user.role === 'admin') {
+        router.replace('/admin');
+      } else {
+        router.replace('/dashboard');
+      }
+    } else {
+      setCheckingAuth(false);
+    }
+  }, [router]);
+
+  useEffect(() => {
+    if (lockoutSeconds === null || lockoutSeconds <= 0) return;
+    const interval = setInterval(() => {
+      setLockoutSeconds((prev) => {
+        if (prev === null || prev <= 1) {
+          clearInterval(interval);
+          setFailedCount(0);
+          setError(null);
+          return null;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [lockoutSeconds]);
+
+  const formatCountdown = (secs: number) => {
+    const m = Math.floor(secs / 60);
+    const s = secs % 60;
+    return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (lockoutSeconds !== null && lockoutSeconds > 0) return;
     setLoading(true);
     setError(null);
 
@@ -27,6 +68,7 @@ export default function LoginPage() {
       });
 
       if (res.success && res.data) {
+        setFailedCount(0);
         const { accessToken, refreshToken, user } = res.data;
         setTokens(accessToken, refreshToken, user);
 
@@ -37,7 +79,30 @@ export default function LoginPage() {
         }
       }
     } catch (err: any) {
-      setError(err.message || 'Gagal masuk. Periksa kembali kredensial Anda.');
+      const msg = err.message || 'Email/NIK atau kata sandi salah.';
+      const newFailCount = failedCount + 1;
+      setFailedCount(newFailCount);
+
+      // Check if locked out (status 429, retryAfter, 5 consecutive failed attempts, or lockout message)
+      if (
+        err.status === 429 ||
+        err.data?.retryAfter ||
+        newFailCount >= 5 ||
+        msg.toLowerCase().includes('terkunci') ||
+        msg.toLowerCase().includes('too many') ||
+        msg.toLowerCase().includes('dibatasi') ||
+        msg.toLowerCase().includes('menit')
+      ) {
+        let secs = err.data?.retryAfter || 60;
+        const match = msg.match(/(\d+)\s*menit/i);
+        if (match && match[1] && !err.data?.retryAfter) {
+          secs = parseInt(match[1], 10) * 60;
+        }
+        setLockoutSeconds(secs);
+        setError('Terlalu banyak percobaan login gagal (5 kali berturut-turut). Sistem mengunci login sementara.');
+      } else {
+        setError(`${msg} (Percobaan gagal: ${newFailCount}/5)`);
+      }
     } finally {
       setLoading(false);
     }
@@ -45,7 +110,13 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-white flex">
+      {checkingAuth && (
+        <div className="fixed inset-0 bg-white z-50 flex items-center justify-center">
+          <Loader2 className="w-8 h-8 text-[#0B3A6A] animate-spin" />
+        </div>
+      )}
       {/* Left Column: Branding / Graphic (Hidden on Mobile) */}
+
       <div 
         className="hidden lg:flex lg:w-1/2 relative bg-slate-900 overflow-hidden bg-cover bg-center"
         style={{ backgroundImage: "url('/footage2.jpg')" }}
@@ -60,7 +131,7 @@ export default function LoginPage() {
 
         <div className="relative z-10 w-full h-full flex flex-col p-12 lg:p-20">
           <div>
-            <Link href="/" className="inline-flex items-center gap-2 text-white/90 hover:text-white bg-white/10 hover:bg-white/20 border border-white/20 backdrop-blur-md px-4 py-2 rounded-xl transition-all shadow-sm text-sm font-medium">
+            <Link href="/" className="inline-flex items-center gap-2 text-white/90 hover:text-white bg-white/10 hover:bg-white/20 border border-white/20 backdrop-blur-md px-4 py-2 rounded-xl transition-all shadow-sm text-sm font-normal">
               <ArrowLeft className="w-4 h-4" />
               Kembali ke Beranda
             </Link>
@@ -98,7 +169,7 @@ export default function LoginPage() {
             <p className="text-slate-500">Silakan masuk ke akun Anda untuk melanjutkan.</p>
           </div>
 
-          {error && (
+          {error && lockoutSeconds === null && (
             <div className="p-4 bg-rose-50 border border-rose-200 rounded-2xl flex items-start gap-3 text-xs text-rose-800 animate-in fade-in">
               <AlertCircle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
               <div>
@@ -120,9 +191,10 @@ export default function LoginPage() {
                   <input
                     type="text"
                     required
+                    disabled={lockoutSeconds !== null && lockoutSeconds > 0}
                     value={identifier}
                     onChange={(e) => setIdentifier(e.target.value)}
-                    className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all text-slate-900 font-normal placeholder:font-normal placeholder:text-slate-400"
+                    className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all text-slate-900 font-normal placeholder:font-normal placeholder:text-slate-400 disabled:opacity-50 disabled:cursor-not-allowed"
                     placeholder="Masukkan Email atau NIK Anda"
                   />
                 </div>
@@ -130,12 +202,7 @@ export default function LoginPage() {
 
               {/* Password Input */}
               <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <label className="text-sm font-medium text-slate-700 block">Kata Sandi</label>
-                  <Link href="#" className="text-xs font-semibold text-blue-600 hover:text-blue-800">
-                    Lupa Sandi?
-                  </Link>
-                </div>
+                <label className="text-sm font-medium text-slate-700 block">Kata Sandi</label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
                     <Lock className="w-5 h-5 text-slate-400" />
@@ -143,15 +210,17 @@ export default function LoginPage() {
                   <input
                     type={showPassword ? 'text' : 'password'}
                     required
+                    disabled={lockoutSeconds !== null && lockoutSeconds > 0}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full pl-11 pr-12 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all text-slate-900 font-normal placeholder:font-normal placeholder:text-slate-400"
+                    className="w-full pl-11 pr-12 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all text-slate-900 font-normal placeholder:font-normal placeholder:text-slate-400 disabled:opacity-50 disabled:cursor-not-allowed"
                     placeholder="Masukkan kata sandi Anda"
                   />
                   <button
                     type="button"
+                    disabled={lockoutSeconds !== null && lockoutSeconds > 0}
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 focus:outline-none"
+                    className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 focus:outline-none disabled:opacity-50"
                   >
                     {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
@@ -159,28 +228,22 @@ export default function LoginPage() {
               </div>
             </div>
 
-            {/* Remember Me */}
-            <div className="flex items-center">
-              <input
-                id="remember-me"
-                type="checkbox"
-                className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 bg-slate-50"
-              />
-              <label htmlFor="remember-me" className="ml-2 block text-sm text-slate-600">
-                Ingat saya di perangkat ini
-              </label>
-            </div>
+
 
             {/* Submit Button */}
             <div className="space-y-3 pt-2">
               <button
                 type="submit"
-                disabled={loading}
-                className="w-full py-3.5 px-4 bg-blue-900 hover:bg-blue-950 text-white font-bold rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 group disabled:opacity-50"
+                disabled={loading || (lockoutSeconds !== null && lockoutSeconds > 0)}
+                className="w-full py-3.5 px-4 bg-blue-900 hover:bg-blue-950 text-white font-bold rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" /> Memproses...
+                  </>
+                ) : lockoutSeconds !== null && lockoutSeconds > 0 ? (
+                  <>
+                    <Clock className="w-4 h-4 animate-pulse" /> Tunggu ({formatCountdown(lockoutSeconds)})
                   </>
                 ) : (
                   <>

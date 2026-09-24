@@ -114,11 +114,13 @@ async function login(req, res) {
 
     // Account Lockout check (UAT-AUTH-05: 5 failed attempts)
     if (user.locked_until && new Date(user.locked_until) > new Date()) {
-      const remainingMinutes = Math.ceil((new Date(user.locked_until).getTime() - Date.now()) / 60000);
+      const remainingSeconds = Math.max(1, Math.ceil((new Date(user.locked_until).getTime() - Date.now()) / 1000));
+      const remainingMinutes = Math.ceil(remainingSeconds / 60);
       auditLog({ action: 'LOGIN_LOCKED_USER_ATTEMPT', userId: user.id, ipAddress: clientIp, userAgent: req.headers['user-agent'], requestId: req.requestId });
       return res.status(429).json({
         success: false,
-        message: `Too many requests / Akun terkunci sementara karena 5 kali percobaan login gagal. Silakan coba lagi dalam ${remainingMinutes} menit.`,
+        message: `Akun terkunci sementara karena 5 kali percobaan login gagal. Silakan coba lagi dalam ${remainingMinutes} menit.`,
+        retryAfter: remainingSeconds,
       });
     }
 
@@ -132,7 +134,8 @@ async function login(req, res) {
         auditLog({ action: 'ACCOUNT_LOCKED', userId: user.id, ipAddress: clientIp, userAgent: req.headers['user-agent'], requestId: req.requestId });
         return res.status(429).json({
           success: false,
-          message: 'Too many requests / Akun terkunci sementara karena 5 kali percobaan login gagal. Silakan coba lagi dalam 15 menit.',
+          message: 'Akun terkunci sementara karena 5 kali percobaan login gagal. Silakan coba lagi setelah waktu tunggu selesai.',
+          retryAfter: Math.ceil(LOCKOUT_DURATION_MS / 1000),
         });
       } else {
         await pool.execute('UPDATE users SET failed_login_attempts = ? WHERE id = ?', [failedAttempts, user.id]);
