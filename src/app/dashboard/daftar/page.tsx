@@ -346,12 +346,12 @@ export default function RegistrationPage() {
     }
   }, [isProfileLoaded, isSubmitted, currentStep, formData, signatureDataUrl]);
 
-  const handleDocumentUpload = async (docKey: string, _oldDocType: string, file: File) => {
+  const handleDocumentUpload = async (docKey: string, docType: string, file: File) => {
     setUploadingDocKey(docKey);
     try {
       const uploadFormData = new FormData();
-      uploadFormData.append(docKey, file);
-      const res = await fetchAPI(`/applicant/upload/${docKey}`, {
+      uploadFormData.append(docType, file);
+      const res = await fetchAPI(`/applicant/upload/${docType}`, {
         method: 'POST',
         body: uploadFormData,
       });
