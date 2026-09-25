@@ -17,6 +17,22 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [user, setUser] = useState<any>(null);
   const [timeline, setTimeline] = useState<any[]>([]);
 
+  const activeNotifications = timeline
+    .filter(t => t.status === 'active' || t.status === 'completed')
+    .slice(-3)
+    .map(t => {
+      let title = t.title;
+      if (t.id === 'sanggah') title = t.status === 'active' ? 'Masa Sanggah Dibuka' : 'Masa Sanggah Selesai';
+      if (t.id === 'pengumuman') title = 'Pengumuman Seleksi Administrasi';
+      return {
+        id: t.id,
+        title,
+        desc: t.desc,
+        date: t.startDate ? new Date(t.startDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Segera'
+      };
+    })
+    .reverse();
+
   useEffect(() => {
     const cachedUser = getUser();
     if (cachedUser) {
@@ -144,7 +160,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 className={`relative p-2 rounded-full transition-colors ${notificationsOpen ? 'bg-slate-100 text-blue-600' : 'text-slate-500 hover:bg-slate-100'}`}
               >
                 <Bell className="w-5 h-5" />
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 border border-white rounded-full"></span>
+                {activeNotifications.length > 0 && (
+                  <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 border border-white rounded-full"></span>
+                )}
               </button>
 
               {notificationsOpen && (
@@ -154,28 +172,25 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   
                   <div className="px-4 py-3 border-b border-slate-100 relative z-10 flex items-center justify-between">
                     <h3 className="font-bold text-slate-900 text-sm">Notifikasi</h3>
-                    <span className="text-xs bg-rose-100 text-rose-600 px-2 py-0.5 rounded-full font-semibold">2 Baru</span>
+                    {activeNotifications.length > 0 && (
+                      <span className="text-xs bg-rose-100 text-rose-600 px-2 py-0.5 rounded-full font-semibold">{activeNotifications.length} Baru</span>
+                    )}
                   </div>
                   
                   <div className="max-h-[300px] overflow-y-auto relative z-10">
-                    <Link href="/dashboard/pengumuman" onClick={() => setNotificationsOpen(false)} className="block px-4 py-3 border-b border-slate-50 hover:bg-slate-50 transition-colors">
-                      <p className="text-sm font-semibold text-slate-900 mb-1">Pengumuman Seleksi Administrasi</p>
-                      <p className="text-xs text-slate-500 line-clamp-2">Hasil seleksi tahap awal akan diumumkan melalui portal ini. Pastikan Anda mengecek secara berkala.</p>
-                      <p className="text-[10px] text-slate-400 mt-2 font-medium">
-                        {timeline.find(t => t.id === 'pengumuman')?.startDate 
-                          ? new Date(timeline.find(t => t.id === 'pengumuman').startDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
-                          : 'Segera'}
-                      </p>
-                    </Link>
-                    <Link href="/dashboard/pengumuman" onClick={() => setNotificationsOpen(false)} className="block px-4 py-3 hover:bg-slate-50 transition-colors">
-                      <p className="text-sm font-semibold text-slate-900 mb-1">Masa Sanggah Dibuka</p>
-                      <p className="text-xs text-slate-500 line-clamp-2">Periode pengajuan banding khusus bagi pendaftar yang tidak lolos seleksi administrasi awal.</p>
-                      <p className="text-[10px] text-slate-400 mt-2 font-medium">
-                        {timeline.find(t => t.id === 'sanggah')?.startDate 
-                          ? new Date(timeline.find(t => t.id === 'sanggah').startDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
-                          : 'Segera'}
-                      </p>
-                    </Link>
+                    {activeNotifications.length > 0 ? (
+                      activeNotifications.map(notif => (
+                        <Link key={notif.id} href="/dashboard/pengumuman" onClick={() => setNotificationsOpen(false)} className="block px-4 py-3 border-b border-slate-50 hover:bg-slate-50 transition-colors">
+                          <p className="text-sm font-semibold text-slate-900 mb-1">{notif.title}</p>
+                          <p className="text-xs text-slate-500 line-clamp-2">{notif.desc}</p>
+                          <p className="text-[10px] text-slate-400 mt-2 font-medium">{notif.date}</p>
+                        </Link>
+                      ))
+                    ) : (
+                      <div className="px-4 py-8 text-center text-slate-500 text-xs">
+                        Belum ada notifikasi saat ini.
+                      </div>
+                    )}
                   </div>
                   
                   <div className="px-4 py-2 border-t border-slate-100 relative z-10">
