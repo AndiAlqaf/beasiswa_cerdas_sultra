@@ -551,7 +551,7 @@ export default function RegisterPage() {
         const res = await fetch(capturedImage);
         const fileBlob = await res.blob();
         const formData = new FormData();
-        formData.append('selfie', fileBlob, 'selfie.png');
+        formData.append('selfie', fileBlob, 'selfie.webp');
         await fetchAPI('/applicant/upload/selfie', {
           method: 'POST',
           body: formData,

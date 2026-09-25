@@ -112,10 +112,10 @@ export default function ProfilPage() {
 
           smaNama: smaEdu.institusi || '',
           smaJurusan: smaEdu.jurusan || '',
-          smaTahunLulus: smaEdu.tahunLulus ? String(smaEdu.tahunLulus) : '',
+          smaTahunLulus: smaEdu.tahun_lulus ? String(smaEdu.tahun_lulus) : (smaEdu.tahunLulus ? String(smaEdu.tahunLulus) : ''),
           s1Nama: s1Edu.institusi || '',
           s1Jurusan: s1Edu.jurusan || '',
-          s1TahunLulus: s1Edu.tahunLulus ? String(s1Edu.tahunLulus) : '',
+          s1TahunLulus: s1Edu.tahun_lulus ? String(s1Edu.tahun_lulus) : (s1Edu.tahunLulus ? String(s1Edu.tahunLulus) : ''),
 
           namaAyah: p.namaAyah || p.nama_ayah || '',
           pekerjaanAyah: p.pekerjaanAyah || p.pekerjaan_ayah || '',

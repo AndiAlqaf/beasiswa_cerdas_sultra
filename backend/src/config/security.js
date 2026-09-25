@@ -22,6 +22,7 @@ module.exports = {
     'image/jpeg',
     'image/jpg',
     'image/png',
+    'image/webp',
     'application/pdf',
     'application/msword',
     'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
@@ -37,6 +38,9 @@ module.exports = {
     ],
     'image/png': [
       Buffer.from([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]),
+    ],
+    'image/webp': [
+      Buffer.from([0x52, 0x49, 0x46, 0x46]), // RIFF
     ],
     'application/pdf': [
       Buffer.from([0x25, 0x50, 0x44, 0x46]), // %PDF

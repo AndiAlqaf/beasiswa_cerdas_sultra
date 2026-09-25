@@ -219,7 +219,12 @@ export default function RegistrationPage() {
 
           const selfieDoc = docs.find((d: any) => d.docType === 'selfie');
           const ktmDoc = docs.find((d: any) => d.docType === 'ktm');
-          const pendukungDoc = docs.find((d: any) => d.docType === 'pendukung');
+          const ktpDoc = docs.find((d: any) => d.docType === 'ktp' || d.docType === 'pendukung');
+          const suratPermohonanDoc = docs.find((d: any) => d.docType === 'surat_permohonan');
+          const transkripDoc = docs.find((d: any) => d.docType === 'transkrip');
+          const dtksDoc = docs.find((d: any) => d.docType === 'dtks');
+          const suratPernyataanDoc = docs.find((d: any) => d.docType === 'surat_pernyataan');
+          const esaiDoc = docs.find((d: any) => d.docType === 'esai');
 
           let regDraft: any = null;
           try {
@@ -238,8 +243,8 @@ export default function RegistrationPage() {
             tanggalLahir: p.tanggalLahir ? String(p.tanggalLahir).split('T')[0] : (regDraft?.tanggalLahir || ''),
             jenisKelamin: p.gender || regDraft?.gender || 'Laki-laki',
             noHp: p.noHp || regDraft?.noHp || '',
-            alamatDomisili: p.alamatDomisili || regDraft?.alamatDomisili || '',
-            alamatKtp: p.alamatKtp || p.alamatDomisili || regDraft?.alamatDomisili || '',
+            alamatDomisili: p.alamatDomisili || p.alamat_domisili || regDraft?.alamatDomisili || '',
+            alamatKtp: p.alamatKtp || p.alamat_ktp || p.alamatDomisili || p.alamat_domisili || regDraft?.alamatDomisili || '',
             noKk: p.noKk || '',
             akreditasiProdi: p.akreditasiProdi || 'Baik Sekali',
             nim: p.nim || '',
@@ -249,13 +254,13 @@ export default function RegistrationPage() {
             beasiswaLain: p.beasiswaLain || 'Tidak Ada',
             smaNama: sma.institusi || p.smaNama || regDraft?.smaNama || '',
             smaJurusan: sma.jurusan || p.smaJurusan || regDraft?.smaJurusan || '',
-            smaTahunLulus: sma.tahunLulus ? String(sma.tahunLulus) : (p.smaTahunLulus || regDraft?.smaTahunLulus || ''),
+            smaTahunLulus: sma.tahun_lulus ? String(sma.tahun_lulus) : (sma.tahunLulus ? String(sma.tahunLulus) : (p.smaTahunLulus || regDraft?.smaTahunLulus || '')),
             s1Nama: (currentJenjang === 'S2' || currentJenjang === 'S3') ? (s1.institusi || p.s1Nama || regDraft?.s1Nama || '') : '',
             s1Jurusan: (currentJenjang === 'S2' || currentJenjang === 'S3') ? (s1.jurusan || p.s1Jurusan || regDraft?.s1Jurusan || '') : '',
-            s1TahunLulus: (currentJenjang === 'S2' || currentJenjang === 'S3') ? (s1.tahunLulus ? String(s1.tahunLulus) : (p.s1TahunLulus || regDraft?.s1TahunLulus || '')) : '',
+            s1TahunLulus: (currentJenjang === 'S2' || currentJenjang === 'S3') ? (s1.tahun_lulus ? String(s1.tahun_lulus) : (s1.tahunLulus ? String(s1.tahunLulus) : (p.s1TahunLulus || regDraft?.s1TahunLulus || ''))) : '',
             s2Nama: s2.institusi || p.s2Nama || regDraft?.s2Nama || '',
             s2Jurusan: s2.jurusan || p.s2Jurusan || regDraft?.s2Jurusan || '',
-            s2TahunLulus: s2.tahunLulus ? String(s2.tahunLulus) : (p.s2TahunLulus || regDraft?.s2TahunLulus || ''),
+            s2TahunLulus: s2.tahun_lulus ? String(s2.tahun_lulus) : (s2.tahunLulus ? String(s2.tahunLulus) : (p.s2TahunLulus || regDraft?.s2TahunLulus || '')),
             perguruanTinggi: p.perguruanTinggi || p.institusi || (currentJenjang === 'S3' ? edus.find((e: any) => e.tingkat === 'S3')?.institusi : currentJenjang === 'S2' ? s2.institusi : s1.institusi) || regDraft?.perguruanTinggi || cachedUser?.institusi || '',
             fakultasProdi: p.fakultasProdi || p.jurusan || (currentJenjang === 'S3' ? edus.find((e: any) => e.tingkat === 'S3')?.jurusan : currentJenjang === 'S2' ? s2.jurusan : s1.jurusan) || p.prodiPrioritas || regDraft?.prodi || cachedUser?.jurusan || '',
             namaAyah: p.namaAyah || p.nama_ayah || '',
@@ -272,7 +277,12 @@ export default function RegistrationPage() {
             pelatihanSertifikasi: p.pelatihanSertifikasi || p.pelatihan_sertifikasi || '',
             filePasfoto: selfieDoc ? selfieDoc.originalName : '',
             fileSuratAktif: ktmDoc ? ktmDoc.originalName : '',
-            fileKtp: pendukungDoc ? pendukungDoc.originalName : '',
+            fileKtp: ktpDoc ? ktpDoc.originalName : '',
+            fileSuratPermohonan: suratPermohonanDoc ? suratPermohonanDoc.originalName : '',
+            fileTranskrip: transkripDoc ? transkripDoc.originalName : '',
+            fileDtks: dtksDoc ? dtksDoc.originalName : '',
+            fileSuratPernyataan: suratPernyataanDoc ? suratPernyataanDoc.originalName : '',
+            fileMotivationOrEsai: esaiDoc ? esaiDoc.originalName : '',
           };
 
           // Restore draft if exists and application is not submitted
@@ -1271,35 +1281,35 @@ export default function RegistrationPage() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                     {(formData.jenjang === 'S1'
                       ? [
-                          { key: 'fileSuratPermohonan', docType: 'pendukung', title: '1. Surat Permohonan BSSC (Gubernur Sultra)' },
+                          { key: 'fileSuratPermohonan', docType: 'surat_permohonan', title: '1. Surat Permohonan BSSC (Gubernur Sultra)' },
                           { key: 'filePasfoto', docType: 'selfie', title: '2. Pasfoto Terbaru / Selfie KTP' },
-                          { key: 'fileKtp', docType: 'pendukung', title: '3. KTP Provinsi Sulawesi Tenggara' },
+                          { key: 'fileKtp', docType: 'ktp', title: '3. KTP Provinsi Sulawesi Tenggara' },
                           { key: 'fileSuratAktif', docType: 'ktm', title: '4. KTM / Surat Aktif Kuliah' },
-                          { key: 'fileTranskrip', docType: 'pendukung', title: '5. Transkrip Nilai Sementara S1' },
-                          { key: 'fileDtks', docType: 'pendukung', title: '6. Bukti Terdaftar DTKS / DTSEN' },
-                          { key: 'fileSuratPernyataan', docType: 'pendukung', title: '7. Surat Pernyataan Bebas Beasiswa Lain (Materai)' },
-                          { key: 'fileMotivationOrEsai', docType: 'pendukung', title: '8. Motivation Letter (S1/D4)' }
+                          { key: 'fileTranskrip', docType: 'transkrip', title: '5. Transkrip Nilai Sementara S1' },
+                          { key: 'fileDtks', docType: 'dtks', title: '6. Bukti Terdaftar DTKS / DTSEN' },
+                          { key: 'fileSuratPernyataan', docType: 'surat_pernyataan', title: '7. Surat Pernyataan Bebas Beasiswa Lain (Materai)' },
+                          { key: 'fileMotivationOrEsai', docType: 'esai', title: '8. Motivation Letter (S1/D4)' }
                         ]
                       : formData.jenjang === 'S2'
                       ? [
-                          { key: 'fileSuratPermohonan', docType: 'pendukung', title: '1. Surat Permohonan BSSC (Gubernur Sultra)' },
+                          { key: 'fileSuratPermohonan', docType: 'surat_permohonan', title: '1. Surat Permohonan BSSC (Gubernur Sultra)' },
                           { key: 'filePasfoto', docType: 'selfie', title: '2. Pasfoto Terbaru / Selfie KTP' },
-                          { key: 'fileKtp', docType: 'pendukung', title: '3. KTP Provinsi Sulawesi Tenggara' },
+                          { key: 'fileKtp', docType: 'ktp', title: '3. KTP Provinsi Sulawesi Tenggara' },
                           { key: 'fileSuratAktif', docType: 'ktm', title: '4. KTM / Surat Aktif S2' },
-                          { key: 'fileTranskrip', docType: 'pendukung', title: '5. Transkrip Nilai Semester S2' },
-                          { key: 'fileDtks', docType: 'pendukung', title: '6. Ijazah & Transkrip Nilai S1' },
-                          { key: 'fileSuratPernyataan', docType: 'pendukung', title: '7. Surat Pernyataan Bebas Beasiswa Lain' },
-                          { key: 'fileMotivationOrEsai', docType: 'pendukung', title: '8. Esai Rencana Penelitian & Kontribusi Sultra (S2)' }
+                          { key: 'fileTranskrip', docType: 'transkrip', title: '5. Transkrip Nilai Semester S2' },
+                          { key: 'fileDtks', docType: 'dtks', title: '6. Ijazah & Transkrip Nilai S1' },
+                          { key: 'fileSuratPernyataan', docType: 'surat_pernyataan', title: '7. Surat Pernyataan Bebas Beasiswa Lain' },
+                          { key: 'fileMotivationOrEsai', docType: 'esai', title: '8. Esai Rencana Penelitian & Kontribusi Sultra (S2)' }
                         ]
                       : [
-                          { key: 'fileSuratPermohonan', docType: 'pendukung', title: '1. Surat Permohonan BSSC (Gubernur Sultra)' },
+                          { key: 'fileSuratPermohonan', docType: 'surat_permohonan', title: '1. Surat Permohonan BSSC (Gubernur Sultra)' },
                           { key: 'filePasfoto', docType: 'selfie', title: '2. Pasfoto Terbaru / Selfie KTP' },
-                          { key: 'fileKtp', docType: 'pendukung', title: '3. KTP Provinsi Sulawesi Tenggara' },
+                          { key: 'fileKtp', docType: 'ktp', title: '3. KTP Provinsi Sulawesi Tenggara' },
                           { key: 'fileSuratAktif', docType: 'ktm', title: '4. KTM / Surat Aktif S3' },
-                          { key: 'fileTranskrip', docType: 'pendukung', title: '5. Transkrip Nilai Semester S3' },
-                          { key: 'fileDtks', docType: 'pendukung', title: '6. Ijazah & Transkrip S1 & S2' },
-                          { key: 'fileSuratPernyataan', docType: 'pendukung', title: '7. Surat Rekomendasi Promotor' },
-                          { key: 'fileMotivationOrEsai', docType: 'pendukung', title: '8. Proposal Disertasi & Esai Kontribusi Sultra (S3)' }
+                          { key: 'fileTranskrip', docType: 'transkrip', title: '5. Transkrip Nilai Semester S3' },
+                          { key: 'fileDtks', docType: 'dtks', title: '6. Ijazah & Transkrip S1 & S2' },
+                          { key: 'fileSuratPernyataan', docType: 'surat_pernyataan', title: '7. Surat Rekomendasi Promotor' },
+                          { key: 'fileMotivationOrEsai', docType: 'esai', title: '8. Proposal Disertasi & Esai Kontribusi Sultra (S3)' }
                         ]
                     ).map((docItem, idx) => {
                       const currentVal = (formData as any)[docItem.key];

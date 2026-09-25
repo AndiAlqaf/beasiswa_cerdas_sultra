@@ -43,6 +43,7 @@ function getExtFromMime(mimeType) {
     'image/jpeg': '.jpg',
     'image/jpg': '.jpg',
     'image/png': '.png',
+    'image/webp': '.webp',
     'application/pdf': '.pdf',
     'application/msword': '.doc',
     'application/vnd.openxmlformats-officedocument.wordprocessingml.document': '.docx',
@@ -96,7 +97,7 @@ function fileFilter(_req, file, cb) {
       filename: file.originalname,
       mimetype: file.mimetype,
     });
-    return cb(new Error('Tipe file tidak diizinkan. Hanya JPG, PNG, dan PDF yang diterima.'), false);
+    return cb(new Error('Tipe file tidak diizinkan. Hanya JPG, PNG, WEBP, dan PDF yang diterima.'), false);
   }
   
   cb(null, true);
