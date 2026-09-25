@@ -12,23 +12,22 @@ export interface ScheduleConfig {
   kontrakDate: string;
   penyaluranDate: string;
 }
-
 export const DEFAULT_SCHEDULE_CONFIG: ScheduleConfig = {
-  openDate: '2026-09-13',
-  closeDate: '2026-09-30',
-  selectionStart: '2026-10-01',
-  selectionEnd: '2026-10-15',
-  announcementDate: '2026-10-16',
-  announcementEnd: '2026-10-17',
-  sanggahStart: '2026-10-19',
-  sanggahEnd: '2026-10-21',
-  pengumumanSanggahDate: '2026-10-22',
-  penetapanDate: '2026-10-30',
-  kontrakDate: '2026-11-02',
-  penyaluranDate: '2026-11-04'
+  openDate: '2026-10-01',
+  closeDate: '2026-10-18',
+  selectionStart: '2026-10-19',
+  selectionEnd: '2026-10-31',
+  announcementDate: '2026-11-02',
+  announcementEnd: '2026-11-04',
+  sanggahStart: '2026-11-05',
+  sanggahEnd: '2026-11-08',
+  pengumumanSanggahDate: '2026-11-09',
+  penetapanDate: '2026-11-16',
+  kontrakDate: '2026-11-18',
+  penyaluranDate: '2026-11-23'
 };
 
-const STORAGE_KEY = 'bssc_schedule_config';
+const STORAGE_KEY = 'bssc_schedule_config_v2';
 
 export function getStoredScheduleConfig(): ScheduleConfig {
   if (typeof window === 'undefined') return DEFAULT_SCHEDULE_CONFIG;
@@ -185,37 +184,37 @@ export function getDynamicTimeline(
       id: 'pengumuman-sanggah',
       title: 'Pengumuman Hasil Sanggah',
       desc: 'Pengumuman final setelah proses verifikasi sanggahan.',
-      date: formatDateRange(config.pengumumanSanggahDate || '2026-10-22', '2026-10-29'),
-      startDate: config.pengumumanSanggahDate || '2026-10-22',
-      endDate: '2026-10-29',
-      status: getStatus(config.pengumumanSanggahDate || '2026-10-22', '2026-10-29')
+      date: formatDateRange(config.pengumumanSanggahDate || '2026-11-09', '2026-11-11'),
+      startDate: config.pengumumanSanggahDate || '2026-11-09',
+      endDate: '2026-11-11',
+      status: getStatus(config.pengumumanSanggahDate || '2026-11-09', '2026-11-11')
     },
     {
       id: 'penetapan',
-      title: 'Penetapan Penerima Resmi',
+      title: 'Penetapan Penerima Beasiswa',
       desc: 'SK Gubernur penetapan nama penerima Beasiswa Stimulan Sultra Cerdas.',
-      date: formatDateRange(config.penetapanDate || '2026-10-30', '2026-10-31'),
-      startDate: config.penetapanDate || '2026-10-30',
-      endDate: '2026-10-31',
-      status: getStatus(config.penetapanDate || '2026-10-30', '2026-10-31')
+      date: formatDateRange(config.penetapanDate || '2026-11-16', '2026-11-17'),
+      startDate: config.penetapanDate || '2026-11-16',
+      endDate: '2026-11-17',
+      status: getStatus(config.penetapanDate || '2026-11-16', '2026-11-17')
     },
     {
       id: 'kontrak',
-      title: 'Penandatanganan Kontrak & Pakta Integritas',
+      title: 'Penandatanganan Kontrak dan Pakta Integritas',
       desc: 'Penandatanganan dokumen komitmen penerima beasiswa.',
-      date: formatDateRange(config.kontrakDate || '2026-11-02', '2026-11-03'),
-      startDate: config.kontrakDate || '2026-11-02',
-      endDate: '2026-11-03',
-      status: getStatus(config.kontrakDate || '2026-11-02', '2026-11-03')
+      date: formatDateRange(config.kontrakDate || '2026-11-18', '2026-11-20'),
+      startDate: config.kontrakDate || '2026-11-18',
+      endDate: '2026-11-20',
+      status: getStatus(config.kontrakDate || '2026-11-18', '2026-11-20')
     },
     {
       id: 'penyaluran',
-      title: 'Penyaluran Beasiswa Termin I',
+      title: 'Penyaluran Beasiswa',
       desc: 'Pencairan dana 50% tahap pertama langsung ke rekening bank penerima.',
-      date: `Mulai ${formatDateRange(config.penyaluranDate || '2026-11-04', config.penyaluranDate || '2026-11-04')}`,
-      startDate: config.penyaluranDate || '2026-11-04',
+      date: `Mulai ${formatDateRange(config.penyaluranDate || '2026-11-23', config.penyaluranDate || '2026-11-23')}`,
+      startDate: config.penyaluranDate || '2026-11-23',
       endDate: '2026-12-31',
-      status: getStatus(config.penyaluranDate || '2026-11-04', '2026-12-31')
+      status: getStatus(config.penyaluranDate || '2026-11-23', '2026-12-31')
     }
   ];
 }
