@@ -1595,7 +1595,7 @@ export default function RegistrationPage() {
           {/* Kop Surat Resmi */}
           <div className="text-center font-serif border-b-4 border-slate-900 pb-3 mb-1">
             <h3 className="text-sm font-bold uppercase tracking-wider text-slate-900">Pemerintah Provinsi Sulawesi Tenggara</h3>            <p className="text-xs font-bold uppercase text-slate-800">Panitia Seleksi Program Beasiswa Sultra Cerdas 2026</p>
-            <p className="text-[10px] text-slate-600 italic">Kompleks Bumi Praja Anduonohu, Kota Kendari | Website: beasiswasultra.go.id</p>
+            <p className="text-[10px] text-slate-600 italic">Kompleks Bumi Praja Anduonohu, Kota Kendari | Website: bssc.akusahabatrakyat.com</p>
           </div>
           <div className="border-b border-slate-900 mb-6"></div>
 

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { LayoutDashboard, FileText, Bell, LogOut, User, Menu, X, ShieldCheck, Download } from 'lucide-react';
 import { getUser, fetchAPI, clearTokens } from '@/lib/api';
+import { getDynamicTimeline } from '@/lib/schedule';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -14,6 +15,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const notificationsRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
   const [user, setUser] = useState<any>(null);
+  const [timeline, setTimeline] = useState<any[]>([]);
 
   useEffect(() => {
     const cachedUser = getUser();
@@ -35,6 +37,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         console.warn('DashboardLayout profile load error:', err.message);
       });
 
+    setTimeline(getDynamicTimeline());
+    const handleScheduleUpdate = () => {
+      setTimeline(getDynamicTimeline());
+    };
+    window.addEventListener('bssc_schedule_updated', handleScheduleUpdate);
+
     const handleClickOutside = (event: MouseEvent) => {
       if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
         setProfileOpen(false);
@@ -47,6 +55,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     document.addEventListener('mousedown', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('bssc_schedule_updated', handleScheduleUpdate);
     };
   }, []);
 
@@ -152,12 +161,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     <Link href="/dashboard/pengumuman" onClick={() => setNotificationsOpen(false)} className="block px-4 py-3 border-b border-slate-50 hover:bg-slate-50 transition-colors">
                       <p className="text-sm font-semibold text-slate-900 mb-1">Pengumuman Seleksi Administrasi</p>
                       <p className="text-xs text-slate-500 line-clamp-2">Hasil seleksi tahap awal akan diumumkan melalui portal ini. Pastikan Anda mengecek secara berkala.</p>
-                      <p className="text-[10px] text-slate-400 mt-2 font-medium">15 Okt 2026</p>
+                      <p className="text-[10px] text-slate-400 mt-2 font-medium">
+                        {timeline.find(t => t.id === 'pengumuman')?.startDate 
+                          ? new Date(timeline.find(t => t.id === 'pengumuman').startDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
+                          : 'Segera'}
+                      </p>
                     </Link>
                     <Link href="/dashboard/pengumuman" onClick={() => setNotificationsOpen(false)} className="block px-4 py-3 hover:bg-slate-50 transition-colors">
                       <p className="text-sm font-semibold text-slate-900 mb-1">Masa Sanggah Dibuka</p>
                       <p className="text-xs text-slate-500 line-clamp-2">Periode pengajuan banding khusus bagi pendaftar yang tidak lolos seleksi administrasi awal.</p>
-                      <p className="text-[10px] text-slate-400 mt-2 font-medium">16 Okt 2026</p>
+                      <p className="text-[10px] text-slate-400 mt-2 font-medium">
+                        {timeline.find(t => t.id === 'sanggah')?.startDate 
+                          ? new Date(timeline.find(t => t.id === 'sanggah').startDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
+                          : 'Segera'}
+                      </p>
                     </Link>
                   </div>
                   
