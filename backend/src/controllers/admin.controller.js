@@ -131,7 +131,7 @@ async function getApplicantDetail(req, res) {
              p.beasiswa_lain, p.nama_ayah, p.pekerjaan_ayah, p.nama_ibu, p.pekerjaan_ibu,
              p.penghasilan_ortu, p.jumlah_tanggungan, p.kepemilikan_bantuan,
              p.prestasi_akademik, p.prestasi_non_akademik, p.pengalaman_organisasi,
-             p.pengalaman_pengabdian, p.pelatihan_sertifikasi,
+             p.pengalaman_pengabdian, p.pelatihan_sertifikasi, p.signature_data,
              a.id as app_id, a.registration_no, a.status, a.notes, a.submitted_at, a.verified_at
       FROM users u
       LEFT JOIN profiles p ON p.user_id = u.id
@@ -181,7 +181,8 @@ async function getApplicantDetail(req, res) {
           prestasiNonAkademik: user.prestasi_non_akademik,
           pengalamanOrganisasi: user.pengalaman_organisasi,
           pengalamanPengabdian: user.pengalaman_pengabdian,
-          pelatihanSertifikasi: user.pelatihan_sertifikasi
+          pelatihanSertifikasi: user.pelatihan_sertifikasi,
+          signatureData: user.signature_data
         },
         application: user.app_id ? {
           id: user.app_id, registrationNo: user.registration_no, status: user.status,

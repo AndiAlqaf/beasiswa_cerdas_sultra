@@ -244,7 +244,7 @@ export default function RegistrationPage() {
             jenisKelamin: p.gender || regDraft?.gender || 'Laki-laki',
             noHp: p.noHp || regDraft?.noHp || '',
             alamatDomisili: p.alamatDomisili || p.alamat_domisili || regDraft?.alamatDomisili || '',
-            alamatKtp: p.alamatKtp || p.alamat_ktp || p.alamatDomisili || p.alamat_domisili || regDraft?.alamatDomisili || '',
+            alamatKtp: p.alamatKtp || p.alamat_ktp || '',
             noKk: p.noKk || '',
             akreditasiProdi: p.akreditasiProdi || 'Baik Sekali',
             nim: p.nim || '',

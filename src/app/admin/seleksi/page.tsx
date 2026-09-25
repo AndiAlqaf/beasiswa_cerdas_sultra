@@ -652,8 +652,8 @@ export default function SeleksiPage() {
                 
                 {/* Signature Display */}
                 <div className="h-16 flex items-center justify-center my-1">
-                  {applicantDetail.application?.signature_url ? (
-                    <img src={applicantDetail.application.signature_url} alt="Tanda Tangan Digital" className="max-h-16 max-w-full object-contain" crossOrigin="anonymous" />
+                  {applicantDetail.profile?.signatureData ? (
+                    <img src={applicantDetail.profile.signatureData} alt="Tanda Tangan Digital" className="max-h-16 max-w-full object-contain" crossOrigin="anonymous" />
                   ) : (
                     <div className="text-[10px] text-slate-400 italic">
                       (Tanda Tangan Digital)

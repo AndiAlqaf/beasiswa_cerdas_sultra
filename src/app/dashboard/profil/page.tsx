@@ -181,6 +181,15 @@ export default function ProfilPage() {
         });
       }
 
+      if (form.perguruanTinggi) {
+        eduList.push({
+          tingkat: form.jenjangTarget, // 'S1', 'S2', or 'S3'
+          institusi: form.perguruanTinggi,
+          jurusan: form.fakultasProdi,
+          tahunLulus: parseInt(form.targetLulus) || null,
+        });
+      }
+
       if (eduList.length > 0) {
         await fetchAPI('/applicant/education', {
           method: 'PUT',
