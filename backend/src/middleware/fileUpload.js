@@ -82,6 +82,14 @@ function fileFilter(_req, file, cb) {
   // Sanitize the original filename
   file.originalname = sanitizeFilename(file.originalname);
   
+  // Normalize mimetype for common browser edge cases (Windows registry issues)
+  const ext = path.extname(file.originalname).toLowerCase();
+  if (file.mimetype === 'application/octet-stream' || file.mimetype === 'application/x-pdf') {
+    if (ext === '.pdf') file.mimetype = 'application/pdf';
+    else if (ext === '.jpg' || ext === '.jpeg') file.mimetype = 'image/jpeg';
+    else if (ext === '.png') file.mimetype = 'image/png';
+  }
+
   // Check MIME type
   if (!ALLOWED_MIME_TYPES.includes(file.mimetype)) {
     log(LOG_LEVELS.SECURITY, 'Rejected file upload: invalid MIME type', {
