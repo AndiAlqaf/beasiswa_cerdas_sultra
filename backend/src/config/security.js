@@ -12,7 +12,7 @@ module.exports = {
 
   // Account lockout
   MAX_LOGIN_ATTEMPTS: 5,
-  LOCKOUT_DURATION_MS: 15 * 60 * 1000, // 15 minutes
+  LOCKOUT_DURATION_MS: 5 * 60 * 1000, // 5 minutes
 
   // Token
   TOKEN_ALGORITHM: 'HS512',
