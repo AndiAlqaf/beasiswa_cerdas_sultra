@@ -64,6 +64,16 @@ const env = {
   DB_PASSWORD: process.env.DB_PASSWORD || '',
   DB_NAME: process.env.DB_NAME || 'beasiswa_sultra_cerdas',
   DB_CONNECTION_LIMIT: parseInt(process.env.DB_CONNECTION_LIMIT, 10) || 20,
+
+  // SMTP Email (Brevo)
+  SMTP_HOST: process.env.SMTP_HOST || 'smtp-relay.brevo.com',
+  SMTP_PORT: parseInt(process.env.SMTP_PORT, 10) || 587,
+  SMTP_USER: process.env.SMTP_USER || '',
+  SMTP_PASS: process.env.SMTP_PASS || '',
+  EMAIL_FROM: process.env.EMAIL_FROM || 'Beasiswa Sultra Cerdas <noreply@bssc.sultraprov.go.id>',
+
+  // Jadwal Pengumuman Email Blast (format: YYYY-MM-DD)
+  ANNOUNCEMENT_DATE: process.env.ANNOUNCEMENT_DATE || '',
 };
 
 module.exports = env;

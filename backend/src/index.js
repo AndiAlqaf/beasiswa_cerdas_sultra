@@ -21,6 +21,7 @@ const { requestId } = require('./middleware/requestId');
 const { generalLimiter } = require('./middleware/rateLimiter');
 const { notFoundHandler, errorHandler } = require('./middleware/errorHandler');
 const { log, LOG_LEVELS } = require('./utils/logger');
+const { startEmailScheduler } = require('./utils/emailScheduler');
 
 // Route imports
 const authRoutes = require('./routes/auth.routes');
@@ -75,6 +76,9 @@ async function startServer() {
 
     // Start token cleanup job
     startCleanupJob();
+
+    // Start email announcement scheduler
+    startEmailScheduler();
 
     const server = app.listen(env.PORT, () => {
       console.log('');
