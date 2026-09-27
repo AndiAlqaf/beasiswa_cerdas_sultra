@@ -85,7 +85,7 @@ if (typeof window !== 'undefined') {
     if (phase.toLowerCase() === 'pengumuman') {
       console.log('%c[BSSC EMAIL] 🚀 Memicu server untuk mengirimkan blast email kelulusan...', 'color: #3b82f6; font-weight: bold;');
       try {
-        const res = await fetch('http://localhost:5000/api/v1/public/trigger-announcement-blast', {
+        const res = await fetch('/api/v1/public/trigger-announcement-blast', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
         });

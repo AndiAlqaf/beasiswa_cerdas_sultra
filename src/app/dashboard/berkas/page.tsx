@@ -104,7 +104,7 @@ export default function BerkasPage() {
       const formData = new FormData();
       formData.append('file', file);
 
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1'}/applicant/upload/${docKey}`, {
+      const res = await fetch(`/api/v1/applicant/upload/${docKey}`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
