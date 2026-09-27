@@ -306,6 +306,31 @@ export default function DashboardPage() {
         </div>
       </div>
 
+      {/* INFORMASI MENUNGGU MASA SANGGAH (Jika Status DITOLAK dan Masa Sanggah Belum Buka) */}
+      {!isSanggahPeriodOpen && effectiveStatus === 'DITOLAK' && !isSanggahan && (
+        <div className="bg-amber-50 rounded-3xl border border-amber-200 p-6 sm:p-8 shadow-sm space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="p-3 bg-amber-600 text-white rounded-2xl shadow-sm">
+              <Clock className="w-6 h-6" />
+            </div>
+            <div>
+              <span className="text-[10px] font-extrabold uppercase tracking-wider bg-amber-100 text-amber-900 px-3 py-1 rounded-full border border-amber-300">
+                Informasi Masa Sanggah
+              </span>
+              <h3 className="text-lg font-black text-slate-900 mt-1">Pengajuan Sanggahan Belum Dibuka</h3>
+            </div>
+          </div>
+          <div className="bg-white p-5 rounded-2xl border border-amber-200 text-xs text-slate-700 leading-relaxed space-y-2">
+            <p>
+              Mohon maaf, berkas pendaftaran Anda dinyatakan <strong>Belum Lolos Seleksi</strong>. Pengajuan sanggahan dan perbaikan dokumen hanya dapat dilakukan pada jadwal <strong>Masa Sanggah</strong> ({sanggahStep?.date || '5 - 8 November 2026'}).
+            </p>
+            <p className="text-slate-500 text-[11px]">
+              Silakan siapkan dokumen perbaikan Anda (seperti perbaikan KTP/KK atau Surat Pernyataan) dan ajukan sanggahan ketika jadwal Masa Sanggah resmi dibuka.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* SANGGAHAN SECTION (Jika Status DITOLAK dan Masa Sanggah Buka) */}
       {isSanggahPeriodOpen && effectiveStatus === 'DITOLAK' && !isSanggahan && (
         <div className="bg-rose-50 rounded-3xl border-2 border-rose-200 p-6 sm:p-8 shadow-md space-y-6">
