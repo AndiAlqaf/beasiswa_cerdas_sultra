@@ -142,4 +142,31 @@ async function triggerAnnouncementBlast(req, res) {
   }
 }
 
-module.exports = { healthCheck, checkStatus, getAcceptedRecipients, triggerAnnouncementBlast };
+/**
+ * POST /api/v1/public/trigger-appeal-blast
+ * Memungkinkan trigger pengiriman email notifikasi kelulusan KHUSUS HASIL SANGGAH
+ */
+async function triggerAppealBlast(req, res) {
+  try {
+    const { jalankanBlastHasilSanggah } = require('../utils/emailScheduler');
+    const result = await jalankanBlastHasilSanggah();
+    return res.json({
+      success: true,
+      message: 'Blast email kelulusan hasil sanggah berhasil dipicu!',
+      data: result,
+    });
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      message: 'Gagal mengirim email hasil sanggah: ' + err.message,
+    });
+  }
+}
+
+module.exports = {
+  healthCheck,
+  checkStatus,
+  getAcceptedRecipients,
+  triggerAnnouncementBlast,
+  triggerAppealBlast,
+};

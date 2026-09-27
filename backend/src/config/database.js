@@ -216,6 +216,23 @@ async function runMigrations() {
     console.error(`[DB] Migration doc_type modify error:`, e.message);
   }
 
+  // Add columns to applications table for tracking email notifications
+  const appColumns = [
+    'announcement_email_sent_at DATETIME NULL',
+    'appeal_email_sent_at DATETIME NULL',
+    'is_lulus_sanggah TINYINT(1) NOT NULL DEFAULT 0'
+  ];
+  for (const colDef of appColumns) {
+    const colName = colDef.split(' ')[0];
+    try {
+      await migrationConn.query(`ALTER TABLE applications ADD COLUMN ${colDef}`);
+    } catch (e) {
+      if (e.code !== 'ER_DUP_FIELDNAME') {
+        console.error(`[DB] Error adding column ${colName} to applications:`, e.message);
+      }
+    }
+  }
+
   await migrationConn.end();
   console.log('[DB] MySQL migrations completed successfully');
 }
