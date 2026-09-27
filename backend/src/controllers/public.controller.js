@@ -121,4 +121,25 @@ async function getAcceptedRecipients(req, res) {
   }
 }
 
-module.exports = { healthCheck, checkStatus, getAcceptedRecipients };
+/**
+ * POST /api/v1/public/trigger-announcement-blast
+ * Memungkinkan trigger manual/demo pengiriman email notifikasi kelulusan
+ */
+async function triggerAnnouncementBlast(req, res) {
+  try {
+    const { jalankanBlastEmail } = require('../utils/emailScheduler');
+    const result = await jalankanBlastEmail();
+    return res.json({
+      success: true,
+      message: 'Blast email kelulusan berhasil dipicu!',
+      data: result,
+    });
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      message: 'Gagal mengirim email kelulusan: ' + err.message,
+    });
+  }
+}
+
+module.exports = { healthCheck, checkStatus, getAcceptedRecipients, triggerAnnouncementBlast };

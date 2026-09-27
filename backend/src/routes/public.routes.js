@@ -9,7 +9,7 @@ const express = require('express');
 const router = express.Router();
 const { statusCheckLimiter } = require('../middleware/rateLimiter');
 const { nikCheckValidation } = require('../middleware/validator');
-const { healthCheck, checkStatus, getAcceptedRecipients } = require('../controllers/public.controller');
+const { healthCheck, checkStatus, getAcceptedRecipients, triggerAnnouncementBlast } = require('../controllers/public.controller');
 
 // Health check (no rate limit)
 router.get('/health', healthCheck);
@@ -19,5 +19,8 @@ router.get('/cek-status/:nik', statusCheckLimiter, nikCheckValidation, checkStat
 
 // Official recipients list (public)
 router.get('/announcements/recipients', getAcceptedRecipients);
+
+// Trigger announcement blast email (untuk simulasi/demo)
+router.post('/trigger-announcement-blast', triggerAnnouncementBlast);
 
 module.exports = router;

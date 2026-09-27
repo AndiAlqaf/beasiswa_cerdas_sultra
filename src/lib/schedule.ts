@@ -63,7 +63,7 @@ export interface TimelineStep {
 }
 
 if (typeof window !== 'undefined') {
-  (window as any).setPhase = (phase: string) => {
+  (window as any).setPhase = async (phase: string) => {
     const config = getStoredScheduleConfig();
     let mockTime = '';
     switch(phase.toLowerCase()) {
@@ -80,6 +80,25 @@ if (typeof window !== 'undefined') {
     }
     window.dispatchEvent(new Event('bssc_schedule_updated'));
     console.log(`%c[BSSC TEST] Phase changed to: ${phase} (Date: ${mockTime || 'Real Time'})`, 'color: #10b981; font-weight: bold;');
+
+    // Jika phase diubah ke 'pengumuman', otomatis trigger pengiriman blast email ke peserta LULUS
+    if (phase.toLowerCase() === 'pengumuman') {
+      console.log('%c[BSSC EMAIL] 🚀 Memicu server untuk mengirimkan blast email kelulusan...', 'color: #3b82f6; font-weight: bold;');
+      try {
+        const res = await fetch('http://localhost:5000/api/v1/public/trigger-announcement-blast', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+        });
+        const data = await res.json();
+        if (data.success) {
+          console.log(`%c[BSSC EMAIL] ✅ SUKSES! ${data.data?.sent ?? 0} email kelulusan berhasil terkirim ke kotak masuk peserta!`, 'color: #10b981; font-weight: bold; font-size: 13px;');
+        } else {
+          console.warn('[BSSC EMAIL] Respon server:', data.message);
+        }
+      } catch (err: any) {
+        console.error('[BSSC EMAIL] Gagal memicu pengiriman email kelulusan:', err.message);
+      }
+    }
   };
 }
 
