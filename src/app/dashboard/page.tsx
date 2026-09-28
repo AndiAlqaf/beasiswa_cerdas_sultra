@@ -222,12 +222,27 @@ export default function DashboardPage() {
 
           {!hasSubmitted && (
             <div className="pt-4 mt-4 border-t border-slate-100">
-              <Link
-                href="/dashboard/daftar"
-                className="text-xs font-bold text-blue-900 hover:text-blue-950 flex items-center gap-1.5"
-              >
-                Isi Formulir Pendaftaran <ArrowRight className="w-3.5 h-3.5" />
-              </Link>
+              {(() => {
+                const pendaftaranStep = timeline.find((s) => s.id === 'pendaftaran');
+                const isRegistrationOpen = pendaftaranStep ? pendaftaranStep.status === 'active' : true;
+
+                if (isRegistrationOpen) {
+                  return (
+                    <Link
+                      href="/dashboard/daftar"
+                      className="text-xs font-bold text-blue-900 hover:text-blue-950 flex items-center gap-1.5"
+                    >
+                      Isi Formulir Pendaftaran <ArrowRight className="w-3.5 h-3.5" />
+                    </Link>
+                  );
+                } else {
+                  return (
+                    <span className="text-xs font-bold text-slate-400 flex items-center gap-1.5 cursor-not-allowed">
+                      Pendaftaran Online Ditutup
+                    </span>
+                  );
+                }
+              })()}
             </div>
           )}
         </div>

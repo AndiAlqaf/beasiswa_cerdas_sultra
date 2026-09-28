@@ -533,63 +533,55 @@ export default function SeleksiPage() {
               ) : null}
             </div>
 
-            {/* Modal Footer with Status Lock Enforcer */}
+            {/* Modal Footer */}
             {(() => {
               const currentStatus = applicantDetail?.application?.status || selectedApplicant?.status;
               const isStatusLocked = currentStatus === 'DITERIMA' || currentStatus === 'DITOLAK';
 
               return (
-                <div className="p-5 border-t border-slate-100 bg-slate-50 flex flex-col gap-3">
-                  {isStatusLocked && (
-                    <div className="w-full text-xs font-extrabold text-amber-900 bg-amber-100/90 border border-amber-300 p-3 rounded-xl flex items-center justify-center gap-2">
-                      <span>🔒 Status pendaftaran sudah <strong>{currentStatus}</strong> (Dikunci). Status tidak dapat diubah lagi kecuali pendaftar mengajukan sanggahan.</span>
-                    </div>
-                  )}
-
-                  <div className="flex items-center justify-end gap-3">
-                    <button 
-                      onClick={() => window.print()}
-                      className="px-5 py-2.5 bg-slate-800 text-white font-normal rounded-xl hover:bg-slate-900 transition-colors flex items-center gap-2 mr-auto text-xs"
-                    >
-                      <Printer className="w-4 h-4" /> Cetak Formulir
-                    </button>
-                    <button 
-                      onClick={() => { setSelectedApplicant(null); setApplicantDetail(null); }}
-                      className="px-5 py-2.5 bg-slate-200 text-slate-700 font-bold rounded-xl hover:bg-slate-300 transition-colors text-xs"
-                    >
-                      Tutup
-                    </button>
-                    <button 
-                      type="button"
-                      disabled={isStatusLocked}
-                      onClick={handleOpenRejectModal}
-                      className="px-5 py-2.5 bg-rose-100 text-rose-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed font-extrabold rounded-xl hover:bg-rose-200 transition-colors flex items-center gap-2 shadow-sm text-xs"
-                    >
-                      <XCircle className="w-4 h-4" /> Tolak
-                    </button>
-                    <button 
-                      disabled={isStatusLocked}
-                      onClick={async () => {
-                        if (!selectedApplicant) return;
-                        try {
-                          const id = selectedApplicant.userId || selectedApplicant.id;
-                          await fetchAPI(`/admin/applicants/${id}/verify`, {
-                            method: 'PATCH',
-                            body: JSON.stringify({ status: 'DITERIMA', notes: 'Berkas lengkap dan dinyatakan lolos verifikasi.' }),
-                          });
-                          setSelectedApplicant(null);
-                          setApplicantDetail(null);
-                          loadApplicants();
-                          showNotification('Status pendaftar berhasil diubah menjadi DITERIMA!', 'success', 'Status Berhasil Diubah');
-                        } catch (err: any) {
-                          showNotification(err.message || 'Gagal mengubah status.', 'error', 'Gagal Update Status');
-                        }
-                      }}
-                      className="px-5 py-2.5 bg-emerald-600 text-white disabled:bg-slate-300 disabled:cursor-not-allowed font-extrabold rounded-xl hover:bg-emerald-700 transition-colors flex items-center gap-2 shadow-sm text-xs"
-                    >
-                      <CheckCircle2 className="w-4 h-4" /> Loloskan
-                    </button>
-                  </div>
+                <div className="p-5 border-t border-slate-100 bg-slate-50 flex items-center justify-end gap-3">
+                  <button 
+                    onClick={() => window.print()}
+                    className="px-5 py-2.5 bg-slate-800 text-white font-normal rounded-xl hover:bg-slate-900 transition-colors flex items-center gap-2 mr-auto text-xs"
+                  >
+                    <Printer className="w-4 h-4" /> Cetak Formulir
+                  </button>
+                  <button 
+                    onClick={() => { setSelectedApplicant(null); setApplicantDetail(null); }}
+                    className="px-5 py-2.5 bg-slate-200 text-slate-700 font-bold rounded-xl hover:bg-slate-300 transition-colors text-xs"
+                  >
+                    Tutup
+                  </button>
+                  <button 
+                    type="button"
+                    disabled={isStatusLocked}
+                    onClick={handleOpenRejectModal}
+                    className="px-5 py-2.5 bg-rose-100 text-rose-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed font-extrabold rounded-xl hover:bg-rose-200 transition-colors flex items-center gap-2 shadow-sm text-xs"
+                  >
+                    <XCircle className="w-4 h-4" /> Tolak
+                  </button>
+                  <button 
+                    disabled={isStatusLocked}
+                    onClick={async () => {
+                      if (!selectedApplicant) return;
+                      try {
+                        const id = selectedApplicant.userId || selectedApplicant.id;
+                        await fetchAPI(`/admin/applicants/${id}/verify`, {
+                          method: 'PATCH',
+                          body: JSON.stringify({ status: 'DITERIMA', notes: 'Berkas lengkap dan dinyatakan lolos verifikasi.' }),
+                        });
+                        setSelectedApplicant(null);
+                        setApplicantDetail(null);
+                        loadApplicants();
+                        showNotification('Status pendaftar berhasil diubah menjadi DITERIMA!', 'success', 'Status Berhasil Diubah');
+                      } catch (err: any) {
+                        showNotification(err.message || 'Gagal mengubah status.', 'error', 'Gagal Update Status');
+                      }
+                    }}
+                    className="px-5 py-2.5 bg-emerald-600 text-white disabled:bg-slate-300 disabled:cursor-not-allowed font-extrabold rounded-xl hover:bg-emerald-700 transition-colors flex items-center gap-2 shadow-sm text-xs"
+                  >
+                    <CheckCircle2 className="w-4 h-4" /> Loloskan
+                  </button>
                 </div>
               );
             })()}

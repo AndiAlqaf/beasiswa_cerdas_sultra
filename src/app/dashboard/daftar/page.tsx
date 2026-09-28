@@ -22,17 +22,31 @@ import {
   PenTool,
   RotateCcw,
   Eraser,
-  X
+  X,
+  Clock
 } from 'lucide-react';
 import { fetchAPI, getUser } from '@/lib/api';
 import { parseAchievementString, formatAchievementItems, DynamicAchievementItem } from '@/lib/achievementHelpers';
 import DynamicAchievementBlock from '@/components/DynamicAchievementBlock';
+import { getStoredScheduleConfig, getDynamicTimeline, ScheduleConfig } from '@/lib/schedule';
 
 export default function RegistrationPage() {
   const [currentStep, setCurrentStep] = useState<number>(1);
   const [isSubmitted, setIsSubmitted] = useState<boolean>(false);
   const [registrationCode, setRegistrationCode] = useState<string>('');
   const [loadingProfile, setLoadingProfile] = useState<boolean>(true);
+  const [scheduleConfig, setScheduleConfig] = useState<ScheduleConfig>(getStoredScheduleConfig());
+
+  useEffect(() => {
+    setScheduleConfig(getStoredScheduleConfig());
+    const handleUpdate = () => setScheduleConfig(getStoredScheduleConfig());
+    window.addEventListener('bssc_schedule_updated', handleUpdate);
+    return () => window.removeEventListener('bssc_schedule_updated', handleUpdate);
+  }, []);
+
+  const timeline = getDynamicTimeline(scheduleConfig);
+  const pendaftaranStep = timeline.find((s) => s.id === 'pendaftaran');
+  const isRegistrationOpen = pendaftaranStep ? pendaftaranStep.status === 'active' : true;
 
   // 5 Categories Dynamic State
   const [prestasiAkademikList, setPrestasiAkademikList] = useState<DynamicAchievementItem[]>([]);
@@ -555,6 +569,35 @@ export default function RegistrationPage() {
       alert(err.message || 'Gagal mengirim permohonan beasiswa.');
     }
   };
+
+  if (!loadingProfile && !isSubmitted && !isRegistrationOpen) {
+    return (
+      <div className="max-w-3xl mx-auto py-12 px-4 text-center">
+        <div className="bg-amber-50 rounded-3xl border border-amber-200 p-8 sm:p-10 shadow-sm space-y-4">
+          <div className="w-16 h-16 bg-amber-100 text-amber-700 rounded-2xl mx-auto flex items-center justify-center">
+            <Clock className="w-8 h-8" />
+          </div>
+          <div>
+            <span className="text-[10px] font-extrabold uppercase tracking-wider bg-amber-100 text-amber-900 px-3 py-1 rounded-full border border-amber-300">
+              Pendaftaran Ditutup
+            </span>
+            <h2 className="text-xl sm:text-2xl font-black text-slate-900 mt-2">Masa Pendaftaran Online Telah Berakhir</h2>
+          </div>
+          <p className="text-xs sm:text-sm text-slate-600 leading-relaxed max-w-lg mx-auto">
+            Jadwal Pendaftaran Online telah berakhir ({pendaftaranStep?.date || '1 - 18 Oktober 2026'}). Seluruh pengajuan pendaftaran baru dan pengisian formulir sudah tidak dapat dilakukan. Silakan menanti tahapan seleksi selanjutnya.
+          </p>
+          <div className="pt-4">
+            <Link
+              href="/dashboard"
+              className="px-6 py-3 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-md transition-all inline-flex items-center gap-2"
+            >
+              <Home className="w-4 h-4" /> Kembali ke Dashboard
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="relative">
