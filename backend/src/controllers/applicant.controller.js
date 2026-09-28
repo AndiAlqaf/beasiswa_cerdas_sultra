@@ -241,17 +241,7 @@ function uploadDocument(docType) {
         return res.status(400).json({ success: false, message: 'File tidak ditemukan. Silakan pilih file untuk diunggah.' });
       }
 
-      // Remove old document of same type
-      const [oldDocs] = await pool.execute(
-        'SELECT id, file_path FROM documents WHERE user_id = ? AND LOWER(doc_type) = LOWER(?)',
-        [userId, docType]
-      );
-
-      if (oldDocs.length > 0) {
-        const fs = require('fs');
-        try { if (fs.existsSync(oldDocs[0].file_path)) fs.unlinkSync(oldDocs[0].file_path); } catch (e) { /* ignore */ }
-        await pool.execute('DELETE FROM documents WHERE id = ?', [oldDocs[0].id]);
-      }
+      // Preserve all uploaded documents (do not delete old file so Admin can compare old vs new sanggahan files)
 
       // Save document record
       const docId = uuidv4();
