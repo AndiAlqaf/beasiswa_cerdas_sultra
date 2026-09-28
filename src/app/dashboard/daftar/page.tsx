@@ -980,11 +980,8 @@ export default function RegistrationPage() {
                         readOnly
                         disabled
                         value="Tidak Ada (Bukan Double Funding)"
-                        className="w-full px-3.5 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-xs font-bold text-emerald-800 cursor-not-allowed select-none"
+                        className="w-full px-3.5 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 cursor-not-allowed select-none"
                       />
-                      <p className="text-[10px] text-slate-500 mt-1">
-                        ✓ Terverifikasi bebas Double Funding (dikunci otomatis sejak pembuatan akun).
-                      </p>
                     </div>
                   </div>
                 </div>
