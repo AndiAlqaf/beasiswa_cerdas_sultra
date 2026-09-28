@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { CheckCircle2, XCircle, Clock, FileText, ExternalLink, Search, X, Loader2, AlertCircle, Printer } from 'lucide-react';
+import { CheckCircle2, XCircle, Clock, FileText, ExternalLink, Search, X, Loader2, AlertCircle, Printer, RefreshCw } from 'lucide-react';
 import { fetchAPI } from '@/lib/api';
 
 const getDocTitle = (key: string) => {
@@ -361,12 +361,12 @@ export default function SeleksiPage() {
       {/* Modal Detail Berkas Pendaftar */}
       {selectedApplicant && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-3xl overflow-hidden flex flex-col max-h-[92vh]">
             {/* Modal Header */}
             <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50">
               <div>
-                <h3 className="text-xl font-bold text-slate-900">Detail Berkas Pendaftar</h3>
-                <p className="text-sm text-slate-500 mt-1">No. Registrasi: {selectedApplicant.registrationNo}</p>
+                <h3 className="text-xl font-bold text-slate-900">Detail & Verifikasi Berkas Pendaftar</h3>
+                <p className="text-sm text-slate-500 mt-1">No. Registrasi: <span className="font-mono font-bold text-slate-800">{selectedApplicant.registrationNo}</span></p>
               </div>
               <button 
                 onClick={() => { setSelectedApplicant(null); setApplicantDetail(null); }}
@@ -385,39 +385,108 @@ export default function SeleksiPage() {
                 </div>
               ) : applicantDetail ? (
                 <>
-                  {/* Applicant Info */}
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 bg-blue-50/50 rounded-xl border border-blue-100">
+                  {/* Applicant Info Header */}
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 bg-blue-50/60 rounded-2xl border border-blue-100">
                     <div className="flex-1">
-                      <h4 className="font-bold text-slate-900 text-lg">{applicantDetail.user?.namaLengkap}</h4>
-                      <p className="text-sm text-slate-600">NIK: {applicantDetail.user?.nik} • Email: {applicantDetail.user?.email}</p>
-                      <p className="text-xs text-slate-500 mt-1">Jenjang Target: <strong>{applicantDetail.user?.jenjangTarget}</strong></p>
+                      <h4 className="font-extrabold text-slate-900 text-lg">{applicantDetail.user?.namaLengkap}</h4>
+                      <p className="text-xs text-slate-600 mt-0.5">NIK: <strong>{applicantDetail.user?.nik}</strong> • Email: <strong>{applicantDetail.user?.email}</strong></p>
+                      <p className="text-xs text-slate-500 mt-1">Jenjang Target: <strong className="text-blue-900">{applicantDetail.user?.jenjangTarget}</strong></p>
                     </div>
                     <div className="text-right">
-                      <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                        selectedApplicant.status === 'DITERIMA' ? 'bg-emerald-100 text-emerald-700' :
-                        selectedApplicant.status === 'DITOLAK' ? 'bg-rose-100 text-rose-700' :
-                        'bg-amber-100 text-amber-700'
+                      <span className={`px-3 py-1.5 rounded-full text-xs font-extrabold shadow-xs ${
+                        (applicantDetail.application?.status || selectedApplicant.status) === 'DITERIMA' ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' :
+                        (applicantDetail.application?.status || selectedApplicant.status) === 'DITOLAK' ? 'bg-rose-100 text-rose-800 border border-rose-300' :
+                        'bg-amber-100 text-amber-800 border border-amber-300'
                       }`}>
-                        {selectedApplicant.status}
+                        {applicantDetail.application?.status || selectedApplicant.status}
                       </span>
                     </div>
                   </div>
 
-                  {/* Biodata Summary */}
-                  {applicantDetail.profile && (
-                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs space-y-1 text-slate-700">
-                      <p>• Tempat/Tanggal Lahir: <strong>{applicantDetail.profile.tempatLahir || '-'}, {applicantDetail.profile.tanggalLahir || '-'}</strong></p>
-                      <p>• Gender: <strong>{applicantDetail.profile.gender || '-'}</strong> | No. HP: <strong>{applicantDetail.profile.noHp || '-'}</strong></p>
-                      <p>• Alamat Domisili: <strong>{applicantDetail.profile.alamatDomisili || '-'}</strong></p>
+                  {/* Pengajuan Sanggahan Notice Box (If any) */}
+                  {applicantDetail.application?.notes && applicantDetail.application.notes.includes('[SANGGAHAN') && (
+                    <div className="p-4 bg-amber-50 border-2 border-amber-300 rounded-2xl space-y-2">
+                      <div className="flex items-center gap-2 text-amber-900 font-extrabold text-xs">
+                        <RefreshCw className="w-4 h-4 text-amber-700 animate-spin" />
+                        <span>Catatan Sanggahan & Perbaikan Berkas Mahasiswa</span>
+                      </div>
+                      <div className="p-3 bg-white rounded-xl border border-amber-200 text-xs text-slate-900 leading-relaxed font-medium whitespace-pre-line">
+                        {applicantDetail.application.notes}
+                      </div>
                     </div>
                   )}
 
+                  {/* Highlights Card: IPK & Perguruan Tinggi */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="p-4 bg-amber-50/80 rounded-2xl border border-amber-200 flex items-center justify-between">
+                      <div>
+                        <p className="text-[11px] font-bold text-amber-900 uppercase tracking-wider">IPK Kumulatif Terakhir</p>
+                        <p className="text-xs text-amber-700 mt-0.5">Sesuai Isian Formulir</p>
+                      </div>
+                      <span className="text-2xl font-black bg-amber-500 text-white px-3.5 py-1 rounded-xl shadow-xs">
+                        {applicantDetail.profile?.ipk || '-'}
+                      </span>
+                    </div>
+
+                    <div className="p-4 bg-blue-50/80 rounded-2xl border border-blue-200 flex flex-col justify-between">
+                      <p className="text-[11px] font-bold text-blue-900 uppercase tracking-wider">Perguruan Tinggi & Prodi</p>
+                      <p className="text-xs font-bold text-slate-900 mt-1 truncate">
+                        {applicantDetail.education?.[0]?.institusi || '-'}
+                      </p>
+                      <p className="text-[11px] text-slate-600 truncate">
+                        {applicantDetail.education?.[0]?.jurusan || '-'} (Akreditasi: {applicantDetail.profile?.akreditasiProdi || '-'})
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Complete Form Rincian Accordion / Sections */}
+                  <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3 text-xs text-slate-800">
+                    <h5 className="font-extrabold text-slate-900 text-xs uppercase tracking-wider border-b border-slate-200 pb-2 flex items-center gap-1.5">
+                      <FileText className="w-4 h-4 text-blue-900" /> Rincian Isian Formulir Mahasiswa
+                    </h5>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-[11px]">
+                      <p>• Tempat/Tgl Lahir: <strong>{applicantDetail.profile?.tempatLahir || '-'}, {applicantDetail.profile?.tanggalLahir ? applicantDetail.profile.tanggalLahir.split('T')[0] : '-'}</strong></p>
+                      <p>• Gender / No HP: <strong>{applicantDetail.profile?.gender || '-'} | {applicantDetail.profile?.noHp || '-'}</strong></p>
+                      <p>• NIM / Semester: <strong>{applicantDetail.profile?.nim || '-'} (Semester {applicantDetail.profile?.semester || '-'})</strong></p>
+                      <p>• Target Tahun Lulus: <strong>{applicantDetail.profile?.targetLulus || '-'}</strong></p>
+                      <p>• Status Double Funding: <strong>{applicantDetail.profile?.beasiswaLain || 'Tidak Ada (Bukan Double Funding)'}</strong></p>
+                      <p>• No. KK / Alamat KTP: <strong>{applicantDetail.profile?.noKk || '-'} | {applicantDetail.profile?.alamatKtp || '-'}</strong></p>
+                      <p>• Nama Ortu (Ayah/Ibu): <strong>{applicantDetail.profile?.namaAyah || '-'} / {applicantDetail.profile?.namaIbu || '-'}</strong></p>
+                      <p>• Pekerjaan Ortu: <strong>{applicantDetail.profile?.pekerjaanAyah || '-'} / {applicantDetail.profile?.pekerjaanIbu || '-'}</strong></p>
+                      <p>• Penghasilan / Tanggungan: <strong>{applicantDetail.profile?.penghasilanOrtu || '-'} ({applicantDetail.profile?.jumlahTanggungan || 0} orang)</strong></p>
+                    </div>
+
+                    {(applicantDetail.profile?.prestasiAkademik || applicantDetail.profile?.prestasiNonAkademik) && (
+                      <div className="pt-2 border-t border-slate-200 space-y-1.5 text-[11px]">
+                        {applicantDetail.profile?.prestasiAkademik && (
+                          <div>
+                            <span className="font-bold text-slate-900">Prestasi Akademik:</span>
+                            {renderAchievementDetails(applicantDetail.profile.prestasiAkademik)}
+                          </div>
+                        )}
+                        {applicantDetail.profile?.prestasiNonAkademik && (
+                          <div>
+                            <span className="font-bold text-slate-900">Prestasi Non-Akademik:</span>
+                            {renderAchievementDetails(applicantDetail.profile.prestasiNonAkademik)}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
                   {/* Documents List */}
                   <div>
-                    <h4 className="font-bold text-slate-900 mb-4 flex items-center gap-2">
-                      <FileText className="w-5 h-5 text-slate-500" />
-                      Daftar Berkas Unggahan Real
-                    </h4>
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="font-extrabold text-slate-900 flex items-center gap-2 text-sm">
+                        <FileText className="w-4 h-4 text-blue-900" />
+                        Daftar Berkas Unggahan Mahasiswa
+                      </h4>
+                      <span className="text-[11px] text-slate-500 italic">
+                        Bandingkan Berkas Lama vs Berkas Baru
+                      </span>
+                    </div>
+
                     {applicantDetail.documents && applicantDetail.documents.length > 0 ? (
                       <div className="space-y-3">
                         {applicantDetail.documents.map((doc: any, docIdx: number) => {
@@ -447,7 +516,7 @@ export default function SeleksiPage() {
                                   onClick={() => handleViewDocument(applicantDetail.user?.id || selectedApplicant?.userId, doc.id)}
                                   className="px-3 py-1.5 text-xs font-bold bg-blue-100 text-blue-800 hover:bg-blue-200 rounded-lg transition-colors flex items-center gap-1 border border-blue-200"
                                 >
-                                  <ExternalLink className="w-3.5 h-3.5" /> Lihat
+                                  <ExternalLink className="w-3.5 h-3.5" /> Lihat Dokumen
                                 </button>
                               </div>
                             </div>
@@ -464,49 +533,66 @@ export default function SeleksiPage() {
               ) : null}
             </div>
 
-            {/* Modal Footer */}
-            <div className="p-5 border-t border-slate-100 bg-slate-50 flex justify-end gap-3">
-              <button 
-                onClick={() => window.print()}
-                className="px-5 py-2.5 bg-slate-800 text-white font-normal rounded-xl hover:bg-slate-900 transition-colors flex items-center gap-2 mr-auto"
-              >
-                <Printer className="w-4 h-4" /> Cetak Formulir
-              </button>
-              <button 
-                onClick={() => { setSelectedApplicant(null); setApplicantDetail(null); }}
-                className="px-5 py-2.5 bg-slate-200 text-slate-700 font-normal rounded-xl hover:bg-slate-300 transition-colors"
-              >
-                Tutup
-              </button>
-              <button 
-                type="button"
-                onClick={handleOpenRejectModal}
-                className="px-5 py-2.5 bg-rose-100 text-rose-700 font-medium rounded-xl hover:bg-rose-200 transition-colors flex items-center gap-2 shadow-sm font-semibold"
-              >
-                <XCircle className="w-4 h-4" /> Tolak
-              </button>
-              <button 
-                onClick={async () => {
-                  if (!selectedApplicant) return;
-                  try {
-                    const id = selectedApplicant.userId || selectedApplicant.id;
-                    await fetchAPI(`/admin/applicants/${id}/verify`, {
-                      method: 'PATCH',
-                      body: JSON.stringify({ status: 'DITERIMA', notes: 'Berkas lengkap dan dinyatakan lolos verifikasi.' }),
-                    });
-                    setSelectedApplicant(null);
-                    setApplicantDetail(null);
-                    loadApplicants();
-                    showNotification('Status pendaftar berhasil diubah menjadi DITERIMA!', 'success', 'Status Berhasil Diubah');
-                  } catch (err: any) {
-                    showNotification(err.message || 'Gagal mengubah status.', 'error', 'Gagal Update Status');
-                  }
-                }}
-                className="px-5 py-2.5 bg-emerald-600 text-white font-medium rounded-xl hover:bg-emerald-700 transition-colors flex items-center gap-2 shadow-sm font-semibold"
-              >
-                <CheckCircle2 className="w-4 h-4" /> Loloskan
-              </button>
-            </div>
+            {/* Modal Footer with Status Lock Enforcer */}
+            {(() => {
+              const currentStatus = applicantDetail?.application?.status || selectedApplicant?.status;
+              const isStatusLocked = currentStatus === 'DITERIMA' || currentStatus === 'DITOLAK';
+
+              return (
+                <div className="p-5 border-t border-slate-100 bg-slate-50 flex flex-col gap-3">
+                  {isStatusLocked && (
+                    <div className="w-full text-xs font-extrabold text-amber-900 bg-amber-100/90 border border-amber-300 p-3 rounded-xl flex items-center justify-center gap-2">
+                      <span>🔒 Status pendaftaran sudah <strong>{currentStatus}</strong> (Dikunci). Status tidak dapat diubah lagi kecuali pendaftar mengajukan sanggahan.</span>
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-end gap-3">
+                    <button 
+                      onClick={() => window.print()}
+                      className="px-5 py-2.5 bg-slate-800 text-white font-normal rounded-xl hover:bg-slate-900 transition-colors flex items-center gap-2 mr-auto text-xs"
+                    >
+                      <Printer className="w-4 h-4" /> Cetak Formulir
+                    </button>
+                    <button 
+                      onClick={() => { setSelectedApplicant(null); setApplicantDetail(null); }}
+                      className="px-5 py-2.5 bg-slate-200 text-slate-700 font-bold rounded-xl hover:bg-slate-300 transition-colors text-xs"
+                    >
+                      Tutup
+                    </button>
+                    <button 
+                      type="button"
+                      disabled={isStatusLocked}
+                      onClick={handleOpenRejectModal}
+                      className="px-5 py-2.5 bg-rose-100 text-rose-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed font-extrabold rounded-xl hover:bg-rose-200 transition-colors flex items-center gap-2 shadow-sm text-xs"
+                    >
+                      <XCircle className="w-4 h-4" /> Tolak
+                    </button>
+                    <button 
+                      disabled={isStatusLocked}
+                      onClick={async () => {
+                        if (!selectedApplicant) return;
+                        try {
+                          const id = selectedApplicant.userId || selectedApplicant.id;
+                          await fetchAPI(`/admin/applicants/${id}/verify`, {
+                            method: 'PATCH',
+                            body: JSON.stringify({ status: 'DITERIMA', notes: 'Berkas lengkap dan dinyatakan lolos verifikasi.' }),
+                          });
+                          setSelectedApplicant(null);
+                          setApplicantDetail(null);
+                          loadApplicants();
+                          showNotification('Status pendaftar berhasil diubah menjadi DITERIMA!', 'success', 'Status Berhasil Diubah');
+                        } catch (err: any) {
+                          showNotification(err.message || 'Gagal mengubah status.', 'error', 'Gagal Update Status');
+                        }
+                      }}
+                      className="px-5 py-2.5 bg-emerald-600 text-white disabled:bg-slate-300 disabled:cursor-not-allowed font-extrabold rounded-xl hover:bg-emerald-700 transition-colors flex items-center gap-2 shadow-sm text-xs"
+                    >
+                      <CheckCircle2 className="w-4 h-4" /> Loloskan
+                    </button>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         </div>
       )}

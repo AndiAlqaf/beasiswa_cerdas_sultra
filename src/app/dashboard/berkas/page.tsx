@@ -200,7 +200,9 @@ export default function BerkasPage() {
       {/* Grid Dokumen */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         {DOCUMENT_TYPES.map((docTypeItem) => {
-          const uploadedDoc = documents.find((d) => isDocTypeMatch(d, docTypeItem.key));
+          const matchingDocs = documents.filter((d) => isDocTypeMatch(d, docTypeItem.key));
+          const uploadedDoc = matchingDocs[matchingDocs.length - 1]; // Latest uploaded file
+          const hasMultipleVersions = matchingDocs.length > 1;
           const isUploading = uploadingKey === docTypeItem.key;
 
           return (
@@ -234,6 +236,11 @@ export default function BerkasPage() {
                     }`}>
                       {uploadedDoc ? '✓ Tersimpan' : docTypeItem.required ? 'Wajib Unggah' : 'Opsional'}
                     </span>
+                    {hasMultipleVersions && (
+                      <span className="text-[10px] font-extrabold uppercase bg-amber-100 text-amber-900 border border-amber-300 px-2 py-0.5 rounded-full">
+                        🆕 Sanggahan Baru (#{matchingDocs.length})
+                      </span>
+                    )}
                     {uploadedDoc && (
                       <span className="text-[10px] font-mono uppercase bg-slate-100 text-slate-600 px-2 py-0.5 rounded">
                         {uploadedDoc.mimeType.split('/')[1] || 'FILE'}
@@ -248,20 +255,51 @@ export default function BerkasPage() {
 
                 {/* Uploaded File Details (If Available) */}
                 {uploadedDoc ? (
-                  <div className="bg-slate-50 rounded-2xl p-3.5 border border-slate-100 space-y-2 mb-4">
-                    <p className="text-xs font-semibold text-slate-800 truncate" title={uploadedDoc.originalName}>
-                      📄 {uploadedDoc.originalName}
-                    </p>
-                    <div className="flex items-center gap-4 text-[11px] text-slate-500 font-medium">
-                      <span className="flex items-center gap-1">
-                        <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                        {new Date(uploadedDoc.uploadedAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <HardDrive className="w-3.5 h-3.5 text-slate-400" />
-                        {formatSize(uploadedDoc.fileSize)}
-                      </span>
+                  <div className="space-y-2 mb-4">
+                    <div className="bg-slate-50 rounded-2xl p-3.5 border border-slate-200 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs font-bold text-slate-800 truncate" title={uploadedDoc.originalName}>
+                          📄 {uploadedDoc.originalName}
+                        </p>
+                        {hasMultipleVersions && (
+                          <span className="text-[9px] font-bold uppercase bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-md">
+                            Unggahan Terbaru
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-4 text-[11px] text-slate-500 font-medium">
+                        <span className="flex items-center gap-1">
+                          <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                          {new Date(uploadedDoc.uploadedAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <HardDrive className="w-3.5 h-3.5 text-slate-400" />
+                          {formatSize(uploadedDoc.fileSize)}
+                        </span>
+                      </div>
                     </div>
+
+                    {hasMultipleVersions && (
+                      <div className="p-2.5 bg-amber-50/80 rounded-xl border border-amber-200 text-[11px] text-amber-900">
+                        <p className="font-bold mb-1">Riwayat Berkas Sanggahan ({matchingDocs.length} File):</p>
+                        <div className="space-y-1">
+                          {matchingDocs.map((mDoc, idx) => (
+                            <div key={mDoc.id} className="flex items-center justify-between text-[10px]">
+                              <span className="truncate max-w-[200px]">
+                                {idx === matchingDocs.length - 1 ? '🆕' : '📁'} #{idx + 1}: {mDoc.originalName}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => handleViewDocument(mDoc.id)}
+                                className="text-blue-700 font-bold hover:underline"
+                              >
+                                Lihat
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="p-4 bg-amber-50/50 border border-amber-200/60 rounded-2xl text-[11px] text-amber-800 leading-relaxed mb-4">

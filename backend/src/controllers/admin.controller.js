@@ -222,6 +222,14 @@ async function verifyApplicant(req, res) {
       return res.status(404).json({ success: false, message: 'Pendaftaran tidak ditemukan.' });
     }
 
+    const currentStatus = appRows[0].status;
+    if (currentStatus === 'DITERIMA' || currentStatus === 'DITOLAK') {
+      return res.status(400).json({
+        success: false,
+        message: `Status pendaftaran sudah ${currentStatus} (Dikunci). Status tidak dapat diubah lagi kecuali pendaftar mengajukan sanggahan.`
+      });
+    }
+
     await pool.execute(
       `UPDATE applications SET status = ?, notes = COALESCE(?, notes), verified_at = NOW(), verified_by = ? WHERE user_id = ?`,
       [status, notes || null, adminUserId, applicantUserId]
