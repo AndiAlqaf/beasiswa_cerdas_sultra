@@ -489,39 +489,54 @@ export default function SeleksiPage() {
 
                     {applicantDetail.documents && applicantDetail.documents.length > 0 ? (
                       <div className="space-y-3">
-                        {applicantDetail.documents.map((doc: any, docIdx: number) => {
-                          const sameTypeDocs = applicantDetail.documents.filter((d: any) => (d.docType || '').toLowerCase() === (doc.docType || '').toLowerCase());
-                          const sameTypeIndex = sameTypeDocs.findIndex((d: any) => d.id === doc.id);
-                          const isMultiple = sameTypeDocs.length > 1;
-                          const isLatest = sameTypeIndex === sameTypeDocs.length - 1;
+                        {(() => {
+                          const isAppeal = applicantDetail.application?.notes?.includes('[SANGGAHAN');
+                          
+                          // If not appeal, filter to only show latest document of each docType
+                          let docsToRender = applicantDetail.documents;
+                          if (!isAppeal) {
+                            const latestDocsMap = new Map();
+                            applicantDetail.documents.forEach((d: any) => {
+                              const key = (d.docType || '').toLowerCase();
+                              latestDocsMap.set(key, d); // over-writes with later uploads
+                            });
+                            docsToRender = Array.from(latestDocsMap.values());
+                          }
 
-                          return (
-                            <div key={docIdx} className={`flex items-center justify-between p-3.5 rounded-xl border transition-colors ${isMultiple && isLatest ? 'bg-amber-50/70 border-amber-300' : 'bg-white border-slate-200 hover:bg-slate-50'}`}>
-                              <div className="flex items-center gap-3">
-                                <CheckCircle2 className={`w-5 h-5 shrink-0 ${isMultiple && isLatest ? 'text-amber-600' : 'text-emerald-500'}`} />
-                                <div>
-                                  <div className="flex items-center gap-2">
-                                    <p className="font-bold text-slate-800 uppercase text-xs">{getDocTitle(doc.docType)}</p>
-                                    {isMultiple && (
-                                      <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full border ${isLatest ? 'bg-amber-100 text-amber-900 border-amber-300' : 'bg-slate-100 text-slate-600 border-slate-200'}`}>
-                                        {isLatest ? '🆕 Berkas Sanggahan Baru' : `📁 Berkas Lama (#${sameTypeIndex + 1})`}
-                                      </span>
-                                    )}
+                          return docsToRender.map((doc: any, docIdx: number) => {
+                            const sameTypeDocs = applicantDetail.documents.filter((d: any) => (d.docType || '').toLowerCase() === (doc.docType || '').toLowerCase());
+                            const sameTypeIndex = sameTypeDocs.findIndex((d: any) => d.id === doc.id);
+                            const isMultiple = sameTypeDocs.length > 1 && isAppeal;
+                            const isLatest = sameTypeIndex === sameTypeDocs.length - 1;
+
+                            return (
+                              <div key={docIdx} className={`flex items-center justify-between p-3.5 rounded-xl border transition-colors ${isMultiple && isLatest ? 'bg-amber-50/70 border-amber-300' : 'bg-white border-slate-200 hover:bg-slate-50'}`}>
+                                <div className="flex items-center gap-3">
+                                  <CheckCircle2 className={`w-5 h-5 shrink-0 ${isMultiple && isLatest ? 'text-amber-600' : 'text-emerald-500'}`} />
+                                  <div>
+                                    <div className="flex items-center gap-2">
+                                      <p className="font-bold text-slate-800 uppercase text-xs">{getDocTitle(doc.docType)}</p>
+                                      {isMultiple && (
+                                        <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full border ${isLatest ? 'bg-amber-100 text-amber-900 border-amber-300' : 'bg-slate-100 text-slate-600 border-slate-200'}`}>
+                                          {isLatest ? '🆕 Berkas Sanggahan Baru' : `📁 Berkas Lama (#${sameTypeIndex + 1})`}
+                                        </span>
+                                      )}
+                                    </div>
+                                    <p className="text-[11px] text-slate-500 mt-0.5">{doc.originalName} ({Math.round(doc.fileSize / 1024)} KB) • {doc.uploadedAt ? new Date(doc.uploadedAt).toLocaleString('id-ID') : 'Terverifikasi'}</p>
                                   </div>
-                                  <p className="text-[11px] text-slate-500 mt-0.5">{doc.originalName} ({Math.round(doc.fileSize / 1024)} KB) • {doc.uploadedAt ? new Date(doc.uploadedAt).toLocaleString('id-ID') : 'Terverifikasi'}</p>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <button 
+                                    onClick={() => handleViewDocument(applicantDetail.user?.id || selectedApplicant?.userId, doc.id)}
+                                    className="px-3 py-1.5 text-xs font-bold bg-blue-100 text-blue-800 hover:bg-blue-200 rounded-lg transition-colors flex items-center gap-1 border border-blue-200"
+                                  >
+                                    <ExternalLink className="w-3.5 h-3.5" /> Lihat Dokumen
+                                  </button>
                                 </div>
                               </div>
-                              <div className="flex items-center gap-2">
-                                <button 
-                                  onClick={() => handleViewDocument(applicantDetail.user?.id || selectedApplicant?.userId, doc.id)}
-                                  className="px-3 py-1.5 text-xs font-bold bg-blue-100 text-blue-800 hover:bg-blue-200 rounded-lg transition-colors flex items-center gap-1 border border-blue-200"
-                                >
-                                  <ExternalLink className="w-3.5 h-3.5" /> Lihat Dokumen
-                                </button>
-                              </div>
-                            </div>
-                          );
-                        })}
+                            );
+                          });
+                        })()}
                       </div>
                     ) : (
                       <p className="text-xs text-slate-400 italic p-4 bg-slate-50 rounded-xl border border-dashed border-slate-200 text-center">

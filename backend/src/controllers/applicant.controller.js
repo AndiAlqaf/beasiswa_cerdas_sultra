@@ -236,12 +236,26 @@ function uploadDocument(docType) {
     try {
       const userId = req.user.id;
       const pool = getPool();
+      const fs = require('fs');
 
       if (!req.file) {
         return res.status(400).json({ success: false, message: 'File tidak ditemukan. Silakan pilih file untuk diunggah.' });
       }
 
-      // Preserve all uploaded documents (do not delete old file so Admin can compare old vs new sanggahan files)
+      // Check if applicant is in appeal / sanggahan state
+      const [appRows] = await pool.execute('SELECT status, notes FROM applications WHERE user_id = ?', [userId]);
+      const isAppealState = appRows.length > 0 && appRows[0].notes && appRows[0].notes.includes('[SANGGAHAN');
+
+      if (!isAppealState) {
+        // Initial registration phase (not sanggahan): replace/delete old document of same type
+        const [oldDocs] = await pool.execute('SELECT id, file_path FROM documents WHERE user_id = ? AND doc_type = ?', [userId, docType]);
+        for (const oldDoc of oldDocs) {
+          if (fs.existsSync(oldDoc.file_path)) {
+            try { fs.unlinkSync(oldDoc.file_path); } catch (e) {}
+          }
+          await pool.execute('DELETE FROM documents WHERE id = ?', [oldDoc.id]);
+        }
+      }
 
       // Save document record
       const docId = uuidv4();
@@ -257,7 +271,7 @@ function uploadDocument(docType) {
 
       auditLog({
         action: 'FILE_UPLOADED', userId, ipAddress: getClientIp(req),
-        details: { docType, originalName: req.file.originalname, storedName: req.file.filename, mimeType: req.file.mimetype, size: req.file.size },
+        details: { docType, originalName: req.file.originalname, storedName: req.file.filename, mimeType: req.file.mimetype, size: req.file.size, isAppealState },
         requestId: req.requestId,
       });
 
