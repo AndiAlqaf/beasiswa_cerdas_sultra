@@ -67,9 +67,9 @@ if (typeof window !== 'undefined') {
     const config = getStoredScheduleConfig();
     let mockTime = '';
     switch(phase.toLowerCase()) {
-      case 'pengumuman': mockTime = config.announcementDate; break;
+      case 'pengumuman': mockTime = `${config.announcementDate} 23:59:00`; break;
       case 'sanggah': mockTime = config.sanggahStart; break;
-      case 'hasil-sanggah': mockTime = config.pengumumanSanggahDate; break;
+      case 'hasil-sanggah': mockTime = `${config.pengumumanSanggahDate} 23:59:00`; break;
       case 'reset': delete (window as any).__MOCK_TIME; break;
       default: 
         console.log('Available phases: pengumuman, sanggah, hasil-sanggah, reset'); 
@@ -125,8 +125,16 @@ export function getDynamicTimeline(
   config: ScheduleConfig = getStoredScheduleConfig(),
   customNow?: string
 ): TimelineStep[] {
-  // Helper to parse date string YYYY-MM-DD in local time
+  // Helper to parse date string YYYY-MM-DD or YYYY-MM-DD HH:mm:ss in local time
   const parseDate = (dStr: string) => {
+    if (!dStr) return new Date();
+    if (dStr.includes(' ') || dStr.includes('T')) {
+      const normalized = dStr.replace(' ', 'T');
+      const [datePart, timePart] = normalized.split('T');
+      const [y, m, d] = datePart.split('-').map(Number);
+      const [hh, mm, ss] = (timePart || '00:00:00').split(':').map(Number);
+      return new Date(y, m - 1, d, hh || 0, mm || 0, ss || 0);
+    }
     const [y, m, d] = dStr.split('-').map(Number);
     return new Date(y, m - 1, d);
   };
