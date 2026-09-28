@@ -147,10 +147,28 @@ export default function ProfilPage() {
 
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validation for Prestasi Akademik: MUST provide Foto Sertifikat OR Link if name is entered
+    for (const item of prestasiAkademikList) {
+      if (item.nama.trim() !== '') {
+        const hasFile = !!item.buktiFile;
+        const hasLink = !!(item.buktiLink && item.buktiLink.trim());
+        if (!hasFile && !hasLink) {
+          setToast({
+            title: 'Bukti Prestasi Akademik Diperlukan',
+            message: `Pada Prestasi Akademik "${item.nama}", Anda wajib melampirkan minimal salah satu bukti: Foto Sertifikat ATAU Link Bukti.`,
+            type: 'error',
+          });
+          return;
+        }
+      }
+    }
+
     setSaving(true);
     try {
       const payload = {
         ...form,
+        beasiswaLain: 'Tidak Ada (Bukan Double Funding)',
         prestasiAkademik: formatAchievementItems(prestasiAkademikList),
         prestasiNonAkademik: formatAchievementItems(prestasiNonAkademikList),
         pengalamanOrganisasi: formatAchievementItems(pengalamanOrganisasiList),
@@ -573,14 +591,16 @@ export default function ProfilPage() {
 
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1.5">Penerima Beasiswa Penuh Lain *</label>
-              <select
-                value={form.beasiswaLain}
-                onChange={(e) => setForm((prev) => ({ ...prev, beasiswaLain: e.target.value }))}
-                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-normal text-slate-900 focus:bg-white focus:ring-2 focus:ring-[#0B3A6A] focus:outline-none"
-              >
-                <option value="Tidak Ada">Tidak Ada (Bukan Double Funding)</option>
-                <option value="Ada">Ya, Sedang Menerima Beasiswa Penuh</option>
-              </select>
+              <input
+                type="text"
+                readOnly
+                disabled
+                value="Tidak Ada (Bukan Double Funding)"
+                className="w-full px-3.5 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-xs font-bold text-emerald-800 cursor-not-allowed select-none"
+              />
+              <p className="text-[10px] text-slate-500 mt-1">
+                ✓ Terverifikasi bebas Double Funding (dikunci otomatis sejak pembuatan akun).
+              </p>
             </div>
           </div>
         </div>
@@ -784,6 +804,7 @@ export default function ProfilPage() {
               items={prestasiAkademikList}
               onChange={setPrestasiAkademikList}
               addButtonText="Tambah Prestasi Akademik"
+              showBuktiAkademik={true}
             />
 
             {/* Category 2: Prestasi Non-Akademik */}
@@ -795,6 +816,7 @@ export default function ProfilPage() {
               items={prestasiNonAkademikList}
               onChange={setPrestasiNonAkademikList}
               addButtonText="Tambah Prestasi Non-Akademik"
+              showBuktiNonAkademik={true}
             />
 
             {/* Category 3: Pengalaman Organisasi Kemahasiswaan */}

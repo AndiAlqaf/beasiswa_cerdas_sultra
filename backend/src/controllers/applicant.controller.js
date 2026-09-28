@@ -171,7 +171,7 @@ async function updateProfile(req, res) {
       tempatLahir || null, tanggalLahir || null, gender || null,
       noHp || null, statusPernikahan || null, alamatDomisili || null,
       noKk || null, alamatKtp || null, akreditasiProdi || null, nim || null,
-      semester || null, ipk || null, targetLulus || null, beasiswaLain || null,
+      semester || null, ipk || null, targetLulus || null, beasiswaLain || 'Tidak Ada (Bukan Double Funding)',
       namaAyah || null, pekerjaanAyah || null, namaIbu || null, pekerjaanIbu || null,
       penghasilanOrtu || null, jumlahTanggungan || null, kepemilikanBantuan || null,
       prestasiAkademik || null, prestasiNonAkademik || null, pengalamanOrganisasi || null,

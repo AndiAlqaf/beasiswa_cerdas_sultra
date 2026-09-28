@@ -21,6 +21,55 @@ const getDocTitle = (key: string) => {
   return map[key] || key;
 };
 
+const renderAchievementDetails = (rawStr?: string) => {
+  if (!rawStr || !rawStr.trim()) return '-';
+  if (rawStr.trim().startsWith('[')) {
+    try {
+      const items = JSON.parse(rawStr);
+      if (Array.isArray(items) && items.length > 0) {
+        return (
+          <div className="space-y-2 py-1">
+            {items.map((item: any, idx: number) => (
+              <div key={idx} className="border-b border-slate-100 last:border-0 pb-1.5 last:pb-0">
+                <p className="font-semibold text-slate-900">
+                  {idx + 1}. {item.nama || item.name || '-'} {item.tahun ? `(${item.tahun})` : ''}
+                </p>
+                {(item.buktiFile || item.buktiLink) && (
+                  <div className="flex flex-wrap items-center gap-2 mt-1">
+                    {item.buktiFile && (
+                      <a
+                        href={item.buktiFile}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-[11px] font-bold text-blue-700 hover:text-blue-900 bg-blue-50 px-2.5 py-1 rounded border border-blue-200 shadow-xs"
+                      >
+                        🖼️ Lihat Foto Bukti ({item.buktiFileName || 'File Bukti'})
+                      </a>
+                    )}
+                    {item.buktiLink && (
+                      <a
+                        href={item.buktiLink.startsWith('http') ? item.buktiLink : `https://${item.buktiLink}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 hover:text-emerald-900 bg-emerald-50 px-2.5 py-1 rounded border border-emerald-200 shadow-xs"
+                      >
+                        🔗 Buka Link Bukti
+                      </a>
+                    )}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        );
+      }
+    } catch (e) {
+      // fallback
+    }
+  }
+  return <div className="whitespace-pre-line">{rawStr}</div>;
+};
+
 export default function SeleksiPage() {
   const [selectedApplicant, setSelectedApplicant] = useState<any>(null);
   const [applicantDetail, setApplicantDetail] = useState<any>(null);
@@ -30,6 +79,7 @@ export default function SeleksiPage() {
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [jenjangFilter, setJenjangFilter] = useState<string>('');
+  const [statusFilter, setStatusFilter] = useState<string>('');
 
   // Custom Toast/Notification Modal State
   const [toast, setToast] = useState<{
@@ -146,6 +196,7 @@ export default function SeleksiPage() {
       const params = new URLSearchParams();
       if (searchTerm.trim()) params.set('search', searchTerm.trim());
       if (jenjangFilter) params.set('jenjang', jenjangFilter);
+      if (statusFilter) params.set('status', statusFilter);
 
       const res = await fetchAPI(`/admin/applicants?${params.toString()}`);
       if (res.success && res.data) {
@@ -160,7 +211,7 @@ export default function SeleksiPage() {
 
   useEffect(() => {
     loadApplicants();
-  }, [jenjangFilter]);
+  }, [jenjangFilter, statusFilter]);
 
   const handleOpenDetail = async (applicant: any) => {
     setSelectedApplicant(applicant);
@@ -194,9 +245,21 @@ export default function SeleksiPage() {
         
         <form onSubmit={handleSearchSubmit} className="flex flex-col sm:flex-row gap-3">
           <select 
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm w-full sm:w-auto"
+          >
+            <option value="">Semua Status</option>
+            <option value="TERKIRIM">Menunggu Verifikasi (TERKIRIM)</option>
+            <option value="VERIFIKASI_BERKAS">Proses Verifikasi (VERIFIKASI)</option>
+            <option value="SELEKSI_ADMINISTRASI">Seleksi Administrasi</option>
+            <option value="DITERIMA">Lolos Seleksi (DITERIMA)</option>
+            <option value="DITOLAK">Ditolak (DITOLAK)</option>
+          </select>
+          <select 
             value={jenjangFilter}
             onChange={(e) => setJenjangFilter(e.target.value)}
-            className="px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-xl text-sm font-normal focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm w-full sm:w-auto"
+            className="px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm w-full sm:w-auto"
           >
             <option value="">Semua Jenjang</option>
             <option value="S1">S1 / D4</option>
@@ -628,9 +691,24 @@ export default function SeleksiPage() {
                 </div>
                 <table className="w-full text-left border-collapse">
                   <tbody>
-                    {applicantDetail.profile?.prestasiAkademik && <tr className="border-b border-slate-200"><td className="w-1/3 p-1.5 font-semibold bg-slate-50">Prestasi Akademik</td><td className="p-1.5 whitespace-pre-line">: {applicantDetail.profile.prestasiAkademik}</td></tr>}
-                    {applicantDetail.profile?.prestasiNonAkademik && <tr className="border-b border-slate-200"><td className="w-1/3 p-1.5 font-semibold bg-slate-50">Prestasi Non-Akademik</td><td className="p-1.5 whitespace-pre-line">: {applicantDetail.profile.prestasiNonAkademik}</td></tr>}
-                    {applicantDetail.profile?.pengalamanOrganisasi && <tr><td className="w-1/3 p-1.5 font-semibold bg-slate-50">Pengalaman Organisasi</td><td className="p-1.5 whitespace-pre-line">: {applicantDetail.profile.pengalamanOrganisasi}</td></tr>}
+                    {applicantDetail.profile?.prestasiAkademik && (
+                      <tr className="border-b border-slate-200">
+                        <td className="w-1/3 p-1.5 font-semibold bg-slate-50">Prestasi Akademik</td>
+                        <td className="p-1.5">{renderAchievementDetails(applicantDetail.profile.prestasiAkademik)}</td>
+                      </tr>
+                    )}
+                    {applicantDetail.profile?.prestasiNonAkademik && (
+                      <tr className="border-b border-slate-200">
+                        <td className="w-1/3 p-1.5 font-semibold bg-slate-50">Prestasi Non-Akademik</td>
+                        <td className="p-1.5">{renderAchievementDetails(applicantDetail.profile.prestasiNonAkademik)}</td>
+                      </tr>
+                    )}
+                    {applicantDetail.profile?.pengalamanOrganisasi && (
+                      <tr>
+                        <td className="w-1/3 p-1.5 font-semibold bg-slate-50">Pengalaman Organisasi</td>
+                        <td className="p-1.5">{renderAchievementDetails(applicantDetail.profile.pengalamanOrganisasi)}</td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>

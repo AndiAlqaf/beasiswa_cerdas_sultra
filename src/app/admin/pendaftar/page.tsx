@@ -21,6 +21,55 @@ const getDocTitle = (key: string) => {
   return map[key] || key;
 };
 
+const renderAchievementDetails = (rawStr?: string) => {
+  if (!rawStr || !rawStr.trim()) return '-';
+  if (rawStr.trim().startsWith('[')) {
+    try {
+      const items = JSON.parse(rawStr);
+      if (Array.isArray(items) && items.length > 0) {
+        return (
+          <div className="space-y-2 py-1">
+            {items.map((item: any, idx: number) => (
+              <div key={idx} className="border-b border-slate-100 last:border-0 pb-1.5 last:pb-0">
+                <p className="font-semibold text-slate-900">
+                  {idx + 1}. {item.nama || item.name || '-'} {item.tahun ? `(${item.tahun})` : ''}
+                </p>
+                {(item.buktiFile || item.buktiLink) && (
+                  <div className="flex flex-wrap items-center gap-2 mt-1">
+                    {item.buktiFile && (
+                      <a
+                        href={item.buktiFile}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-[11px] font-bold text-blue-700 hover:text-blue-900 bg-blue-50 px-2.5 py-1 rounded border border-blue-200 shadow-xs"
+                      >
+                        🖼️ Lihat Foto Bukti ({item.buktiFileName || 'File Bukti'})
+                      </a>
+                    )}
+                    {item.buktiLink && (
+                      <a
+                        href={item.buktiLink.startsWith('http') ? item.buktiLink : `https://${item.buktiLink}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 hover:text-emerald-900 bg-emerald-50 px-2.5 py-1 rounded border border-emerald-200 shadow-xs"
+                      >
+                        🔗 Buka Link Bukti
+                      </a>
+                    )}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        );
+      }
+    } catch (e) {
+      // fallback
+    }
+  }
+  return <div className="whitespace-pre-line">{rawStr}</div>;
+};
+
 export default function PendaftarPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [jenjangFilter, setJenjangFilter] = useState('');
@@ -168,9 +217,11 @@ export default function PendaftarPage() {
               className="px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-xl text-sm font-semibold hover:bg-slate-50 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="">Semua Status</option>
-              <option value="Lolos">Lolos</option>
-              <option value="Menunggu">Menunggu</option>
-              <option value="Ditolak">Ditolak</option>
+              <option value="TERKIRIM">Menunggu Verifikasi (TERKIRIM)</option>
+              <option value="VERIFIKASI_BERKAS">Proses Verifikasi (VERIFIKASI)</option>
+              <option value="SELEKSI_ADMINISTRASI">Seleksi Administrasi</option>
+              <option value="DITERIMA">Lolos Seleksi (DITERIMA)</option>
+              <option value="DITOLAK">Ditolak (DITOLAK)</option>
             </select>
             <button className="flex items-center gap-2 px-4 py-2 bg-blue-50 border border-blue-200 text-blue-700 rounded-xl text-sm font-semibold hover:bg-blue-100 transition-colors">
               <Filter className="w-4 h-4" />
@@ -471,10 +522,10 @@ export default function PendaftarPage() {
               <h2 className="font-bold text-lg border-b-2 border-black mb-3 uppercase bg-gray-100 px-2 py-1">4. Riwayat & Prestasi</h2>
               <table className="w-full text-left border-collapse">
                 <tbody>
-                  <tr><td className="w-1/3 py-1.5 font-semibold">Prestasi Akademik</td><td>: {applicantDetail.profile?.prestasiAkademik || '-'}</td></tr>
-                  <tr><td className="w-1/3 py-1.5 font-semibold">Prestasi Non-Akademik</td><td>: {applicantDetail.profile?.prestasiNonAkademik || '-'}</td></tr>
-                  <tr><td className="w-1/3 py-1.5 font-semibold">Pengalaman Organisasi</td><td>: {applicantDetail.profile?.pengalamanOrganisasi || '-'}</td></tr>
-                  <tr><td className="w-1/3 py-1.5 font-semibold">Pelatihan/Sertifikasi</td><td>: {applicantDetail.profile?.pelatihanSertifikasi || '-'}</td></tr>
+                  <tr><td className="w-1/3 py-1.5 font-semibold">Prestasi Akademik</td><td>{renderAchievementDetails(applicantDetail.profile?.prestasiAkademik)}</td></tr>
+                  <tr><td className="w-1/3 py-1.5 font-semibold">Prestasi Non-Akademik</td><td>{renderAchievementDetails(applicantDetail.profile?.prestasiNonAkademik)}</td></tr>
+                  <tr><td className="w-1/3 py-1.5 font-semibold">Pengalaman Organisasi</td><td>{renderAchievementDetails(applicantDetail.profile?.pengalamanOrganisasi)}</td></tr>
+                  <tr><td className="w-1/3 py-1.5 font-semibold">Pelatihan/Sertifikasi</td><td>{renderAchievementDetails(applicantDetail.profile?.pelatihanSertifikasi)}</td></tr>
                 </tbody>
               </table>
             </section>

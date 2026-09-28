@@ -64,8 +64,14 @@ async function listApplicants(req, res) {
     const params = [];
 
     if (status) {
+      let mappedStatus = status;
+      if (status === 'Lolos') mappedStatus = 'DITERIMA';
+      if (status === 'Menunggu') mappedStatus = 'TERKIRIM';
+      if (status === 'Ditolak') mappedStatus = 'DITOLAK';
+      if (status === 'Verifikasi') mappedStatus = 'VERIFIKASI_BERKAS';
+
       whereClause += ' AND a.status = ?';
-      params.push(status);
+      params.push(mappedStatus);
     }
     if (jenjang) {
       whereClause += ' AND u.jenjang_target = ?';

@@ -450,6 +450,18 @@ export default function RegistrationPage() {
   };
 
   const executeFinalSubmit = async (finalSignatureUrl?: string) => {
+    // Validation for Prestasi Akademik: MUST provide Foto Sertifikat OR Link if name is entered
+    for (const item of prestasiAkademikList) {
+      if (item.nama.trim() !== '') {
+        const hasFile = !!item.buktiFile;
+        const hasLink = !!(item.buktiLink && item.buktiLink.trim());
+        if (!hasFile && !hasLink) {
+          alert(`Pada Prestasi Akademik "${item.nama}", Anda wajib melampirkan minimal salah satu bukti: Foto Sertifikat ATAU Link Bukti.`);
+          return;
+        }
+      }
+    }
+
     const sigToSave = finalSignatureUrl || signatureDataUrl;
     try {
       // 1. Update Profile
@@ -468,7 +480,7 @@ export default function RegistrationPage() {
           semester: formData.semester,
           ipk: formData.ipk,
           targetLulus: formData.targetLulus,
-          beasiswaLain: formData.beasiswaLain,
+          beasiswaLain: 'Tidak Ada (Bukan Double Funding)',
           namaAyah: formData.namaAyah,
           pekerjaanAyah: formData.pekerjaanAyah,
           namaIbu: formData.namaIbu,
@@ -962,14 +974,17 @@ export default function RegistrationPage() {
                     </div>
 
                     <div className="sm:col-span-2">
-                      <label className="block mb-1 font-semibold">Status Penerima Beasiswa Lain</label>
+                      <label className="block mb-1 font-semibold text-xs text-slate-700">Penerima Beasiswa Penuh Lain *</label>
                       <input
                         type="text"
-                        value={formData.beasiswaLain}
-                        onChange={(e) => handleInputChange('beasiswaLain', e.target.value)}
-                        placeholder="Wajib 'Tidak Ada' (Jika menerima sebutkan nama beasiswa)"
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-base sm:text-sm focus:ring-2 focus:ring-blue-900 focus:outline-none"
+                        readOnly
+                        disabled
+                        value="Tidak Ada (Bukan Double Funding)"
+                        className="w-full px-3.5 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-xs font-bold text-emerald-800 cursor-not-allowed select-none"
                       />
+                      <p className="text-[10px] text-slate-500 mt-1">
+                        ✓ Terverifikasi bebas Double Funding (dikunci otomatis sejak pembuatan akun).
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -1220,6 +1235,7 @@ export default function RegistrationPage() {
                       items={prestasiAkademikList}
                       onChange={setPrestasiAkademikList}
                       addButtonText="Tambah Prestasi Akademik"
+                      showBuktiAkademik={true}
                     />
 
                     <DynamicAchievementBlock
@@ -1230,6 +1246,7 @@ export default function RegistrationPage() {
                       items={prestasiNonAkademikList}
                       onChange={setPrestasiNonAkademikList}
                       addButtonText="Tambah Prestasi Non-Akademik"
+                      showBuktiNonAkademik={true}
                     />
 
                     <DynamicAchievementBlock
