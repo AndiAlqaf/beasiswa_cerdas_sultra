@@ -172,7 +172,7 @@ export function getDynamicTimeline(
     const sYear = s.getFullYear();
     const eYear = e.getFullYear();
 
-    const timeNote = isAnnouncement ? ' (Pukul 23.59 WITA)' : '';
+    const timeNote = '';
 
     if (startStr === endStr) {
       return `${sDay} ${sMonth} ${sYear}${timeNote}`;
@@ -211,8 +211,8 @@ export function getDynamicTimeline(
     {
       id: 'pengumuman',
       title: 'Pengumuman Hasil Seleksi',
-      desc: 'Pengumuman kelulusan administrasi & seleksi tahap awal (Dirilis Pukul 23.59 WITA).',
-      date: formatDateRange(config.announcementDate, config.announcementEnd || config.announcementDate, true),
+      desc: 'Pengumuman kelulusan administrasi & seleksi tahap awal.',
+      date: formatDateRange(config.announcementDate, config.announcementEnd || config.announcementDate),
       startDate: config.announcementDate,
       endDate: config.announcementEnd || config.announcementDate,
       status: getStatus(config.announcementDate, config.announcementEnd || config.announcementDate, true)
@@ -229,8 +229,8 @@ export function getDynamicTimeline(
     {
       id: 'pengumuman-sanggah',
       title: 'Pengumuman Hasil Sanggah',
-      desc: 'Pengumuman final setelah proses verifikasi sanggahan (Dirilis Pukul 23.59 WITA).',
-      date: formatDateRange(config.pengumumanSanggahDate || '2026-11-09', '2026-11-11', true),
+      desc: 'Pengumuman final setelah proses verifikasi sanggahan.',
+      date: formatDateRange(config.pengumumanSanggahDate || '2026-11-09', '2026-11-11'),
       startDate: config.pengumumanSanggahDate || '2026-11-09',
       endDate: '2026-11-11',
       status: getStatus(config.pengumumanSanggahDate || '2026-11-09', '2026-11-11', true)
