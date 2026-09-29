@@ -471,7 +471,7 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleRegisterAccount = async () => {
+  const handleRegisterAccount = () => {
     if (!email || !password || !namaLengkap || !nik || !prodiPrioritas) {
       setError('Harap lengkapi semua bidang bertanda bintang (*), termasuk Program Studi Prioritas.');
       return;
@@ -490,32 +490,8 @@ export default function RegisterPage() {
       return;
     }
 
-    setLoading(true);
     setError(null);
-    try {
-      const res = await fetchAPI('/auth/register', {
-        method: 'POST',
-        skipAuth: true,
-        body: JSON.stringify({
-          email,
-          nik: nik,
-          password,
-          confirmPassword,
-          namaLengkap,
-          jenjangTarget,
-          prodiPrioritas,
-        }),
-      });
-
-      if (res.success && res.data) {
-        setTokens(res.data.accessToken, res.data.refreshToken, res.data.user);
-        nextStep();
-      }
-    } catch (err: any) {
-      setError(err.message || 'Registrasi gagal. Silakan coba lagi.');
-    } finally {
-      setLoading(false);
-    }
+    nextStep();
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -525,6 +501,52 @@ export default function RegisterPage() {
     setLoading(true);
     setError(null);
     try {
+      // 0. Ensure user account is registered and authenticated
+      let currentToken = typeof window !== 'undefined' ? localStorage.getItem('bssc_access_token') : null;
+      if (!currentToken) {
+        try {
+          const resReg = await fetchAPI('/auth/register', {
+            method: 'POST',
+            skipAuth: true,
+            body: JSON.stringify({
+              email,
+              nik: nik,
+              password,
+              confirmPassword,
+              namaLengkap,
+              jenjangTarget,
+              prodiPrioritas,
+            }),
+          });
+          if (resReg.success && resReg.data) {
+            setTokens(resReg.data.accessToken, resReg.data.refreshToken, resReg.data.user);
+          }
+        } catch (regErr: any) {
+          const errMsg = regErr?.message || '';
+          if (errMsg.toLowerCase().includes('terdaftar')) {
+            try {
+              const loginRes = await fetchAPI('/auth/login', {
+                method: 'POST',
+                skipAuth: true,
+                body: JSON.stringify({
+                  identifier: nik || email,
+                  password
+                })
+              });
+              if (loginRes.success && loginRes.data) {
+                setTokens(loginRes.data.accessToken, loginRes.data.refreshToken, loginRes.data.user);
+              } else {
+                throw regErr;
+              }
+            } catch (loginErr) {
+              throw regErr;
+            }
+          } else {
+            throw regErr;
+          }
+        }
+      }
+
       // 1. Submit Profile (Data Diri)
       await fetchAPI('/applicant/profile', {
         method: 'PUT',

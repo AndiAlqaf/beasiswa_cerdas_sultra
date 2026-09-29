@@ -197,6 +197,14 @@ export function getDynamicTimeline(
     return `${sDay} ${sMonth} ${sYear} - ${eDay} ${eMonth} ${eYear}${timeNote}`;
   };
 
+  const getRegistrationStatus = (endStr: string): 'completed' | 'active' => {
+    const end = parseDate(endStr);
+    end.setHours(23, 59, 59, 999);
+    const checkTime = customNow ? parseDate(customNow) : (mockNow ? parseDate(mockNow) : new Date());
+    if (checkTime > end) return 'completed';
+    return 'active';
+  };
+
   return [
     {
       id: 'pendaftaran',
@@ -205,7 +213,7 @@ export function getDynamicTimeline(
       date: formatDateRange(config.openDate, config.closeDate),
       startDate: config.openDate,
       endDate: config.closeDate,
-      status: getStatus(config.openDate, config.closeDate)
+      status: getRegistrationStatus(config.closeDate)
     },
     {
       id: 'seleksi',
