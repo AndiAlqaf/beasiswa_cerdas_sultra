@@ -505,9 +505,13 @@ export default function SeleksiPage() {
                     {applicantDetail.documents && applicantDetail.documents.length > 0 ? (
                       <div className="space-y-3">
                         {(() => {
-                          const isAppeal = applicantDetail.application?.notes?.includes('[SANGGAHAN');
+                          const hasSanggahanNote = applicantDetail.application?.notes?.toLowerCase().includes('sanggah') || applicantDetail.application?.status === 'DITOLAK';
+                          const hasMultipleDocs = applicantDetail.documents.some((d: any) => 
+                            applicantDetail.documents.filter((x: any) => (x.docType || '').toLowerCase() === (d.docType || '').toLowerCase()).length > 1
+                          );
+                          const isAppeal = hasSanggahanNote || hasMultipleDocs;
                           
-                          // If not appeal, filter to only show latest document of each docType
+                          // If not appeal/multiple, filter to only show latest document of each docType
                           let docsToRender = applicantDetail.documents;
                           if (!isAppeal) {
                             const latestDocsMap = new Map();
@@ -521,7 +525,7 @@ export default function SeleksiPage() {
                           return docsToRender.map((doc: any, docIdx: number) => {
                             const sameTypeDocs = applicantDetail.documents.filter((d: any) => (d.docType || '').toLowerCase() === (doc.docType || '').toLowerCase());
                             const sameTypeIndex = sameTypeDocs.findIndex((d: any) => d.id === doc.id);
-                            const isMultiple = sameTypeDocs.length > 1 && isAppeal;
+                            const isMultiple = sameTypeDocs.length > 1;
                             const isLatest = sameTypeIndex === sameTypeDocs.length - 1;
 
                             return (

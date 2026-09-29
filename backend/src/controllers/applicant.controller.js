@@ -264,9 +264,14 @@ function uploadDocument(docType) {
         return res.status(400).json({ success: false, message: 'File tidak ditemukan. Silakan pilih file untuk diunggah.' });
       }
 
-      // Check if applicant is in appeal / sanggahan state
+      // Check if applicant is in appeal / sanggahan state or status is DITOLAK
       const [appRows] = await pool.execute('SELECT status, notes FROM applications WHERE user_id = ?', [userId]);
-      const isAppealState = appRows.length > 0 && appRows[0].notes && appRows[0].notes.includes('[SANGGAHAN');
+      const appStatus = appRows.length > 0 ? appRows[0].status : null;
+      const appNotes = appRows.length > 0 ? (appRows[0].notes || '') : '';
+
+      const isAppealState = appStatus === 'DITOLAK' ||
+                            appNotes.toLowerCase().includes('sanggah') ||
+                            appNotes.includes('[SANGGAHAN');
 
       if (!isAppealState) {
         // Initial registration phase (not sanggahan): replace/delete old document of same type
