@@ -16,9 +16,12 @@ export const metadata: Metadata = {
   title: "Beasiswa Cerdas Sultra",
   description: "Beasiswa Cerdas Sultra",
   icons: {
-    icon: "/icon.png",
-    shortcut: "/icon.png",
-    apple: "/logo-sultra.png",
+    icon: [
+      { url: "/logo-sultra.png?v=2", type: "image/png" },
+      { url: "/favicon.ico?v=2" },
+    ],
+    shortcut: "/logo-sultra.png?v=2",
+    apple: "/logo-sultra.png?v=2",
   },
 };
 
@@ -30,6 +33,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       data-scroll-behavior="smooth"
       suppressHydrationWarning
     >
+      <head>
+        <link rel="icon" href="/logo-sultra.png?v=2" type="image/png" />
+        <link rel="shortcut icon" href="/logo-sultra.png?v=2" />
+        <link rel="apple-touch-icon" href="/logo-sultra.png?v=2" />
+      </head>
       <body suppressHydrationWarning className="min-h-full flex flex-col">{children}</body>
     </html>
   );
