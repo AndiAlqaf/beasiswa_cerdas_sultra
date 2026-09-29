@@ -21,6 +21,21 @@ const getDocTitle = (key: string) => {
   return map[key] || key;
 };
 
+const getOngoingEducation = (detail: any) => {
+  if (!detail) return { institusi: '-', jurusan: '-' };
+  const profilePt = detail.profile?.perguruanTinggi;
+  const profileProdi = detail.profile?.fakultasProdi || detail.profile?.prodiPrioritas;
+
+  const targetEdu = detail.education?.find((e: any) => e.tingkat === detail.user?.jenjangTarget);
+  const higherEdu = detail.education?.find((e: any) => e.tingkat && e.tingkat !== 'SMA');
+  const lastEdu = detail.education && detail.education.length > 0 ? detail.education[detail.education.length - 1] : null;
+
+  const institusi = profilePt || targetEdu?.institusi || higherEdu?.institusi || lastEdu?.institusi || detail.education?.[0]?.institusi || '-';
+  const jurusan = profileProdi || targetEdu?.jurusan || higherEdu?.jurusan || lastEdu?.jurusan || detail.education?.[0]?.jurusan || '-';
+
+  return { institusi, jurusan };
+};
+
 const renderAchievementDetails = (rawStr?: string) => {
   if (!rawStr || !rawStr.trim()) return '-';
   if (rawStr.trim().startsWith('[')) {
@@ -481,18 +496,8 @@ export default function PendaftarPage() {
               <table className="w-full text-left border-collapse">
                 <tbody>
                   <tr><td className="w-1/3 py-1.5 font-semibold">Jenjang Beasiswa</td><td>: {applicantDetail.user?.jenjangTarget}</td></tr>
-                  {/* Note: since admin API may not return complete academic details mapped clearly if it wasn't entered, we do our best with what we have. Education table has S1 entry etc. */}
-                  {applicantDetail.education && applicantDetail.education.length > 0 ? (
-                    <>
-                      <tr><td className="w-1/3 py-1.5 font-semibold">Perguruan Tinggi</td><td>: {applicantDetail.education[0].institusi || '-'}</td></tr>
-                      <tr><td className="w-1/3 py-1.5 font-semibold">Fakultas / Program Studi</td><td>: {applicantDetail.education[0].jurusan || '-'}</td></tr>
-                    </>
-                  ) : (
-                     <>
-                      <tr><td className="w-1/3 py-1.5 font-semibold">Perguruan Tinggi</td><td>: -</td></tr>
-                      <tr><td className="w-1/3 py-1.5 font-semibold">Fakultas / Program Studi</td><td>: -</td></tr>
-                     </>
-                  )}
+                  <tr><td className="w-1/3 py-1.5 font-semibold">Perguruan Tinggi</td><td>: {getOngoingEducation(applicantDetail).institusi}</td></tr>
+                  <tr><td className="w-1/3 py-1.5 font-semibold">Fakultas / Program Studi</td><td>: {getOngoingEducation(applicantDetail).jurusan}</td></tr>
                   <tr><td className="w-1/3 py-1.5 font-semibold">Akreditasi Prodi</td><td>: {applicantDetail.profile?.akreditasiProdi || '-'}</td></tr>
                   <tr><td className="w-1/3 py-1.5 font-semibold">NIM</td><td>: {applicantDetail.profile?.nim || '-'}</td></tr>
                   <tr><td className="w-1/3 py-1.5 font-semibold">Semester</td><td>: {applicantDetail.profile?.semester || '-'}</td></tr>

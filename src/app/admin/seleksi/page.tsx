@@ -21,6 +21,21 @@ const getDocTitle = (key: string) => {
   return map[key] || key;
 };
 
+const getOngoingEducation = (detail: any) => {
+  if (!detail) return { institusi: '-', jurusan: '-' };
+  const profilePt = detail.profile?.perguruanTinggi;
+  const profileProdi = detail.profile?.fakultasProdi || detail.profile?.prodiPrioritas;
+
+  const targetEdu = detail.education?.find((e: any) => e.tingkat === detail.user?.jenjangTarget);
+  const higherEdu = detail.education?.find((e: any) => e.tingkat && e.tingkat !== 'SMA');
+  const lastEdu = detail.education && detail.education.length > 0 ? detail.education[detail.education.length - 1] : null;
+
+  const institusi = profilePt || targetEdu?.institusi || higherEdu?.institusi || lastEdu?.institusi || detail.education?.[0]?.institusi || '-';
+  const jurusan = profileProdi || targetEdu?.jurusan || higherEdu?.jurusan || lastEdu?.jurusan || detail.education?.[0]?.jurusan || '-';
+
+  return { institusi, jurusan };
+};
+
 const renderAchievementDetails = (rawStr?: string) => {
   if (!rawStr || !rawStr.trim()) return '-';
   if (rawStr.trim().startsWith('[')) {
@@ -431,10 +446,10 @@ export default function SeleksiPage() {
                     <div className="p-4 bg-blue-50/80 rounded-2xl border border-blue-200 flex flex-col justify-between">
                       <p className="text-[11px] font-bold text-blue-900 uppercase tracking-wider">Perguruan Tinggi & Prodi</p>
                       <p className="text-xs font-bold text-slate-900 mt-1 truncate">
-                        {applicantDetail.education?.[0]?.institusi || '-'}
+                        {getOngoingEducation(applicantDetail).institusi}
                       </p>
                       <p className="text-[11px] text-slate-600 truncate">
-                        {applicantDetail.education?.[0]?.jurusan || '-'} (Akreditasi: {applicantDetail.profile?.akreditasiProdi || '-'})
+                        {getOngoingEducation(applicantDetail).jurusan} (Akreditasi: {applicantDetail.profile?.akreditasiProdi || '-'})
                       </p>
                     </div>
                   </div>
@@ -763,8 +778,8 @@ export default function SeleksiPage() {
               </div>
               <table className="w-full text-left border-collapse">
                 <tbody>
-                  <tr className="border-b border-slate-200"><td className="w-1/3 p-1.5 font-semibold bg-slate-50">Perguruan Tinggi</td><td className="p-1.5 font-bold">: {applicantDetail.education && applicantDetail.education.length > 0 ? applicantDetail.education[0].institusi : '-'}</td></tr>
-                  <tr className="border-b border-slate-200"><td className="w-1/3 p-1.5 font-semibold bg-slate-50">Fakultas / Program Studi</td><td className="p-1.5">: {applicantDetail.education && applicantDetail.education.length > 0 ? applicantDetail.education[0].jurusan : '-'}</td></tr>
+                  <tr className="border-b border-slate-200"><td className="w-1/3 p-1.5 font-semibold bg-slate-50">Perguruan Tinggi</td><td className="p-1.5 font-bold">: {getOngoingEducation(applicantDetail).institusi}</td></tr>
+                  <tr className="border-b border-slate-200"><td className="w-1/3 p-1.5 font-semibold bg-slate-50">Fakultas / Program Studi</td><td className="p-1.5">: {getOngoingEducation(applicantDetail).jurusan}</td></tr>
                   <tr className="border-b border-slate-200"><td className="w-1/3 p-1.5 font-semibold bg-slate-50">Akreditasi Prodi</td><td className="p-1.5">: {applicantDetail.profile?.akreditasiProdi || '-'}</td></tr>
                   <tr className="border-b border-slate-200"><td className="w-1/3 p-1.5 font-semibold bg-slate-50">NIM Mahasiswa</td><td className="p-1.5 font-mono">: {applicantDetail.profile?.nim || '-'}</td></tr>
                   <tr className="border-b border-slate-200"><td className="w-1/3 p-1.5 font-semibold bg-slate-50">Semester Saat Ini</td><td className="p-1.5">: Semester {applicantDetail.profile?.semester || '-'}</td></tr>

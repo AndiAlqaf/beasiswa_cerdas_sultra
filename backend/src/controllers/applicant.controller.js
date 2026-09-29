@@ -127,6 +127,7 @@ async function updateProfile(req, res) {
     } = req.body;
     const pool = getPool();
 
+    // Ensure user row exists and update users table
     if (namaLengkap || jenjangTarget) {
       await pool.execute(`
         UPDATE users
@@ -135,6 +136,26 @@ async function updateProfile(req, res) {
         WHERE id = ?
       `, [namaLengkap || null, jenjangTarget || null, userId]);
     }
+
+    // Ensure profiles record exists for user_id (Auto-create if missing)
+    const [existingProfile] = await pool.execute('SELECT id FROM profiles WHERE user_id = ?', [userId]);
+    if (existingProfile.length === 0) {
+      await pool.execute('INSERT INTO profiles (id, user_id) VALUES (?, ?)', [uuidv4(), userId]);
+    }
+
+    // Sanitize and format data types for MySQL strict mode
+    let formattedTanggalLahir = null;
+    if (tanggalLahir) {
+      const dStr = String(tanggalLahir).trim();
+      if (dStr) {
+        formattedTanggalLahir = dStr.includes('T') ? dStr.split('T')[0] : dStr.split(' ')[0];
+        if (formattedTanggalLahir.length < 8) formattedTanggalLahir = null;
+      }
+    }
+
+    const formattedSemester = (semester !== undefined && semester !== null && semester !== '') ? (parseInt(semester) || null) : null;
+    const formattedTanggungan = (jumlahTanggungan !== undefined && jumlahTanggungan !== null && jumlahTanggungan !== '') ? (parseInt(jumlahTanggungan) || null) : null;
+    const formattedIpk = (ipk !== undefined && ipk !== null && ipk !== '') ? (parseFloat(String(ipk).replace(',', '.')) || null) : null;
 
     await pool.execute(`
       UPDATE profiles
@@ -168,12 +189,12 @@ async function updateProfile(req, res) {
           signature_data = COALESCE(?, signature_data)
       WHERE user_id = ?
     `, [
-      tempatLahir || null, tanggalLahir || null, gender || null,
+      tempatLahir || null, formattedTanggalLahir, gender || null,
       noHp || null, statusPernikahan || null, alamatDomisili || null,
       noKk || null, alamatKtp || null, akreditasiProdi || null, nim || null,
-      semester || null, ipk || null, targetLulus || null, beasiswaLain || 'Tidak Ada (Bukan Double Funding)',
+      formattedSemester, formattedIpk, targetLulus || null, beasiswaLain || 'Tidak Ada (Bukan Double Funding)',
       namaAyah || null, pekerjaanAyah || null, namaIbu || null, pekerjaanIbu || null,
-      penghasilanOrtu || null, jumlahTanggungan || null, kepemilikanBantuan || null,
+      penghasilanOrtu || null, formattedTanggungan, kepemilikanBantuan || null,
       prestasiAkademik || null, prestasiNonAkademik || null, pengalamanOrganisasi || null,
       pengalamanPengabdian || null, pelatihanSertifikasi || null, prodiPrioritas || null,
       signatureData || null,
@@ -183,8 +204,9 @@ async function updateProfile(req, res) {
     auditLog({ action: 'PROFILE_UPDATED', userId, ipAddress: getClientIp(req), requestId: req.requestId });
     res.json({ success: true, message: 'Profil berhasil diperbarui.' });
   } catch (err) {
+    console.error(`[UPDATE PROFILE FAIL] User ID ${req.user?.id}:`, err);
     log(LOG_LEVELS.ERROR, `Update profile error: ${err.message}`);
-    res.status(500).json({ success: false, message: 'Gagal memperbarui profil.' });
+    res.status(500).json({ success: false, message: 'Gagal memperbarui profil: ' + err.message });
   }
 }
 

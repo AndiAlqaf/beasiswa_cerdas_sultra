@@ -15,6 +15,11 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Beasiswa Cerdas Sultra",
   description: "Beasiswa Cerdas Sultra",
+  icons: {
+    icon: "/icon.png",
+    shortcut: "/icon.png",
+    apple: "/logo-sultra.png",
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
