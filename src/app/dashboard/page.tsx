@@ -364,91 +364,93 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* PENYALURAN BEASISWA & REKENING BANK CARD (Tahap 1 - 50%) */}
-      <div className="bg-white rounded-3xl border border-blue-200 p-6 sm:p-8 shadow-sm space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-5">
-          <div className="flex items-center gap-3">
-            <div className="p-3 bg-blue-900 text-white rounded-2xl shadow-sm">
-              <Landmark className="w-6 h-6" />
+      {/* PENYALURAN BEASISWA & REKENING BANK CARD (Tahap 1 - 50%: Hanya Muncul Bagi Penerima yang Lolos / DITERIMA) */}
+      {(effectiveStatus === 'DITERIMA' || effectiveStatus === 'PENCAIRAN_TERMIN_1' || effectiveStatus === 'PENCAIRAN_TERMIN_2') && (
+        <div className="bg-white rounded-3xl border border-blue-200 p-6 sm:p-8 shadow-sm space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-5">
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-blue-900 text-white rounded-2xl shadow-sm">
+                <Landmark className="w-6 h-6" />
+              </div>
+              <div>
+                <span className="text-[10px] font-extrabold uppercase tracking-wider bg-blue-100 text-blue-900 px-3 py-1 rounded-full border border-blue-200">
+                  Penyaluran Beasiswa 50% Tahap 1
+                </span>
+                <h3 className="text-xl font-black text-slate-900 mt-1">Rekening Bank Penerima Beasiswa</h3>
+              </div>
             </div>
-            <div>
-              <span className="text-[10px] font-extrabold uppercase tracking-wider bg-blue-100 text-blue-900 px-3 py-1 rounded-full border border-blue-200">
-                Penyaluran Beasiswa 50% Tahap 1
-              </span>
-              <h3 className="text-xl font-black text-slate-900 mt-1">Rekening Bank Penerima Beasiswa</h3>
+            <div className="text-xs text-slate-600 bg-blue-50/70 px-4 py-2.5 rounded-2xl border border-blue-100 max-w-sm leading-relaxed">
+              💳 <strong>Informasi Penyaluran:</strong> Selamat! Anda telah dinyatakan Lolos. Silakan lengkapi rekening bank atas nama Anda untuk pencairan dana 50% tahap pertama.
             </div>
           </div>
-          <div className="text-xs text-slate-600 bg-blue-50/70 px-4 py-2.5 rounded-2xl border border-blue-100 max-w-sm leading-relaxed">
-            💳 <strong>Informasi Penyaluran:</strong> Pencairan dana beasiswa 50% tahap pertama langsung ditransfer ke rekening bank atas nama mahasiswa penerima.
-          </div>
-        </div>
 
-        <form onSubmit={handleSaveBank} className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1.5">Nama Bank *</label>
-              <select
-                value={namaBank}
-                onChange={(e) => setNamaBank(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-semibold focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white text-slate-900"
+          <form onSubmit={handleSaveBank} className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">Nama Bank *</label>
+                <select
+                  value={namaBank}
+                  onChange={(e) => setNamaBank(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-semibold focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white text-slate-900"
+                >
+                  <option value="">-- Pilih Bank --</option>
+                  <option value="Bank Sultra (BPD Sultra)">Bank Sultra (BPD Sultra)</option>
+                  <option value="Bank Mandiri">Bank Mandiri</option>
+                  <option value="Bank BNI">Bank BNI</option>
+                  <option value="Bank BRI">Bank BRI</option>
+                  <option value="Bank BCA">Bank BCA</option>
+                  <option value="Bank BSI (Bank Syariah Indonesia)">Bank BSI</option>
+                  <option value="Bank BTN">Bank BTN</option>
+                  <option value="Lainnya">Lainnya</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">Nomor Rekening Bank *</label>
+                <input
+                  type="text"
+                  value={noRekening}
+                  onChange={(e) => setNoRekening(e.target.value)}
+                  placeholder="Contoh: 001020304050"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-mono font-semibold focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white text-slate-900"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">Nama Pemilik Rekening *</label>
+                <input
+                  type="text"
+                  value={namaRekening}
+                  onChange={(e) => setNamaRekening(e.target.value)}
+                  placeholder="Nama Sesuai Buku Tabungan / KTP"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-semibold focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white text-slate-900"
+                />
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
+              <p className="text-[11px] text-slate-500 italic">
+                * Pastikan rekening bank masih aktif atas nama pendaftar sendiri untuk kelancaran pencairan dana tahap pertama.
+              </p>
+              <button
+                type="submit"
+                disabled={savingBank}
+                className="px-5 py-2.5 bg-blue-900 hover:bg-blue-950 disabled:bg-slate-300 text-white font-extrabold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-2 shrink-0"
               >
-                <option value="">-- Pilih Bank --</option>
-                <option value="Bank Sultra (BPD Sultra)">Bank Sultra (BPD Sultra)</option>
-                <option value="Bank Mandiri">Bank Mandiri</option>
-                <option value="Bank BNI">Bank BNI</option>
-                <option value="Bank BRI">Bank BRI</option>
-                <option value="Bank BCA">Bank BCA</option>
-                <option value="Bank BSI (Bank Syariah Indonesia)">Bank BSI</option>
-                <option value="Bank BTN">Bank BTN</option>
-                <option value="Lainnya">Lainnya</option>
-              </select>
+                {savingBank ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" /> Menyimpan...
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-4 h-4" /> Simpan Rekening Bank
+                  </>
+                )}
+              </button>
             </div>
-
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1.5">Nomor Rekening Bank *</label>
-              <input
-                type="text"
-                value={noRekening}
-                onChange={(e) => setNoRekening(e.target.value)}
-                placeholder="Contoh: 001020304050"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-mono font-semibold focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white text-slate-900"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1.5">Nama Pemilik Rekening *</label>
-              <input
-                type="text"
-                value={namaRekening}
-                onChange={(e) => setNamaRekening(e.target.value)}
-                placeholder="Nama Sesuai Buku Tabungan / KTP"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-semibold focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white text-slate-900"
-              />
-            </div>
-          </div>
-
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
-            <p className="text-[11px] text-slate-500 italic">
-              * Pastikan rekening bank masih aktif atas nama pendaftar sendiri untuk kelancaran pencairan dana tahap pertama.
-            </p>
-            <button
-              type="submit"
-              disabled={savingBank}
-              className="px-5 py-2.5 bg-blue-900 hover:bg-blue-950 disabled:bg-slate-300 text-white font-extrabold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-2 shrink-0"
-            >
-              {savingBank ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" /> Menyimpan...
-                </>
-              ) : (
-                <>
-                  <Save className="w-4 h-4" /> Simpan Rekening Bank
-                </>
-              )}
-            </button>
-          </div>
-        </form>
-      </div>
+          </form>
+        </div>
+      )}
 
       {/* INFORMASI MENUNGGU MASA SANGGAH (Jika Status DITOLAK dan Masa Sanggah Belum Buka) */}
       {!isSanggahPeriodOpen && effectiveStatus === 'DITOLAK' && !isSanggahan && (
