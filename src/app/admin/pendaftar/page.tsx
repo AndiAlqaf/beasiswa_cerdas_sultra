@@ -280,13 +280,15 @@ export default function PendaftarPage() {
                     <td className="p-4 text-slate-600 font-mono text-xs">{user.registrationNo}</td>
                     <td className="p-4">
                       <p className="font-bold text-slate-900">{user.namaLengkap}</p>
-                      <p className="text-xs text-slate-500 mt-0.5">{user.email}</p>
+                      <p className="text-xs text-slate-500 mt-0.5">{user.prodi && user.prodi !== '-' ? user.prodi : user.email}</p>
                     </td>
-                    <td className="p-4 text-slate-600">NIK: {user.nik}</td>
+                    <td className="p-4 text-slate-600 text-xs font-medium truncate max-w-[200px]" title={user.perguruanTinggi || `NIK: ${user.nik}`}>
+                      {user.perguruanTinggi && user.perguruanTinggi !== '-' ? user.perguruanTinggi : `NIK: ${user.nik}`}
+                    </td>
                     <td className="p-4">
                       <span className="bg-slate-100 text-slate-700 px-2.5 py-1 rounded-md text-xs font-bold border border-slate-200 whitespace-nowrap">{user.jenjangTarget}</span>
                     </td>
-                    <td className="p-4 text-slate-900 font-semibold">-</td>
+                    <td className="p-4 text-slate-900 font-extrabold text-sm">{user.ipk && user.ipk !== '-' ? user.ipk : '-'}</td>
                     <td className="p-4 text-slate-500 text-xs">
                       {user.submittedAt ? new Date(user.submittedAt).toLocaleDateString('id-ID') : '-'}
                     </td>

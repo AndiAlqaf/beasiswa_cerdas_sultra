@@ -91,9 +91,25 @@ async function listApplicants(req, res) {
     const [applicants] = await pool.execute(
       `SELECT u.id as userId, u.nama_lengkap, u.email, u.nik, u.jenjang_target,
               a.id as applicationId, a.registration_no, a.status, a.notes,
-              a.submitted_at, a.verified_at
+              a.submitted_at, a.verified_at,
+              p.ipk, p.prodi_prioritas, p.akreditasi_prodi,
+              (
+                SELECT e.institusi 
+                FROM education_history e 
+                WHERE e.user_id = u.id 
+                ORDER BY (CASE WHEN e.tingkat = u.jenjang_target THEN 1 WHEN e.tingkat != 'SMA' THEN 2 ELSE 3 END), e.sort_order DESC 
+                LIMIT 1
+              ) as perguruan_tinggi,
+              (
+                SELECT e.jurusan 
+                FROM education_history e 
+                WHERE e.user_id = u.id 
+                ORDER BY (CASE WHEN e.tingkat = u.jenjang_target THEN 1 WHEN e.tingkat != 'SMA' THEN 2 ELSE 3 END), e.sort_order DESC 
+                LIMIT 1
+              ) as jurusan
        FROM applications a
        JOIN users u ON u.id = a.user_id
+       LEFT JOIN profiles p ON p.user_id = u.id
        WHERE ${whereClause}
        ORDER BY a.submitted_at DESC
        LIMIT ? OFFSET ?`,
@@ -108,6 +124,9 @@ async function listApplicants(req, res) {
           jenjangTarget: a.jenjang_target, applicationId: a.applicationId,
           registrationNo: a.registration_no, status: a.status, notes: a.notes,
           submittedAt: a.submitted_at, verifiedAt: a.verified_at,
+          ipk: a.ipk ? String(a.ipk) : '-',
+          perguruanTinggi: a.perguruan_tinggi || '-',
+          prodi: a.prodi_prioritas || a.jurusan || '-',
         })),
         pagination: {
           currentPage: page, totalPages: Math.ceil(cnt / limit),
