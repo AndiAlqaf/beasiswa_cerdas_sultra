@@ -498,20 +498,12 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleRegisterAccount = () => {
+  const handleRegisterAccount = async () => {
     if (!validateStep1()) return;
-    setError(null);
-    nextStep();
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!agreedDeclaration) return;
-    
     setLoading(true);
     setError(null);
+
     try {
-      // 0. Ensure user account is registered and authenticated
       let currentToken = typeof window !== 'undefined' ? localStorage.getItem('bssc_access_token') : null;
       if (!currentToken) {
         try {
@@ -546,14 +538,43 @@ export default function RegisterPage() {
               if (loginRes.success && loginRes.data) {
                 setTokens(loginRes.data.accessToken, loginRes.data.refreshToken, loginRes.data.user);
               } else {
-                throw regErr;
+                throw new Error('NIK atau Email ini sudah terdaftar di sistem. Jika ini akun Anda, gunakan password yang terdaftar atau login di halaman Login.');
               }
             } catch (loginErr) {
-              throw regErr;
+              throw new Error('NIK atau Email ini sudah terdaftar di sistem. Jika ini akun Anda, gunakan password yang terdaftar atau login di halaman Login.');
             }
           } else {
             throw regErr;
           }
+        }
+      }
+
+      setError(null);
+      if (currentStep < totalSteps) {
+        setCurrentStep((prev) => prev + 1);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    } catch (err: any) {
+      setError(err.message || 'Gagal mendaftarkan akun.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!agreedDeclaration) return;
+    
+    setLoading(true);
+    setError(null);
+    try {
+      // 0. Ensure user account is registered and authenticated
+      let currentToken = typeof window !== 'undefined' ? localStorage.getItem('bssc_access_token') : null;
+      if (!currentToken) {
+        await handleRegisterAccount();
+        currentToken = typeof window !== 'undefined' ? localStorage.getItem('bssc_access_token') : null;
+        if (!currentToken) {
+          throw new Error('Sesi autentikasi tidak ditemukan. Harap periksa data akun Anda pada Tahap 1.');
         }
       }
 
