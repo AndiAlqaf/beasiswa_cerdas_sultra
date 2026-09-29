@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "clean-db": "node backend/clean_db.js"
   },
   "dependencies": {
     "@vladmandic/face-api": "^1.7.15",
