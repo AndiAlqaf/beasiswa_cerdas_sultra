@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Beasiswa Cerdas Sultra",
-  description: "Beasiswa Cerdas Sultra",
+  title: "Beasiswa Sultra Cerdas",
+  description: "Beasiswa Sultra Cerdas",
   icons: {
     icon: [
       { url: "/logo-sultra.png?v=2", type: "image/png" },

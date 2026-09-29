@@ -414,10 +414,37 @@ export default function RegisterPage() {
   };
 
   // Step Navigation with Strict Field Validation
+  const validateStep1 = (): boolean => {
+    if (!email || !password || !namaLengkap || !nik || !prodiPrioritas) {
+      setError('Harap lengkapi semua bidang bertanda bintang (*), termasuk Program Studi Prioritas.');
+      return false;
+    }
+    const cleanNik = nik.replace(/\D/g, '');
+    if (cleanNik.length !== 16) {
+      setError('NIK Mahasiswa wajib diisi tepat 16 digit angka (saat ini: ' + cleanNik.length + ' digit).');
+      return false;
+    }
+    if (!isSemesterConfirmed) {
+      setError('Harap beri tanda centang konfirmasi bahwa Anda benar berada di semester yang sesuai kriteria.');
+      return false;
+    }
+    if (password.length < 8 || password.length > 128) {
+      setError('Password harus 8-128 karakter (kombinasi huruf besar, huruf kecil, angka, dan simbol).');
+      return false;
+    }
+    if (password !== confirmPassword) {
+      setError('Konfirmasi password tidak cocok.');
+      return false;
+    }
+    return true;
+  };
+
   const validateAndNextStep = () => {
     setError(null);
 
-    if (currentStep === 2) {
+    if (currentStep === 1) {
+      if (!validateStep1()) return;
+    } else if (currentStep === 2) {
       if (!capturedImage) {
         setError('Wajib mengambil foto selfie atau mengunggah foto selfie terlebih dahulu sebelum melanjutkan.');
         return;
@@ -472,24 +499,7 @@ export default function RegisterPage() {
   const [error, setError] = useState<string | null>(null);
 
   const handleRegisterAccount = () => {
-    if (!email || !password || !namaLengkap || !nik || !prodiPrioritas) {
-      setError('Harap lengkapi semua bidang bertanda bintang (*), termasuk Program Studi Prioritas.');
-      return;
-    }
-    const cleanNik = nik.replace(/\D/g, '');
-    if (cleanNik.length !== 16) {
-      setError('NIK Mahasiswa wajib diisi tepat 16 digit angka (saat ini: ' + cleanNik.length + ' digit).');
-      return;
-    }
-    if (!isSemesterConfirmed) {
-      setError('Harap beri tanda centang konfirmasi bahwa Anda benar berada di semester yang sesuai kriteria.');
-      return;
-    }
-    if (password !== confirmPassword) {
-      setError('Konfirmasi password tidak cocok.');
-      return;
-    }
-
+    if (!validateStep1()) return;
     setError(null);
     nextStep();
   };
@@ -606,7 +616,21 @@ export default function RegisterPage() {
       setIsSubmitted(true);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err: any) {
-      setError(err.message || 'Gagal menyimpan data kelengkapan.');
+      const errMsg = err.message || 'Gagal menyimpan data kelengkapan.';
+      setError(errMsg);
+      const lowerMsg = errMsg.toLowerCase();
+
+      // Auto jump back to the step where the invalid field belongs
+      if (lowerMsg.includes('password') || lowerMsg.includes('nik') || lowerMsg.includes('email') || lowerMsg.includes('nama') || lowerMsg.includes('prodi') || lowerMsg.includes('semester')) {
+        setCurrentStep(1);
+      } else if (lowerMsg.includes('foto') || lowerMsg.includes('selfie') || lowerMsg.includes('kamera')) {
+        setCurrentStep(2);
+      } else if (lowerMsg.includes('tempat lahir') || lowerMsg.includes('tanggal lahir') || lowerMsg.includes('telepon') || lowerMsg.includes('domisili')) {
+        setCurrentStep(3);
+      } else if (lowerMsg.includes('pendidikan') || lowerMsg.includes('sekolah') || lowerMsg.includes('institusi') || lowerMsg.includes('jurusan')) {
+        setCurrentStep(4);
+      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } finally {
       setLoading(false);
     }
@@ -812,7 +836,7 @@ export default function RegisterPage() {
                           required
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
-                          placeholder="Minimal 6 karakter"
+                          placeholder="Minimal 8 karakter"
                           className="w-full pl-4 pr-11 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0B3A6A] transition-all text-slate-900 font-normal placeholder:font-normal placeholder:text-slate-400"
                         />
                         <button
