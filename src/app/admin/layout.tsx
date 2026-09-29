@@ -4,12 +4,13 @@ import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { LayoutDashboard, Users, FileCheck, Megaphone, Settings, LogOut, Menu, X, Bell } from 'lucide-react';
-import { getUser, clearTokens } from '@/lib/api';
+import { getUser, clearTokens, fetchAPI } from '@/lib/api';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [pendingCount, setPendingCount] = useState<number>(0);
   const profileRef = useRef<HTMLDivElement>(null);
   const notificationsRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
@@ -17,6 +18,18 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   useEffect(() => {
     setUser(getUser());
+
+    async function fetchNotificationCount() {
+      try {
+        const res = await fetchAPI('/admin/dashboard');
+        if (res.success && res.data?.stats) {
+          setPendingCount(res.data.stats.menungguVerifikasi || 0);
+        }
+      } catch (e) {
+        // ignore error silently
+      }
+    }
+    fetchNotificationCount();
 
     const handleClickOutside = (event: MouseEvent) => {
       if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
@@ -121,7 +134,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 className={`relative p-2 rounded-full transition-colors ${notificationsOpen ? 'bg-slate-100 text-blue-600' : 'text-slate-500 hover:bg-slate-100'}`}
               >
                 <Bell className="w-5 h-5" />
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 border border-white rounded-full"></span>
+                {pendingCount > 0 && (
+                  <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 border border-white rounded-full"></span>
+                )}
               </button>
 
               {notificationsOpen && (
@@ -131,15 +146,23 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   
                   <div className="px-4 py-3 border-b border-slate-100 relative z-10 flex items-center justify-between">
                     <h3 className="font-bold text-slate-900 text-sm">Notifikasi</h3>
-                    <span className="text-xs bg-rose-100 text-rose-600 px-2 py-0.5 rounded-full font-semibold">1 Baru</span>
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${pendingCount > 0 ? 'bg-rose-100 text-rose-600' : 'bg-slate-100 text-slate-500'}`}>
+                      {pendingCount > 0 ? `${pendingCount} Baru` : '0 Baru'}
+                    </span>
                   </div>
                   
                   <div className="max-h-[300px] overflow-y-auto relative z-10">
-                    <Link href="/admin/pendaftar" onClick={() => setNotificationsOpen(false)} className="block px-4 py-3 hover:bg-slate-50 transition-colors">
-                      <p className="text-sm font-semibold text-slate-900 mb-1">Pendaftar Baru</p>
-                      <p className="text-xs text-slate-500 line-clamp-2">Ada 5 pendaftar baru yang menunggu untuk diverifikasi berkasnya hari ini.</p>
-                      <p className="text-[10px] text-slate-400 mt-2 font-medium">Baru saja</p>
-                    </Link>
+                    {pendingCount > 0 ? (
+                      <Link href="/admin/seleksi" onClick={() => setNotificationsOpen(false)} className="block px-4 py-3 hover:bg-slate-50 transition-colors">
+                        <p className="text-sm font-semibold text-slate-900 mb-1">Pendaftar Baru</p>
+                        <p className="text-xs text-slate-500 line-clamp-2">Ada {pendingCount} pendaftar baru yang menunggu untuk diverifikasi berkasnya hari ini.</p>
+                        <p className="text-[10px] text-slate-400 mt-2 font-medium">Baru saja</p>
+                      </Link>
+                    ) : (
+                      <div className="px-4 py-6 text-center text-slate-500 text-xs font-medium">
+                        Tidak ada pendaftar baru yang menunggu verifikasi.
+                      </div>
+                    )}
                   </div>
                   
                   <div className="px-4 py-2 border-t border-slate-100 relative z-10">
