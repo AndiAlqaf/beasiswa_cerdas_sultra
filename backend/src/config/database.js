@@ -216,6 +216,25 @@ async function runMigrations() {
     console.error(`[DB] Migration doc_type modify error:`, e.message);
   }
 
+  // Ensure text/achievement columns in profiles are LONGTEXT to handle JSON array stringification without truncation
+  const textColsToModify = [
+    'prestasi_akademik',
+    'prestasi_non_akademik',
+    'pengalaman_organisasi',
+    'pengalaman_pengabdian',
+    'pelatihan_sertifikasi',
+    'signature_data',
+    'alamat_ktp',
+    'alamat_domisili'
+  ];
+  for (const colName of textColsToModify) {
+    try {
+      await migrationConn.query(`ALTER TABLE profiles MODIFY COLUMN ${colName} LONGTEXT NULL`);
+    } catch (e) {
+      console.error(`[DB] Migration ${colName} modify error:`, e.message);
+    }
+  }
+
   // Add columns to applications table for tracking email notifications
   const appColumns = [
     'announcement_email_sent_at DATETIME NULL',
