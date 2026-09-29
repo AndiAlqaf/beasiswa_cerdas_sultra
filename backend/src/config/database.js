@@ -195,7 +195,10 @@ async function runMigrations() {
     'pengalaman_pengabdian TEXT NULL',
     'pelatihan_sertifikasi TEXT NULL',
     'prodi_prioritas VARCHAR(255) NULL',
-    'signature_data LONGTEXT NULL'
+    'signature_data LONGTEXT NULL',
+    'nama_bank VARCHAR(100) NULL',
+    'no_rekening VARCHAR(50) NULL',
+    'nama_rekening VARCHAR(150) NULL'
   ];
 
   for (const colDef of columnsToAdd) {

@@ -173,10 +173,28 @@ export default function PendaftarPage() {
   };
 
   const handleExport = () => {
-    const headers = ['No. Registrasi', 'Nama', 'Email', 'NIK', 'Jenjang', 'Status', 'Tanggal'];
+    const headers = [
+      'No. Registrasi', 'Nama Lengkap', 'Email', 'NIK', 'Jenjang Target', 
+      'Perguruan Tinggi', 'Prodi', 'IPK', 'Status Pendaftaran', 'Tanggal Submit', 
+      'Nama Bank', 'Nomor Rekening', 'Nama Pemilik Rekening'
+    ];
     const csvContent = [
       headers.join(','),
-      ...applicants.map((u: any) => `"${u.registrationNo}","${u.namaLengkap}","${u.email}","${u.nik}","${u.jenjangTarget}","${u.status}","${u.submittedAt}"`)
+      ...applicants.map((u: any) => [
+        `"${u.registrationNo || ''}"`,
+        `"${u.namaLengkap || ''}"`,
+        `"${u.email || ''}"`,
+        `"${u.nik || ''}"`,
+        `"${u.jenjangTarget || ''}"`,
+        `"${u.perguruanTinggi || ''}"`,
+        `"${u.prodi || ''}"`,
+        `"${u.ipk || ''}"`,
+        `"${u.status || ''}"`,
+        `"${u.submittedAt || ''}"`,
+        `"${u.namaBank || ''}"`,
+        `"${u.noRekening || ''}"`,
+        `"${u.namaRekening || ''}"`
+      ].join(','))
     ].join('\n');
 
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -394,6 +412,18 @@ export default function PendaftarPage() {
                       <p>• Alamat Domisili: <strong>{applicantDetail.profile.alamatDomisili || '-'}</strong></p>
                     </div>
                   )}
+
+                  {/* Bank Account Info Card (Penyaluran Beasiswa 50%) */}
+                  <div className="bg-blue-50/80 p-4 rounded-xl border border-blue-200 text-xs space-y-1.5 text-slate-800">
+                    <h5 className="font-extrabold text-blue-900 text-xs uppercase tracking-wider flex items-center gap-1.5">
+                      💳 Rekening Bank Penerima (Penyaluran 50% Tahap 1)
+                    </h5>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1 font-medium">
+                      <p>• Bank: <strong className="text-slate-900">{applicantDetail.profile?.namaBank || '-'}</strong></p>
+                      <p>• No. Rekening: <strong className="font-mono text-slate-900">{applicantDetail.profile?.noRekening || '-'}</strong></p>
+                      <p>• Atas Nama: <strong className="text-slate-900">{applicantDetail.profile?.namaRekening || '-'}</strong></p>
+                    </div>
+                  </div>
 
                   {/* Education History */}
                   {applicantDetail.education && applicantDetail.education.length > 0 && (

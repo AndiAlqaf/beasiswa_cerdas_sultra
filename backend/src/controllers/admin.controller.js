@@ -93,6 +93,7 @@ async function listApplicants(req, res) {
               a.id as applicationId, a.registration_no, a.status, a.notes,
               a.submitted_at, a.verified_at,
               p.ipk, p.prodi_prioritas, p.akreditasi_prodi,
+              p.nama_bank, p.no_rekening, p.nama_rekening,
               (
                 SELECT e.institusi 
                 FROM education_history e 
@@ -127,6 +128,9 @@ async function listApplicants(req, res) {
           ipk: a.ipk ? String(a.ipk) : '-',
           perguruanTinggi: a.perguruan_tinggi || '-',
           prodi: a.prodi_prioritas || a.jurusan || '-',
+          namaBank: a.nama_bank || '-',
+          noRekening: a.no_rekening || '-',
+          namaRekening: a.nama_rekening || '-'
         })),
         pagination: {
           currentPage: page, totalPages: Math.ceil(cnt / limit),
@@ -157,6 +161,7 @@ async function getApplicantDetail(req, res) {
              p.penghasilan_ortu, p.jumlah_tanggungan, p.kepemilikan_bantuan,
              p.prestasi_akademik, p.prestasi_non_akademik, p.pengalaman_organisasi,
              p.pengalaman_pengabdian, p.pelatihan_sertifikasi, p.signature_data,
+             p.nama_bank, p.no_rekening, p.nama_rekening,
              a.id as app_id, a.registration_no, a.status, a.notes, a.submitted_at, a.verified_at
       FROM users u
       LEFT JOIN profiles p ON p.user_id = u.id
@@ -207,7 +212,10 @@ async function getApplicantDetail(req, res) {
           pengalamanOrganisasi: user.pengalaman_organisasi,
           pengalamanPengabdian: user.pengalaman_pengabdian,
           pelatihanSertifikasi: user.pelatihan_sertifikasi,
-          signatureData: user.signature_data
+          signatureData: user.signature_data,
+          namaBank: user.nama_bank,
+          noRekening: user.no_rekening,
+          namaRekening: user.nama_rekening
         },
         application: user.app_id ? {
           id: user.app_id, registrationNo: user.registration_no, status: user.status,

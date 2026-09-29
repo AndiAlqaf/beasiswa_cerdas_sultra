@@ -470,6 +470,9 @@ export default function SeleksiPage() {
                       <p>• Nama Ortu (Ayah/Ibu): <strong>{applicantDetail.profile?.namaAyah || '-'} / {applicantDetail.profile?.namaIbu || '-'}</strong></p>
                       <p>• Pekerjaan Ortu: <strong>{applicantDetail.profile?.pekerjaanAyah || '-'} / {applicantDetail.profile?.pekerjaanIbu || '-'}</strong></p>
                       <p>• Penghasilan / Tanggungan: <strong>{applicantDetail.profile?.penghasilanOrtu || '-'} ({applicantDetail.profile?.jumlahTanggungan || 0} orang)</strong></p>
+                      <p className="col-span-1 sm:col-span-2 text-blue-900 font-bold bg-blue-50 p-2 rounded-lg border border-blue-100 mt-1">
+                        💳 Rekening Bank Penyaluran 50%: <strong>{applicantDetail.profile?.namaBank || '-'}</strong> | No. Rek: <strong className="font-mono">{applicantDetail.profile?.noRekening || '-'}</strong> | a.n: <strong>{applicantDetail.profile?.namaRekening || '-'}</strong>
+                      </p>
                     </div>
 
                     {(applicantDetail.profile?.prestasiAkademik || applicantDetail.profile?.prestasiNonAkademik) && (

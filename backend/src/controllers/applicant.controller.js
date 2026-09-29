@@ -25,7 +25,8 @@ async function getProfile(req, res) {
              p.beasiswa_lain, p.nama_ayah, p.pekerjaan_ayah, p.nama_ibu, p.pekerjaan_ibu,
              p.penghasilan_ortu, p.jumlah_tanggungan, p.kepemilikan_bantuan,
              p.prestasi_akademik, p.prestasi_non_akademik, p.pengalaman_organisasi,
-             p.pengalaman_pengabdian, p.pelatihan_sertifikasi, p.prodi_prioritas, p.signature_data
+             p.pengalaman_pengabdian, p.pelatihan_sertifikasi, p.prodi_prioritas, p.signature_data,
+             p.nama_bank, p.no_rekening, p.nama_rekening
       FROM users u
       LEFT JOIN profiles p ON p.user_id = u.id
       WHERE u.id = ?
@@ -94,7 +95,10 @@ async function getProfile(req, res) {
           pengalamanPengabdian: user.pengalaman_pengabdian,
           pelatihanSertifikasi: user.pelatihan_sertifikasi,
           prodiPrioritas: user.prodi_prioritas,
-          signatureData: user.signature_data
+          signatureData: user.signature_data,
+          namaBank: user.nama_bank,
+          noRekening: user.no_rekening,
+          namaRekening: user.nama_rekening
         },
         education,
         documents: documents.map(doc => ({
@@ -123,7 +127,8 @@ async function updateProfile(req, res) {
       beasiswaLain, namaAyah, pekerjaanAyah, namaIbu, pekerjaanIbu,
       penghasilanOrtu, jumlahTanggungan, kepemilikanBantuan,
       prestasiAkademik, prestasiNonAkademik, pengalamanOrganisasi,
-      pengalamanPengabdian, pelatihanSertifikasi, prodiPrioritas, signatureData
+      pengalamanPengabdian, pelatihanSertifikasi, prodiPrioritas, signatureData,
+      namaBank, noRekening, namaRekening
     } = req.body;
     const pool = getPool();
 
@@ -186,7 +191,10 @@ async function updateProfile(req, res) {
           pengalaman_pengabdian = COALESCE(?, pengalaman_pengabdian),
           pelatihan_sertifikasi = COALESCE(?, pelatihan_sertifikasi),
           prodi_prioritas = COALESCE(?, prodi_prioritas),
-          signature_data = COALESCE(?, signature_data)
+          signature_data = COALESCE(?, signature_data),
+          nama_bank = COALESCE(?, nama_bank),
+          no_rekening = COALESCE(?, no_rekening),
+          nama_rekening = COALESCE(?, nama_rekening)
       WHERE user_id = ?
     `, [
       tempatLahir || null, formattedTanggalLahir, gender || null,
@@ -198,6 +206,7 @@ async function updateProfile(req, res) {
       prestasiAkademik || null, prestasiNonAkademik || null, pengalamanOrganisasi || null,
       pengalamanPengabdian || null, pelatihanSertifikasi || null, prodiPrioritas || null,
       signatureData || null,
+      namaBank || null, noRekening || null, namaRekening || null,
       userId,
     ]);
 
