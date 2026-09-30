@@ -956,7 +956,7 @@ export default function RegistrationPage() {
                     </div>
 
                     <div>
-                      <label className="block mb-1 font-semibold">Akreditasi Prodi (Minimal Baik Sekali)</label>
+                      <label className="block mb-1 font-semibold">Akreditasi Perguruan Tinggi (Minimal Baik Sekali)</label>
                       <select
                         value={formData.akreditasiProdi}
                         onChange={(e) => handleInputChange('akreditasiProdi', e.target.value)}
@@ -1694,7 +1694,7 @@ export default function RegistrationPage() {
                 <tbody>
                   <tr className="border-b border-slate-200"><td className="w-1/3 p-1.5 font-semibold bg-slate-50">Perguruan Tinggi</td><td className="p-1.5 font-bold">: {formData.perguruanTinggi}</td></tr>
                   <tr className="border-b border-slate-200"><td className="w-1/3 p-1.5 font-semibold bg-slate-50">Fakultas / Program Studi</td><td className="p-1.5">: {formData.fakultasProdi}</td></tr>
-                  <tr className="border-b border-slate-200"><td className="w-1/3 p-1.5 font-semibold bg-slate-50">Akreditasi Prodi</td><td className="p-1.5">: {formData.akreditasiProdi}</td></tr>
+                  <tr className="border-b border-slate-200"><td className="w-1/3 p-1.5 font-semibold bg-slate-50">Akreditasi Perguruan Tinggi</td><td className="p-1.5">: {formData.akreditasiProdi}</td></tr>
                   <tr className="border-b border-slate-200"><td className="w-1/3 p-1.5 font-semibold bg-slate-50">NIM Mahasiswa</td><td className="p-1.5 font-mono">: {formData.nim}</td></tr>
                   <tr className="border-b border-slate-200"><td className="w-1/3 p-1.5 font-semibold bg-slate-50">Semester Saat Ini</td><td className="p-1.5">: Semester {formData.semester}</td></tr>
                   <tr className="border-b border-slate-200"><td className="w-1/3 p-1.5 font-semibold bg-slate-50">IPK Kumulatif Terakhir</td><td className="p-1.5 font-bold">: {formData.ipk}</td></tr>
