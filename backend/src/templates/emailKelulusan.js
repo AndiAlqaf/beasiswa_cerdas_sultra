@@ -14,7 +14,7 @@
  * @param {string} data.announcementDate - Tanggal resmi pengumuman
  * @param {string} [data.portalUrl] - URL portal beasiswa
  */
-function templateKelulusan({ namaLengkap, registrationNo, jenjangTarget, announcementDate, portalUrl = 'https://bssc.devraffi.my.id/dashboard' }) {
+function templateKelulusan({ namaLengkap, registrationNo, jenjangTarget, announcementDate, portalUrl = 'https://bssc.akusahabatrakyat.com/dashboard' }) {
   return {
     subject: `🎉 Selamat! Anda Dinyatakan LULUS Seleksi — Beasiswa Sultra Cerdas 2026`,
     html: `
@@ -154,7 +154,7 @@ function templateKelulusan({ namaLengkap, registrationNo, jenjangTarget, announc
  * @param {string} data.announcementDate - Tanggal pengumuman hasil sanggah
  * @param {string} [data.portalUrl] - URL portal beasiswa
  */
-function templateKelulusanHasilSanggah({ namaLengkap, registrationNo, jenjangTarget, announcementDate, portalUrl = 'https://bssc.devraffi.my.id/dashboard' }) {
+function templateKelulusanHasilSanggah({ namaLengkap, registrationNo, jenjangTarget, announcementDate, portalUrl = 'https://bssc.akusahabatrakyat.com/dashboard' }) {
   return {
     subject: `🎉 Selamat! Sanggahan Dikabulkan & Anda Dinyatakan LULUS — Beasiswa Sultra Cerdas 2026`,
     html: `

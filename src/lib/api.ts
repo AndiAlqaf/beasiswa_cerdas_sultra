@@ -117,13 +117,31 @@ export async function fetchAPI(endpoint: string, options: FetchOptions = {}): Pr
     }
   }
 
-  const data = await res.json().catch(() => ({ success: false, message: 'Respon server tidak dapat dibaca.' }));
+  // Safe response text reading and parsing
+  let data: any = null;
+  const rawText = await res.text().catch(() => '');
+  if (rawText) {
+    try {
+      data = JSON.parse(rawText);
+    } catch {
+      data = {
+        success: false,
+        message: res.status === 401 
+          ? 'Sesi login Anda telah berakhir. Silakan login kembali.' 
+          : res.status >= 500 
+          ? `Server sedang sibuk atau mengalami masalah (${res.status}). Silakan muat ulang halaman.` 
+          : 'Respon server tidak dapat dibaca.',
+      };
+    }
+  } else {
+    data = { success: false, message: 'Respon server kosong.' };
+  }
 
   if (!res.ok) {
-    // If 401 persists after refresh attempt, redirect to login automatically
+    // If 401 Unauthorized persists, clear tokens and auto-redirect to login
     if (res.status === 401 && !skipAuth && typeof window !== 'undefined' && !window.location.pathname.startsWith('/login')) {
       clearTokens();
-      window.location.href = '/login';
+      window.location.href = '/login?expired=1';
     }
 
     let errorMessage = data.message || 'Terjadi kesalahan pada server.';

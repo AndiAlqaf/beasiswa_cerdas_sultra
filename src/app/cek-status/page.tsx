@@ -165,13 +165,12 @@ export default function CheckStatusPage() {
                       return (
                         <div
                           key={step.key}
-                          className={`p-3 rounded-xl border text-center space-y-2 transition-all ${
-                            isCurrent
+                          className={`p-3 rounded-xl border text-center space-y-2 transition-all ${isCurrent
                               ? 'bg-blue-900 border-blue-900 text-white shadow-xs'
                               : isComplete
-                              ? 'bg-emerald-50 border-emerald-200 text-emerald-950'
-                              : 'bg-slate-50 border-slate-200 text-slate-400 opacity-60'
-                          }`}
+                                ? 'bg-emerald-50 border-emerald-200 text-emerald-950'
+                                : 'bg-slate-50 border-slate-200 text-slate-400 opacity-60'
+                            }`}
                         >
                           <div className="w-6 h-6 rounded-full mx-auto flex items-center justify-center font-bold text-xs bg-white/20">
                             {isComplete ? '✓' : idx + 1}
@@ -184,17 +183,16 @@ export default function CheckStatusPage() {
                 </div>
 
                 {/* Official Status Notes */}
-                <div className={`p-5 rounded-2xl border space-y-3 ${
-                  searchedApp.status === 'DITOLAK'
+                <div className={`p-5 rounded-2xl border space-y-3 ${searchedApp.status === 'DITOLAK'
                     ? 'bg-rose-50 border-rose-200 text-rose-950'
                     : 'bg-slate-50 border-slate-200 text-slate-900'
-                }`}>
+                  }`}>
                   <div className="flex items-center gap-2 font-bold text-xs">
                     <ShieldCheck className={`w-4 h-4 ${searchedApp.status === 'DITOLAK' ? 'text-rose-600' : 'text-blue-900'}`} />
                     Catatan Resmi Tim Verifikator:
                   </div>
                   <p className="text-xs leading-relaxed font-medium whitespace-pre-line">{searchedApp.notes || 'Berkas belum memenuhi kualifikasi seleksi administrasi.'}</p>
-                  
+
                   {searchedApp.status === 'DITOLAK' && (
                     <div className="pt-3 border-t border-rose-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                       <p className="text-[11px] text-rose-800 font-semibold">

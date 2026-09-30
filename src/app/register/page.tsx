@@ -967,59 +967,59 @@ export default function RegisterPage() {
                   {!readyToSelfie && (
                     <>
                       <div className="fixed inset-0 bg-black/60 z-50 transition-opacity backdrop-blur-sm" />
-                      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                        <div className="bg-white rounded-3xl shadow-2xl max-w-xl w-full overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                      <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+                        <div className="bg-white rounded-3xl shadow-2xl max-w-xl w-full max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200 my-auto">
                           {/* Header */}
-                          <div className="bg-slate-50 p-6 flex items-center gap-4 border-b border-slate-100">
-                            <div className="w-12 h-12 rounded-2xl bg-[#0B3A6A]/10 flex items-center justify-center shrink-0 shadow-inner">
-                              <Camera className="w-6 h-6 text-[#0B3A6A]" />
+                          <div className="bg-slate-50 p-4 sm:p-6 flex items-center gap-3 sm:gap-4 border-b border-slate-100 shrink-0">
+                            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-[#0B3A6A]/10 flex items-center justify-center shrink-0 shadow-inner">
+                              <Camera className="w-5 h-5 sm:w-6 sm:h-6 text-[#0B3A6A]" />
                             </div>
                             <div>
-                              <h3 className="text-xl font-bold text-slate-800">Verifikasi Keaktifan Wajah</h3>
-                              <p className="text-xs text-slate-500 mt-0.5">Ikuti panduan berikut agar proses pendaftaran berjalan lancar.</p>
+                              <h3 className="text-lg sm:text-xl font-bold text-slate-800">Verifikasi Keaktifan Wajah</h3>
+                              <p className="text-[11px] sm:text-xs text-slate-500 mt-0.5">Ikuti panduan berikut agar proses pendaftaran berjalan lancar.</p>
                             </div>
                           </div>
 
                           {/* Body */}
-                          <div className="p-6 space-y-5">
+                          <div className="p-4 sm:p-6 space-y-4 sm:space-y-5 overflow-y-auto flex-1">
                             {/* Liveness Steps Banner */}
-                            <div className="bg-slate-50 border border-slate-200/60 rounded-2xl p-4">
-                              <h4 className="text-xs font-bold text-slate-700 mb-3 uppercase tracking-wider">Tahapan Verifikasi</h4>
-                              <div className="grid grid-cols-3 gap-3 text-center">
-                                <div className="bg-white border border-slate-100 rounded-xl p-3 shadow-sm flex flex-col items-center">
-                                  <span className="bg-[#0B3A6A]/10 text-[#0B3A6A] font-bold rounded-full w-6 h-6 flex items-center justify-center text-xs mb-1">1</span>
-                                  <span className="text-xs font-semibold text-slate-700">Posisikan Wajah</span>
-                                  <span className="text-[10px] text-slate-400 mt-0.5">Pas di dalam garis panduan</span>
+                            <div className="bg-slate-50 border border-slate-200/60 rounded-2xl p-3 sm:p-4">
+                              <h4 className="text-[11px] sm:text-xs font-bold text-slate-700 mb-2 sm:mb-3 uppercase tracking-wider">Tahapan Verifikasi</h4>
+                              <div className="grid grid-cols-3 gap-2 sm:gap-3 text-center">
+                                <div className="bg-white border border-slate-100 rounded-xl p-2.5 sm:p-3 shadow-sm flex flex-col items-center">
+                                  <span className="bg-[#0B3A6A]/10 text-[#0B3A6A] font-bold rounded-full w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center text-xs mb-1">1</span>
+                                  <span className="text-[11px] sm:text-xs font-semibold text-slate-700">Posisikan Wajah</span>
+                                  <span className="text-[9px] sm:text-[10px] text-slate-400 mt-0.5">Pas di dalam garis panduan</span>
                                 </div>
-                                <div className="bg-white border border-slate-100 rounded-xl p-3 shadow-sm flex flex-col items-center">
-                                  <span className="bg-[#0B3A6A]/10 text-[#0B3A6A] font-bold rounded-full w-6 h-6 flex items-center justify-center text-xs mb-1">2</span>
-                                  <span className="text-xs font-semibold text-slate-700">Kedip & Hadap Samping</span>
-                                  <span className="text-[10px] text-slate-400 mt-0.5">Kedip, lalu tengok kanan/kiri</span>
+                                <div className="bg-white border border-slate-100 rounded-xl p-2.5 sm:p-3 shadow-sm flex flex-col items-center">
+                                  <span className="bg-[#0B3A6A]/10 text-[#0B3A6A] font-bold rounded-full w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center text-xs mb-1">2</span>
+                                  <span className="text-[11px] sm:text-xs font-semibold text-slate-700">Kedip & Hadap Samping</span>
+                                  <span className="text-[9px] sm:text-[10px] text-slate-400 mt-0.5">Kedip, lalu tengok kanan/kiri</span>
                                 </div>
-                                <div className="bg-white border border-slate-100 rounded-xl p-3 shadow-sm flex flex-col items-center">
-                                  <span className="bg-emerald-600/10 text-emerald-600 font-bold rounded-full w-6 h-6 flex items-center justify-center text-xs mb-1">3</span>
-                                  <span className="text-xs font-semibold text-slate-700">Tersenyum</span>
-                                  <span className="text-[10px] text-slate-400 mt-0.5">Foto terambil otomatis</span>
+                                <div className="bg-white border border-slate-100 rounded-xl p-2.5 sm:p-3 shadow-sm flex flex-col items-center">
+                                  <span className="bg-emerald-600/10 text-emerald-600 font-bold rounded-full w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center text-xs mb-1">3</span>
+                                  <span className="text-[11px] sm:text-xs font-semibold text-slate-700">Tersenyum</span>
+                                  <span className="text-[9px] sm:text-[10px] text-slate-400 mt-0.5">Foto terambil otomatis</span>
                                 </div>
                               </div>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                               {/* DOs */}
-                              <div className="bg-emerald-50/50 border border-emerald-100 rounded-2xl p-4">
-                                <h4 className="flex items-center gap-2 text-emerald-800 font-bold mb-3 text-sm">
-                                  <CheckCircle2 className="w-5 h-5 text-emerald-600" /> Boleh (Dianjurkan)
+                              <div className="bg-emerald-50/50 border border-emerald-100 rounded-2xl p-3 sm:p-4">
+                                <h4 className="flex items-center gap-2 text-emerald-800 font-bold mb-2 sm:mb-3 text-xs sm:text-sm">
+                                  <CheckCircle2 className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-emerald-600" /> Boleh (Dianjurkan)
                                 </h4>
-                                <ul className="space-y-2">
-                                  <li className="text-xs text-emerald-700 flex items-start gap-1.5">
+                                <ul className="space-y-1.5 sm:space-y-2">
+                                  <li className="text-[11px] sm:text-xs text-emerald-700 flex items-start gap-1.5">
                                     <span className="text-emerald-500 font-bold shrink-0">✔</span>
                                     <span>Gunakan pakaian rapi dan berkerah resmi.</span>
                                   </li>
-                                  <li className="text-xs text-emerald-700 flex items-start gap-1.5">
+                                  <li className="text-[11px] sm:text-xs text-emerald-700 flex items-start gap-1.5">
                                     <span className="text-emerald-500 font-bold shrink-0">✔</span>
                                     <span>Posisi wajah tegak lurus menghadap kamera.</span>
                                   </li>
-                                  <li className="text-xs text-emerald-700 flex items-start gap-1.5">
+                                  <li className="text-[11px] sm:text-xs text-emerald-700 flex items-start gap-1.5">
                                     <span className="text-emerald-500 font-bold shrink-0">✔</span>
                                     <span>Pencahayaan ruangan cukup terang dan merata.</span>
                                   </li>
@@ -1027,20 +1027,20 @@ export default function RegisterPage() {
                               </div>
 
                               {/* DONTs */}
-                              <div className="bg-rose-50/50 border border-rose-100 rounded-2xl p-4">
-                                <h4 className="flex items-center gap-2 text-rose-800 font-bold mb-3 text-sm">
-                                  <XCircle className="w-5 h-5 text-rose-600" /> Tidak Boleh
+                              <div className="bg-rose-50/50 border border-rose-100 rounded-2xl p-3 sm:p-4">
+                                <h4 className="flex items-center gap-2 text-rose-800 font-bold mb-2 sm:mb-3 text-xs sm:text-sm">
+                                  <XCircle className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-rose-600" /> Tidak Boleh
                                 </h4>
-                                <ul className="space-y-2">
-                                  <li className="text-xs text-rose-700 flex items-start gap-1.5">
+                                <ul className="space-y-1.5 sm:space-y-2">
+                                  <li className="text-[11px] sm:text-xs text-rose-700 flex items-start gap-1.5">
                                     <span className="text-rose-500 font-bold shrink-0">✖</span>
                                     <span>Menggunakan kacamata hitam, masker, atau penutup wajah.</span>
                                   </li>
-                                  <li className="text-xs text-rose-700 flex items-start gap-1.5">
+                                  <li className="text-[11px] sm:text-xs text-rose-700 flex items-start gap-1.5">
                                     <span className="text-rose-500 font-bold shrink-0">✖</span>
                                     <span>Mengambil foto dari layar HP lain atau foto cetak.</span>
                                   </li>
-                                  <li className="text-xs text-rose-700 flex items-start gap-1.5">
+                                  <li className="text-[11px] sm:text-xs text-rose-700 flex items-start gap-1.5">
                                     <span className="text-rose-500 font-bold shrink-0">✖</span>
                                     <span>Posisi kepala miring atau keluar dari batas area.</span>
                                   </li>
@@ -1049,21 +1049,21 @@ export default function RegisterPage() {
                             </div>
 
                             {/* Garis Bantu Warning & Checkbox Agreement */}
-                            <div className="bg-amber-50/60 border border-amber-200/80 rounded-2xl p-4 space-y-3 mt-4">
-                              <p className="text-xs text-amber-800 font-medium leading-relaxed flex items-start gap-2">
-                                <AlertTriangle className="w-4.5 h-4.5 text-amber-600 shrink-0 mt-0.5" />
+                            <div className="bg-amber-50/60 border border-amber-200/80 rounded-2xl p-3 sm:p-4 space-y-2.5 sm:space-y-3 mt-2 sm:mt-4">
+                              <p className="text-[11px] sm:text-xs text-amber-800 font-medium leading-relaxed flex items-start gap-2">
+                                <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
                                 <span>
                                   <strong>PENTING:</strong> Wajah Anda wajib diposisikan pas di dalam <strong>Garis Bantu (Siluet)</strong> yang muncul di kamera nanti. Jika posisi wajah melenceng atau keluar garis bantu, sistem AI tidak akan merespons atau gagal melakukan deteksi liveness.
                                 </span>
                               </p>
-                              <label className="flex items-start gap-2.5 pt-3 border-t border-amber-200/50 cursor-pointer select-none">
+                              <label className="flex items-start gap-2.5 pt-2.5 border-t border-amber-200/50 cursor-pointer select-none">
                                 <input
                                   type="checkbox"
                                   checked={guideChecked}
                                   onChange={(e) => setGuideChecked(e.target.checked)}
-                                  className="rounded text-[#0B3A6A] focus:ring-[#0B3A6A] w-4.5 h-4.5 mt-0.5 shrink-0"
+                                  className="rounded text-[#0B3A6A] focus:ring-[#0B3A6A] w-4 h-4 sm:w-4.5 sm:h-4.5 mt-0.5 shrink-0"
                                 />
-                                <span className="text-xs font-semibold text-slate-700 leading-snug">
+                                <span className="text-[11px] sm:text-xs font-semibold text-slate-700 leading-snug">
                                   Saya memahami bahwa wajah harus disesuaikan dengan siluet garis bantu agar sistem deteksi wajah dapat mengenali saya.
                                 </span>
                               </label>
@@ -1071,10 +1071,10 @@ export default function RegisterPage() {
                           </div>
 
                           {/* Actions */}
-                          <div className="p-6 border-t border-slate-100 bg-slate-50/50 flex flex-col items-center gap-3">
+                          <div className="p-4 sm:p-6 border-t border-slate-100 bg-slate-50/90 backdrop-blur-md flex flex-col items-center gap-3 shrink-0 sticky bottom-0">
                             {modelLoadError ? (
                               <div className="w-full space-y-3">
-                                <div className="bg-rose-50 border border-rose-200 text-rose-800 text-xs rounded-xl p-4 leading-relaxed font-medium">
+                                <div className="bg-rose-50 border border-rose-200 text-rose-800 text-xs rounded-xl p-3.5 leading-relaxed font-medium">
                                   <p className="font-bold mb-1 flex items-center gap-1.5 text-sm text-rose-700">
                                     <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
                                     Gagal Memuat Model AI
@@ -1105,11 +1105,11 @@ export default function RegisterPage() {
                                 <button
                                   onClick={() => setReadyToSelfie(true)}
                                   disabled={!faceModelLoaded || !guideChecked}
-                                  className="w-full py-3.5 bg-[#0B3A6A] hover:bg-[#082a4d] text-white rounded-xl text-base font-semibold shadow-md disabled:opacity-60 disabled:cursor-not-allowed"
+                                  className="w-full py-3 sm:py-3.5 bg-[#0B3A6A] hover:bg-[#082a4d] text-white rounded-xl text-sm sm:text-base font-semibold shadow-md disabled:opacity-60 disabled:cursor-not-allowed"
                                 >
                                   {!faceModelLoaded ? (
                                     <span className="flex items-center justify-center gap-2">
-                                      <Loader2 className="w-5 h-5 animate-spin" />
+                                      <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" />
                                       Memuat sistem deteksi wajah...
                                     </span>
                                   ) : (
@@ -1117,7 +1117,7 @@ export default function RegisterPage() {
                                   )}
                                 </button>
                                 {!faceModelLoaded && (
-                                  <p className="text-[11px] text-slate-400 text-center">Harap tunggu, model AI sedang diunduh dan diproses...</p>
+                                  <p className="text-[10px] sm:text-[11px] text-slate-400 text-center">Harap tunggu, model AI sedang diunduh dan diproses...</p>
                                 )}
                               </>
                             )}

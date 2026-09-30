@@ -40,6 +40,22 @@ export default function Footer() {
                   <ExternalLink className="w-3 h-3" />
                 </a>
               </div>
+              <div className="flex items-center gap-2">
+                <svg className="w-4 h-4 text-blue-400 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+                  <rect width="20" height="20" x="2" y="2" rx="5" ry="5"/>
+                  <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
+                  <line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/>
+                </svg>
+                <a
+                  href="https://www.instagram.com/beasiswasultracerdas?stkn=MWkxZGI1b210d2M0aA=="
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-white underline underline-offset-4 flex items-center gap-1"
+                >
+                  @beasiswasultracerdas
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+              </div>
             </div>
           </div>
 
