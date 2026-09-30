@@ -129,7 +129,7 @@ function templateKelulusan({ namaLengkap, registrationNo, jenjangTarget, announc
               </p>
               <p style="margin:0;font-size:11px;color:#94a3b8;line-height:1.6;">
                 Kompleks Bumi Praja Anduonohu, Kota Kendari, Sulawesi Tenggara<br/>
-                Email resmi: beasiswa@sultraprov.go.id &bull; Dikelola oleh Tim Pengelola BSSC 2026
+                Email resmi: bssc.timsembilan@gmail.com &bull; Dikelola oleh Tim Pengelola BSSC 2026
               </p>
             </td>
           </tr>
@@ -272,7 +272,7 @@ function templateKelulusanHasilSanggah({ namaLengkap, registrationNo, jenjangTar
               </p>
               <p style="margin:0;font-size:11px;color:#94a3b8;line-height:1.6;">
                 Kompleks Bumi Praja Anduonohu, Kota Kendari, Sulawesi Tenggara<br/>
-                Email resmi: beasiswa@sultraprov.go.id &bull; Dikelola oleh Tim Pengelola BSSC 2026
+                Email resmi: bssc.timsembilan@gmail.com &bull; Dikelola oleh Tim Pengelola BSSC 2026
               </p>
             </td>
           </tr>
