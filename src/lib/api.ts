@@ -124,13 +124,19 @@ export async function fetchAPI(endpoint: string, options: FetchOptions = {}): Pr
     try {
       data = JSON.parse(rawText);
     } catch {
+      let friendlyMessage = 'Respon server tidak dapat dibaca.';
+      if (res.status === 401) {
+        friendlyMessage = 'Sesi login Anda telah berakhir. Silakan login kembali.';
+      } else if (res.status === 413) {
+        friendlyMessage = 'Gagal Mengunggah Berkas: Ukuran file yang Anda unggah terlalu besar. Silakan kompres/kecilkan ukuran PDF atau foto Anda di bawah 2MB.';
+      } else if (res.status === 502 || res.status === 504) {
+        friendlyMessage = 'Server portal sedang dalam pemeliharaan atau mengalami gangguan koneksi sementara. Silakan coba beberapa saat lagi.';
+      } else if (res.status >= 500) {
+        friendlyMessage = `Server mengalami kendala internal (${res.status}). Silakan coba muat ulang halaman.`;
+      }
       data = {
         success: false,
-        message: res.status === 401 
-          ? 'Sesi login Anda telah berakhir. Silakan login kembali.' 
-          : res.status >= 500 
-          ? `Server sedang sibuk atau mengalami masalah (${res.status}). Silakan muat ulang halaman.` 
-          : 'Respon server tidak dapat dibaca.',
+        message: friendlyMessage,
       };
     }
   } else {

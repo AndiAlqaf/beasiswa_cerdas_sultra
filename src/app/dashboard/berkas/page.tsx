@@ -322,14 +322,16 @@ export default function BerkasPage() {
 
                 <button
                   type="button"
-                  disabled={isUploading}
+                  disabled={isUploading || docTypeItem.key === 'selfie'}
                   onClick={() => handleTriggerUpload(docTypeItem.key)}
-                  className={`flex-1 py-2 px-3 text-xs font-bold text-white rounded-xl transition-all shadow-sm flex items-center justify-center gap-1.5 ${
-                    isUploading
-                      ? 'bg-slate-400 cursor-not-allowed'
+                  className={`flex-1 py-2 px-3 text-xs font-bold rounded-xl transition-all shadow-sm flex items-center justify-center gap-1.5 ${
+                    docTypeItem.key === 'selfie'
+                      ? 'bg-slate-200 text-slate-400 border border-slate-300 cursor-not-allowed shadow-none'
+                      : isUploading
+                      ? 'bg-slate-400 cursor-not-allowed text-white'
                       : uploadedDoc
-                      ? 'bg-slate-800 hover:bg-slate-900'
-                      : 'bg-blue-900 hover:bg-blue-950'
+                      ? 'bg-slate-800 hover:bg-slate-900 text-white'
+                      : 'bg-blue-900 hover:bg-blue-950 text-white'
                   }`}
                 >
                   {isUploading ? (

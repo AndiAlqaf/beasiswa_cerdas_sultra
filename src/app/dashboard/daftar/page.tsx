@@ -289,7 +289,7 @@ export default function RegistrationPage() {
             pengalamanOrganisasi: p.pengalamanOrganisasi || p.pengalaman_organisasi || '',
             pengalamanPengabdian: p.pengalamanPengabdian || p.pengalaman_pengabdian || '',
             pelatihanSertifikasi: p.pelatihanSertifikasi || p.pelatihan_sertifikasi || '',
-            filePasfoto: selfieDoc ? selfieDoc.originalName : '',
+            filePasfoto: selfieDoc ? selfieDoc.originalName : (u.selfiePath || cachedUser?.selfiePath ? 'selfie.webp' : 'selfie.webp'),
             fileSuratAktif: ktmDoc ? ktmDoc.originalName : '',
             fileKtp: ktpDoc ? ktpDoc.originalName : '',
             fileSuratPermohonan: suratPermohonanDoc ? suratPermohonanDoc.originalName : '',
@@ -1371,6 +1371,8 @@ export default function RegistrationPage() {
                     ).map((docItem, idx) => {
                       const currentVal = (formData as any)[docItem.key];
                       const isUploading = uploadingDocKey === docItem.key;
+                      const isSelfie = docItem.docType === 'selfie' || docItem.key === 'filePasfoto';
+                      const displayVal = isSelfie ? (currentVal || 'selfie.webp') : currentVal;
 
                       return (
                         <div key={idx} className="p-3.5 sm:p-4 rounded-xl border border-slate-200 bg-slate-50 space-y-2 relative">
@@ -1385,25 +1387,35 @@ export default function RegistrationPage() {
                             <div className="flex items-center gap-2 truncate min-w-0 flex-1">
                               <FileText className="w-4 h-4 text-blue-900 shrink-0" />
                               <span className="truncate font-mono text-slate-700 text-[11px]">
-                                {currentVal || 'Belum diunggah'}
+                                {displayVal || 'Belum diunggah'}
                               </span>
                             </div>
 
-                            <label className="shrink-0 cursor-pointer px-3 py-1.5 sm:py-1 bg-blue-50 hover:bg-blue-100 text-blue-900 rounded font-semibold text-xs sm:text-[11px] transition-colors text-center">
-                              {isUploading ? 'Mengunggah...' : currentVal ? 'Ganti File' : 'Unggah File'}
-                              <input
-                                type="file"
-                                accept=".pdf,.jpg,.jpeg,.png"
-                                className="hidden"
-                                disabled={isUploading}
-                                onChange={(e) => {
-                                  const file = e.target.files?.[0];
-                                  if (file) {
-                                    handleDocumentUpload(docItem.key, docItem.docType, file);
-                                  }
-                                }}
-                              />
-                            </label>
+                            {isSelfie ? (
+                              <button
+                                type="button"
+                                disabled
+                                className="shrink-0 px-3 py-1.5 sm:py-1 bg-slate-100 text-slate-400 border border-slate-200 rounded font-semibold text-xs sm:text-[11px] cursor-not-allowed text-center"
+                              >
+                                {displayVal ? 'Ganti File' : 'Unggah File'}
+                              </button>
+                            ) : (
+                              <label className="shrink-0 cursor-pointer px-3 py-1.5 sm:py-1 bg-blue-50 hover:bg-blue-100 text-blue-900 rounded font-semibold text-xs sm:text-[11px] transition-colors text-center">
+                                {isUploading ? 'Mengunggah...' : currentVal ? 'Ganti File' : 'Unggah File'}
+                                <input
+                                  type="file"
+                                  accept=".pdf,.jpg,.jpeg,.png"
+                                  className="hidden"
+                                  disabled={isUploading}
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) {
+                                      handleDocumentUpload(docItem.key, docItem.docType, file);
+                                    }
+                                  }}
+                                />
+                              </label>
+                            )}
                           </div>
                         </div>
                       );

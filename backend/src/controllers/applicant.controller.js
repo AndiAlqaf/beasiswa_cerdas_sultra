@@ -273,6 +273,20 @@ function uploadDocument(docType) {
         return res.status(400).json({ success: false, message: 'File tidak ditemukan. Silakan pilih file untuk diunggah.' });
       }
 
+      if (docType === 'selfie' || docType === 'filePasfoto') {
+        const [existingSelfie] = await pool.execute('SELECT id FROM documents WHERE user_id = ? AND (doc_type = ? OR doc_type = ?)', [userId, 'selfie', 'filePasfoto']);
+        const [existingProfile] = await pool.execute('SELECT selfie_path FROM profiles WHERE user_id = ? AND selfie_path IS NOT NULL AND selfie_path != ""', [userId]);
+        if (existingSelfie.length > 0 || existingProfile.length > 0) {
+          if (fs.existsSync(req.file.path)) {
+            try { fs.unlinkSync(req.file.path); } catch (e) {}
+          }
+          return res.status(400).json({
+            success: false,
+            message: 'Foto selfie telah terverifikasi via Kamera AI saat pendaftaran dan tidak dapat diubah.',
+          });
+        }
+      }
+
       // Check if applicant is in appeal / sanggahan state or status is DITOLAK
       const [appRows] = await pool.execute('SELECT status, notes FROM applications WHERE user_id = ?', [userId]);
       const appStatus = appRows.length > 0 ? appRows[0].status : null;
