@@ -67,9 +67,9 @@ export default function EligibilityChecker() {
 
     // Check Akreditasi
     if (['Unggul', 'Baik Sekali', 'A', 'B'].includes(akreditasiProdi)) {
-      passes.push(`Akreditasi Prodi "${akreditasiProdi}" memenuhi standar minimal "Baik Sekali / B"`);
+      passes.push(`Akreditasi Perguruan Tinggi "${akreditasiProdi}" memenuhi standar minimal "Baik Sekali / B"`);
     } else {
-      errors.push(`Akreditasi prodi wajib minimal "Baik Sekali" atau "B"`);
+      errors.push(`Perguruan tinggi wajib terakreditasi paling rendah "Baik Sekali" atau "B" dari BAN-PT/LAM`);
     }
 
     // Check Priority Major
@@ -109,7 +109,7 @@ export default function EligibilityChecker() {
             </h2>
 
             <p className="text-slate-600 text-sm leading-relaxed">
-              Gunakan kalkulator kelayakan ini untuk memeriksa kualifikasi semester, IPK transkrip sementara, status KTP, dan akreditasi program studi Anda secara realtime sebelum mengisi form pendaftaran.
+              Gunakan kalkulator kelayakan ini untuk memeriksa kualifikasi semester, IPK transkrip sementara, status KTP, dan akreditasi perguruan tinggi Anda secara realtime sebelum mengisi form pendaftaran.
             </p>
 
             <div className="space-y-4 pt-2">
@@ -226,7 +226,7 @@ export default function EligibilityChecker() {
               {/* Select Akreditasi */}
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-                  Akreditasi Program Studi
+                  Akreditasi Perguruan Tinggi
                 </label>
                 <select
                   value={akreditasiProdi}

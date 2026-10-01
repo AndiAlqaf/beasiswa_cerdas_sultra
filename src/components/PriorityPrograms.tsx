@@ -1,6 +1,6 @@
 import React from 'react';
 import { PRIORITY_FIELDS, SCHOLARSHIP_AMOUNTS } from '@/data/bsscData';
-import { GraduationCap, Stethoscope, Wheat, Building2, Layers, DollarSign, Wallet } from 'lucide-react';
+import { GraduationCap, Stethoscope, Wheat, Building2, Wallet } from 'lucide-react';
 
 export default function PriorityPrograms() {
   const getColorScheme = (iconName: string) => {
@@ -52,7 +52,7 @@ export default function PriorityPrograms() {
                 <p className="text-sm text-slate-600 leading-relaxed flex-grow">{field.description}</p>
                 <div className="pt-6 mt-auto">
                   <span className={`inline-flex items-center text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-md ${colors.bg} ${colors.text} border ${colors.border}`}>
-                    Minimal Akreditasi: Baik Sekali
+                    Minimal Akreditasi PT: Baik Sekali
                   </span>
                 </div>
               </div>

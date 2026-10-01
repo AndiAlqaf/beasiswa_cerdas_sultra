@@ -372,8 +372,14 @@ export const FAQ_DATA: FaqItem[] = [
   {
     id: 'faq-5',
     category: 'Cek Kelayakan',
-    question: 'Apakah perguruan tinggi dan program studi harus memiliki akreditasi tertentu?',
-    answer: 'Ya. Perguruan tinggi dan program studi yang ditempuh wajib terakreditasi paling rendah "Baik Sekali" atau "B" dari BAN-PT / LAM.'
+    question: 'Apakah perguruan tinggi harus memiliki akreditasi tertentu?',
+    answer: 'Ya. Perguruan tinggi wajib terakreditasi paling rendah “Baik Sekali” atau “B” dari BAN-PT/LAM.'
+  },
+  {
+    id: 'faq-5b',
+    category: 'Cek Kelayakan',
+    question: 'Apakah program studi yang ditempuh harus memiliki akreditasi tertentu?',
+    answer: 'Tidak. Program studi yang ditempuh tidak harus memiliki akreditasi tertentu. Program studi yang ditempuh hanya disyaratkan “terakreditasi”.'
   },
   {
     id: 'faq-6',
