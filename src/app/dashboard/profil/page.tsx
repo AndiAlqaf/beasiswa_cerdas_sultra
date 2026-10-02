@@ -492,7 +492,21 @@ export default function ProfilPage() {
               <label className="block text-xs font-semibold text-slate-700 mb-1.5">Jenjang Pendidikan Beasiswa *</label>
               <select
                 value={form.jenjangTarget}
-                onChange={(e) => setForm((prev) => ({ ...prev, jenjangTarget: e.target.value }))}
+                onChange={(e) => {
+                  const newJenjang = e.target.value;
+                  const validSemesters = newJenjang === 'S1' ? [3, 4, 5] : newJenjang === 'S2' ? [2, 3] : [2, 3, 4, 5];
+                  setForm((prev) => ({
+                    ...prev,
+                    jenjangTarget: newJenjang,
+                    perguruanTinggi: '',
+                    fakultasProdi: '',
+                    nim: '',
+                    semester: validSemesters[0],
+                    ipk: '',
+                    akreditasiProdi: 'Baik Sekali',
+                    targetLulus: '',
+                  }));
+                }}
                 className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-blue-900 focus:bg-white focus:ring-2 focus:ring-[#0B3A6A] focus:outline-none"
               >
                 <option value="S1">Jenjang S1 / D4</option>
@@ -544,7 +558,7 @@ export default function ProfilPage() {
                 onChange={(e) => setForm((prev) => ({ ...prev, semester: parseInt(e.target.value) }))}
                 className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-normal text-slate-900 focus:bg-white focus:ring-2 focus:ring-[#0B3A6A] focus:outline-none"
               >
-                {[1, 2, 3, 4, 5, 6, 7, 8].map((s) => (
+                {(form.jenjangTarget === 'S1' ? [3, 4, 5] : form.jenjangTarget === 'S2' ? [2, 3] : [2, 3, 4, 5]).map((s) => (
                   <option key={s} value={s}>Semester {s}</option>
                 ))}
               </select>
