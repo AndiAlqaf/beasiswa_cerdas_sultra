@@ -47,6 +47,8 @@ export function clearTokens() {
   localStorage.removeItem(TOKEN_KEY);
   localStorage.removeItem(REFRESH_KEY);
   localStorage.removeItem(USER_KEY);
+  localStorage.removeItem('bssc_application_draft');
+  localStorage.removeItem('bssc_register_draft');
 }
 
 interface FetchOptions extends RequestInit {

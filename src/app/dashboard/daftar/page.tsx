@@ -310,6 +310,7 @@ export default function RegistrationPage() {
                 }
                 if (draft.formData) {
                   Object.keys(draft.formData).forEach((key) => {
+                    if (key === 'jenjang') return; // Do not overwrite user's registered jenjangTarget from DB
                     const draftVal = draft.formData[key];
                     if (draftVal !== undefined && draftVal !== null && draftVal !== '') {
                       (initialData as any)[key] = draftVal;
@@ -325,6 +326,9 @@ export default function RegistrationPage() {
               console.warn('Failed to load application draft:', e);
             }
           }
+
+          // Always enforce jenjang from database user profile
+          initialData.jenjang = currentJenjang;
 
           setFormData(prev => ({ ...prev, ...initialData }));
 
