@@ -335,7 +335,7 @@ export const TEMPLATE_DOCUMENTS: DocumentTemplate[] = [
   },
   {
     id: 'surat-pernyataan',
-    title: 'Template Surat Pernyataan Bebas Beasiswa Lain',
+    title: 'Template Surat Pernyataan Tidak Sedang Menerima Beasiswa Lain',
     description: 'Surat pernyataan tidak sedang menerima beasiswa penuh dari institusi lain (Wajib Materai Rp10.000).',
     fileType: 'DOCX',
     fileSize: '18.2 KB',

@@ -1352,7 +1352,7 @@ export default function RegistrationPage() {
                           { key: 'fileSuratAktif', docType: 'ktm', title: '4. KTM / Surat Aktif Kuliah' },
                           { key: 'fileTranskrip', docType: 'transkrip', title: '5. Transkrip Nilai Sementara S1' },
                           { key: 'fileDtks', docType: 'dtks', title: '6. Bukti Terdaftar DTKS / DTSEN' },
-                          { key: 'fileSuratPernyataan', docType: 'surat_pernyataan', title: '7. Surat Pernyataan Bebas Beasiswa Lain (Materai)' },
+                          { key: 'fileSuratPernyataan', docType: 'surat_pernyataan', title: '7. Surat Pernyataan Tidak Sedang Menerima Beasiswa Lain' },
                           { key: 'fileMotivationOrEsai', docType: 'esai', title: '8. Motivation Letter (S1/D4)' }
                         ]
                       : formData.jenjang === 'S2'
@@ -1363,7 +1363,7 @@ export default function RegistrationPage() {
                           { key: 'fileSuratAktif', docType: 'ktm', title: '4. KTM / Surat Aktif S2' },
                           { key: 'fileTranskrip', docType: 'transkrip', title: '5. Transkrip Nilai Semester S2' },
                           { key: 'fileDtks', docType: 'dtks', title: '6. Ijazah & Transkrip Nilai S1' },
-                          { key: 'fileSuratPernyataan', docType: 'surat_pernyataan', title: '7. Surat Pernyataan Bebas Beasiswa Lain' },
+                          { key: 'fileSuratPernyataan', docType: 'surat_pernyataan', title: '7. Surat Pernyataan Tidak Sedang Menerima Beasiswa Lain' },
                           { key: 'fileMotivationOrEsai', docType: 'esai', title: '8. Esai Rencana Penelitian & Kontribusi Sultra (S2)' }
                         ]
                       : [
@@ -1373,7 +1373,7 @@ export default function RegistrationPage() {
                           { key: 'fileSuratAktif', docType: 'ktm', title: '4. KTM / Surat Aktif S3' },
                           { key: 'fileTranskrip', docType: 'transkrip', title: '5. Transkrip Nilai Semester S3' },
                           { key: 'fileDtks', docType: 'dtks', title: '6. Ijazah & Transkrip S1 & S2' },
-                          { key: 'fileSuratPernyataan', docType: 'surat_pernyataan', title: '7. Surat Rekomendasi Promotor' },
+                          { key: 'fileSuratPernyataan', docType: 'surat_pernyataan', title: '7. Surat Pernyataan Tidak Sedang Menerima Beasiswa Lain' },
                           { key: 'fileMotivationOrEsai', docType: 'esai', title: '8. Proposal Disertasi & Esai Kontribusi Sultra (S3)' }
                         ]
                     ).map((docItem, idx) => {
