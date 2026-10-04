@@ -216,7 +216,7 @@ export default function RegistrationPage() {
           const docs = res.data.documents || [];
           const edus = res.data.education || [];
 
-          const sma = edus.find((e: any) => e.tingkat === 'SMA') || {};
+          const sma = edus.find((e: any) => ['SMA', 'SMK', 'MA'].includes(e.tingkat)) || {};
           const s1 = edus.find((e: any) => e.tingkat === 'S1') || {};
           const s2 = edus.find((e: any) => e.tingkat === 'S2') || {};
           const currentJenjang = u.jenjangTarget || 'S1';
@@ -275,8 +275,8 @@ export default function RegistrationPage() {
             s2Nama: s2.institusi || p.s2Nama || regDraft?.s2Nama || '',
             s2Jurusan: s2.jurusan || p.s2Jurusan || regDraft?.s2Jurusan || '',
             s2TahunLulus: s2.tahun_lulus ? String(s2.tahun_lulus) : (s2.tahunLulus ? String(s2.tahunLulus) : (p.s2TahunLulus || regDraft?.s2TahunLulus || '')),
-            perguruanTinggi: p.perguruanTinggi || p.institusi || (currentJenjang === 'S3' ? edus.find((e: any) => e.tingkat === 'S3')?.institusi : currentJenjang === 'S2' ? s2.institusi : s1.institusi) || regDraft?.perguruanTinggi || cachedUser?.institusi || '',
-            fakultasProdi: p.fakultasProdi || p.jurusan || (currentJenjang === 'S3' ? edus.find((e: any) => e.tingkat === 'S3')?.jurusan : currentJenjang === 'S2' ? s2.jurusan : s1.jurusan) || p.prodiPrioritas || regDraft?.prodi || cachedUser?.jurusan || '',
+            perguruanTinggi: p.perguruanTinggi || p.perguruan_tinggi || p.institusi || (currentJenjang === 'S3' ? (edus.find((e: any) => e.tingkat === 'S3')?.institusi || s2.institusi || s1.institusi) : currentJenjang === 'S2' ? (s2.institusi || s1.institusi) : s1.institusi) || regDraft?.perguruanTinggi || cachedUser?.institusi || '',
+            fakultasProdi: p.fakultasProdi || p.fakultas_prodi || p.jurusan || (currentJenjang === 'S3' ? (edus.find((e: any) => e.tingkat === 'S3')?.jurusan || s2.jurusan || s1.jurusan) : currentJenjang === 'S2' ? (s2.jurusan || s1.jurusan) : s1.jurusan) || p.prodiPrioritas || regDraft?.prodi || cachedUser?.jurusan || '',
             namaAyah: p.namaAyah || p.nama_ayah || '',
             pekerjaanAyah: p.pekerjaanAyah || p.pekerjaan_ayah || '',
             namaIbu: p.namaIbu || p.nama_ibu || '',
@@ -512,6 +512,8 @@ export default function RegistrationPage() {
           pengalamanPengabdian: formatAchievementItems(pengalamanPengabdianList),
           pelatihanSertifikasi: formatAchievementItems(pelatihanSertifikasiList),
           prodiPrioritas: formData.fakultasProdi,
+          perguruanTinggi: formData.perguruanTinggi,
+          fakultasProdi: formData.fakultasProdi,
           signatureData: sigToSave
         }),
       });

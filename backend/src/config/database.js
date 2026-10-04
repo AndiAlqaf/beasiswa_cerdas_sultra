@@ -1,5 +1,6 @@
 /**
- * Database Configuration — MySQL via mysql2/promise
+ * Database
+ * Configuration — MySQL via mysql2/promise
  * 
  * Uses connection pool for high concurrency (101K+ users).
  * All queries use parameterized statements (anti SQL injection).
@@ -174,6 +175,8 @@ async function runMigrations() {
 
   // Dynamically add missing columns to profiles table without losing existing data
   const columnsToAdd = [
+    'perguruan_tinggi VARCHAR(255) NULL',
+    'fakultas_prodi VARCHAR(255) NULL',
     'no_kk VARCHAR(20) NULL',
     'alamat_ktp TEXT NULL',
     'akreditasi_prodi VARCHAR(50) NULL',

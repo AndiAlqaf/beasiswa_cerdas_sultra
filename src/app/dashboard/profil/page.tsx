@@ -72,6 +72,9 @@ export default function ProfilPage() {
   const [isDrawing, setIsDrawing] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
+  // Education rows as loaded from server — used to preserve rows the form doesn't edit (e.g. S2 for S3 applicants)
+  const loadedEducationRef = useRef<any[]>([]);
+
   const loadProfile = async () => {
     try {
       const cachedUser = getUser();
@@ -81,9 +84,12 @@ export default function ProfilPage() {
         const u = profileRes.data.user || cachedUser || {};
         const p = profileRes.data.profile || {};
         const edu = profileRes.data.education || [];
+        loadedEducationRef.current = Array.isArray(edu) ? edu : [];
 
-        const smaEdu = edu.find((e: any) => e.tingkat === 'SMA' || e.tingkat === 'SMK') || {};
+        const currentTargetJenjang = u.jenjangTarget || u.jenjang_target || 'S1';
+        const smaEdu = edu.find((e: any) => ['SMA', 'SMK', 'MA'].includes(e.tingkat)) || {};
         const s1Edu = edu.find((e: any) => e.tingkat === 'S1') || {};
+        const targetEdu = edu.find((e: any) => e.tingkat === currentTargetJenjang) || edu.find((e: any) => !['SMA', 'SMK', 'MA'].includes(e.tingkat)) || {};
 
         setForm({
           namaLengkap: u.namaLengkap || u.nama_lengkap || '',
@@ -100,9 +106,9 @@ export default function ProfilPage() {
           alamatKtp: p.alamatKtp || p.alamat_ktp || '',
           alamatDomisili: p.alamatDomisili || p.alamat_domisili || '',
 
-          jenjangTarget: u.jenjangTarget || u.jenjang_target || 'S1',
-          perguruanTinggi: s1Edu.institusi || p.perguruanTinggi || p.institusi || '',
-          fakultasProdi: s1Edu.jurusan || p.fakultasProdi || p.jurusan || '',
+          jenjangTarget: currentTargetJenjang,
+          perguruanTinggi: p.perguruanTinggi || p.perguruan_tinggi || targetEdu.institusi || s1Edu.institusi || p.institusi || '',
+          fakultasProdi: p.fakultasProdi || p.fakultas_prodi || targetEdu.jurusan || s1Edu.jurusan || p.jurusan || p.prodiPrioritas || '',
           nim: p.nim || '',
           semester: p.semester || 3,
           ipk: p.ipk ? String(p.ipk) : '3.50',
@@ -168,6 +174,9 @@ export default function ProfilPage() {
     try {
       const payload = {
         ...form,
+        perguruanTinggi: form.perguruanTinggi,
+        fakultasProdi: form.fakultasProdi,
+        prodiPrioritas: form.fakultasProdi,
         beasiswaLain: 'Tidak Ada (Bukan Double Funding)',
         prestasiAkademik: formatAchievementItems(prestasiAkademikList),
         prestasiNonAkademik: formatAchievementItems(prestasiNonAkademikList),
@@ -181,50 +190,76 @@ export default function ProfilPage() {
         body: JSON.stringify(payload),
       });
 
-      const eduList = [];
-      if (form.smaNama) {
+      if (!profileRes?.success) {
+        throw new Error(profileRes?.message || 'Gagal menyimpan data profil.');
+      }
+
+      const toYear = (v: any) => {
+        const m = String(v ?? '').match(/\d{4}/);
+        return m ? m[0] : null;
+      };
+
+      const eduList: any[] = [];
+      if (form.smaNama && form.smaNama.trim().length >= 2) {
         eduList.push({
           tingkat: 'SMA',
-          institusi: form.smaNama,
-          jurusan: form.smaJurusan,
-          tahunLulus: parseInt(form.smaTahunLulus) || null,
+          institusi: form.smaNama.trim(),
+          jurusan: form.smaJurusan || null,
+          tahunLulus: toYear(form.smaTahunLulus),
         });
       }
-      if ((form.jenjangTarget === 'S2' || form.jenjangTarget === 'S3') && (form.s1Nama)) {
+      if ((form.jenjangTarget === 'S2' || form.jenjangTarget === 'S3') && form.s1Nama && form.s1Nama.trim().length >= 2) {
         eduList.push({
           tingkat: 'S1',
-          institusi: form.s1Nama,
-          jurusan: form.s1Jurusan,
-          tahunLulus: parseInt(form.s1TahunLulus) || null,
+          institusi: form.s1Nama.trim(),
+          jurusan: form.s1Jurusan || null,
+          tahunLulus: toYear(form.s1TahunLulus),
         });
       }
 
-      if (form.perguruanTinggi) {
+      if (form.perguruanTinggi && form.perguruanTinggi.trim().length >= 2) {
         eduList.push({
           tingkat: form.jenjangTarget, // 'S1', 'S2', or 'S3'
-          institusi: form.perguruanTinggi,
-          jurusan: form.fakultasProdi,
-          tahunLulus: parseInt(form.targetLulus) || null,
+          institusi: form.perguruanTinggi.trim(),
+          jurusan: form.fakultasProdi || null,
+          tahunLulus: toYear(form.targetLulus),
+        });
+      }
+
+      // Preserve existing rows this form doesn't edit (e.g. S2 history for S3 applicants),
+      // because the backend replaces the whole education list on save.
+      const rank: Record<string, number> = { S1: 1, S2: 2, S3: 3 };
+      const targetRank = rank[form.jenjangTarget] || 1;
+      const sentTingkat = new Set(eduList.map((e) => e.tingkat));
+      for (const old of loadedEducationRef.current) {
+        if (!old?.tingkat || !old?.institusi || sentTingkat.has(old.tingkat)) continue;
+        if (['SMK', 'MA'].includes(old.tingkat) && sentTingkat.has('SMA')) continue;
+        const oldRank = rank[old.tingkat];
+        if (oldRank !== undefined && oldRank >= targetRank) continue; // drop stale higher/equal-level rows
+        eduList.push({
+          tingkat: old.tingkat,
+          institusi: old.institusi,
+          jurusan: old.jurusan || null,
+          tahunMulai: toYear(old.tahun_mulai),
+          tahunLulus: toYear(old.tahun_lulus),
         });
       }
 
       if (eduList.length > 0) {
+        // Do NOT swallow errors here: a silent failure is exactly what made users
+        // see "berhasil disimpan" while their university data stayed empty.
         await fetchAPI('/applicant/education', {
           method: 'PUT',
           body: JSON.stringify({ educationList: eduList }),
-        }).catch(() => null);
+        });
       }
 
-      if (profileRes.success) {
-        setToast({
-          title: 'Profil Berhasil Disimpan!',
-          message: 'Seluruh data profil dan prestasi Anda telah diperbarui dan diselaraskan secara otomatis.',
-          type: 'success',
-        });
-        await loadProfile();
-      } else {
-        throw new Error(profileRes.message || 'Gagal menyimpan data');
-      }
+      setToast({
+        title: 'Profil Berhasil Disimpan!',
+        message: 'Seluruh data profil dan prestasi Anda telah diperbarui dan diselaraskan secara otomatis.',
+        type: 'success',
+      });
+      await loadProfile();
     } catch (err: any) {
       setToast({
         title: 'Gagal Menyimpan Profil',

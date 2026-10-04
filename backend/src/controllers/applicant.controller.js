@@ -20,7 +20,7 @@ async function getProfile(req, res) {
     const [userRows] = await pool.execute(`
       SELECT u.id, u.email, u.nik, u.nama_lengkap, u.jenjang_target, u.role, u.created_at,
              p.tempat_lahir, p.tanggal_lahir, p.gender, p.no_hp, p.status_pernikahan,
-             p.alamat_domisili, p.selfie_path,
+             p.alamat_domisili, p.selfie_path, p.perguruan_tinggi, p.fakultas_prodi,
              p.no_kk, p.alamat_ktp, p.akreditasi_prodi, p.nim, p.semester, p.ipk, p.target_lulus,
              p.beasiswa_lain, p.nama_ayah, p.pekerjaan_ayah, p.nama_ibu, p.pekerjaan_ibu,
              p.penghasilan_ortu, p.jumlah_tanggungan, p.kepemilikan_bantuan,
@@ -74,6 +74,8 @@ async function getProfile(req, res) {
           gender: user.gender, noHp: user.no_hp,
           statusPernikahan: user.status_pernikahan, alamatDomisili: user.alamat_domisili,
           hasSelfie: !!user.selfie_path,
+          perguruanTinggi: user.perguruan_tinggi,
+          fakultasProdi: user.fakultas_prodi,
           noKk: user.no_kk,
           alamatKtp: user.alamat_ktp,
           akreditasiProdi: user.akreditasi_prodi,
@@ -123,6 +125,7 @@ async function updateProfile(req, res) {
     const { 
       namaLengkap, jenjangTarget,
       tempatLahir, tanggalLahir, gender, noHp, statusPernikahan, alamatDomisili,
+      perguruanTinggi, fakultasProdi,
       noKk, alamatKtp, akreditasiProdi, nim, semester, ipk, targetLulus,
       beasiswaLain, namaAyah, pekerjaanAyah, namaIbu, pekerjaanIbu,
       penghasilanOrtu, jumlahTanggungan, kepemilikanBantuan,
@@ -162,6 +165,13 @@ async function updateProfile(req, res) {
     const formattedTanggungan = (jumlahTanggungan !== undefined && jumlahTanggungan !== null && jumlahTanggungan !== '') ? (parseInt(jumlahTanggungan) || null) : null;
     const formattedIpk = (ipk !== undefined && ipk !== null && ipk !== '') ? (parseFloat(String(ipk).replace(',', '.')) || null) : null;
 
+    const actualProdi = prodiPrioritas || fakultasProdi || null;
+
+    // Prestasi fields: only overwrite when the client explicitly sent the field.
+    // Partial updates (e.g. bank info from dashboard) must NOT wipe existing achievements.
+    const hasField = (v) => (v !== undefined ? 1 : 0);
+    const textOrNull = (v) => (v === undefined || v === null || v === '' ? null : v);
+
     await pool.execute(`
       UPDATE profiles
       SET tempat_lahir = COALESCE(?, tempat_lahir),
@@ -170,6 +180,8 @@ async function updateProfile(req, res) {
           no_hp = COALESCE(?, no_hp),
           status_pernikahan = COALESCE(?, status_pernikahan),
           alamat_domisili = COALESCE(?, alamat_domisili),
+          perguruan_tinggi = COALESCE(?, perguruan_tinggi),
+          fakultas_prodi = COALESCE(?, fakultas_prodi),
           no_kk = COALESCE(?, no_kk),
           alamat_ktp = COALESCE(?, alamat_ktp),
           akreditasi_prodi = COALESCE(?, akreditasi_prodi),
@@ -185,11 +197,11 @@ async function updateProfile(req, res) {
           penghasilan_ortu = COALESCE(?, penghasilan_ortu),
           jumlah_tanggungan = COALESCE(?, jumlah_tanggungan),
           kepemilikan_bantuan = COALESCE(?, kepemilikan_bantuan),
-          prestasi_akademik = ?,
-          prestasi_non_akademik = ?,
-          pengalaman_organisasi = ?,
-          pengalaman_pengabdian = ?,
-          pelatihan_sertifikasi = ?,
+          prestasi_akademik = IF(? = 1, ?, prestasi_akademik),
+          prestasi_non_akademik = IF(? = 1, ?, prestasi_non_akademik),
+          pengalaman_organisasi = IF(? = 1, ?, pengalaman_organisasi),
+          pengalaman_pengabdian = IF(? = 1, ?, pengalaman_pengabdian),
+          pelatihan_sertifikasi = IF(? = 1, ?, pelatihan_sertifikasi),
           prodi_prioritas = COALESCE(?, prodi_prioritas),
           signature_data = COALESCE(?, signature_data),
           nama_bank = COALESCE(?, nama_bank),
@@ -199,12 +211,17 @@ async function updateProfile(req, res) {
     `, [
       tempatLahir || null, formattedTanggalLahir, gender || null,
       noHp || null, statusPernikahan || null, alamatDomisili || null,
+      perguruanTinggi || null, fakultasProdi || null,
       noKk || null, alamatKtp || null, akreditasiProdi || null, nim || null,
       formattedSemester, formattedIpk, targetLulus || null, beasiswaLain || 'Tidak Ada (Bukan Double Funding)',
       namaAyah || null, pekerjaanAyah || null, namaIbu || null, pekerjaanIbu || null,
       penghasilanOrtu || null, formattedTanggungan, kepemilikanBantuan || null,
-      prestasiAkademik || null, prestasiNonAkademik || null, pengalamanOrganisasi || null,
-      pengalamanPengabdian || null, pelatihanSertifikasi || null, prodiPrioritas || null,
+      hasField(prestasiAkademik), textOrNull(prestasiAkademik),
+      hasField(prestasiNonAkademik), textOrNull(prestasiNonAkademik),
+      hasField(pengalamanOrganisasi), textOrNull(pengalamanOrganisasi),
+      hasField(pengalamanPengabdian), textOrNull(pengalamanPengabdian),
+      hasField(pelatihanSertifikasi), textOrNull(pelatihanSertifikasi),
+      actualProdi,
       signatureData || null,
       namaBank || null, noRekening || null, namaRekening || null,
       userId,
@@ -228,18 +245,55 @@ async function updateEducation(req, res) {
     const { educationList } = req.body;
     const pool = getPool();
 
+    if (!Array.isArray(educationList) || educationList.length === 0) {
+      return res.status(400).json({ success: false, message: 'Riwayat pendidikan kosong.' });
+    }
+
+    const toYear = (v) => {
+      if (v === undefined || v === null || v === '') return null;
+      const s = String(v).trim().slice(0, 4);
+      return /^\d{4}$/.test(s) ? s : null;
+    };
+
+    // Existing rows: used to preserve fields the client did not send (e.g. tahun_mulai from registration)
+    const [existingRows] = await pool.execute(
+      'SELECT tingkat, institusi, jurusan, tahun_mulai, tahun_lulus FROM education_history WHERE user_id = ?',
+      [userId]
+    );
+    const existingByTingkat = {};
+    for (const r of existingRows) existingByTingkat[r.tingkat] = r;
+
+    // Deduplicate by tingkat: later entries win, but missing fields are filled from earlier/existing ones
+    const merged = new Map();
+    for (const edu of educationList) {
+      if (!edu || !edu.tingkat || !edu.institusi) continue;
+      const prev = merged.get(edu.tingkat) || {};
+      const old = existingByTingkat[edu.tingkat] || {};
+      merged.set(edu.tingkat, {
+        tingkat: edu.tingkat,
+        institusi: String(edu.institusi).trim(),
+        jurusan: edu.jurusan || prev.jurusan || null,
+        tahunMulai: toYear(edu.tahunMulai) || prev.tahunMulai || toYear(old.tahun_mulai),
+        tahunLulus: toYear(edu.tahunLulus) || prev.tahunLulus || toYear(old.tahun_lulus),
+      });
+    }
+    const finalList = Array.from(merged.values());
+    if (finalList.length === 0) {
+      return res.status(400).json({ success: false, message: 'Riwayat pendidikan tidak valid.' });
+    }
+
     const conn = await pool.getConnection();
     try {
       await conn.beginTransaction();
 
       await conn.execute('DELETE FROM education_history WHERE user_id = ?', [userId]);
 
-      for (let i = 0; i < educationList.length; i++) {
-        const edu = educationList[i];
+      for (let i = 0; i < finalList.length; i++) {
+        const edu = finalList[i];
         await conn.execute(
           `INSERT INTO education_history (id, user_id, tingkat, institusi, jurusan, tahun_mulai, tahun_lulus, sort_order)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-          [uuidv4(), userId, edu.tingkat, edu.institusi, edu.jurusan || null, edu.tahunMulai || null, edu.tahunLulus || null, i]
+          [uuidv4(), userId, edu.tingkat, edu.institusi, edu.jurusan, edu.tahunMulai, edu.tahunLulus, i]
         );
       }
 

@@ -155,7 +155,7 @@ async function getApplicantDetail(req, res) {
     const [userRows] = await pool.execute(`
       SELECT u.id, u.email, u.nik, u.nama_lengkap, u.jenjang_target, u.created_at,
              p.tempat_lahir, p.tanggal_lahir, p.gender, p.no_hp,
-             p.status_pernikahan, p.alamat_domisili, p.selfie_path,
+             p.status_pernikahan, p.alamat_domisili, p.selfie_path, p.perguruan_tinggi, p.fakultas_prodi,
              p.no_kk, p.alamat_ktp, p.akreditasi_prodi, p.nim, p.semester, p.ipk, p.target_lulus,
              p.beasiswa_lain, p.nama_ayah, p.pekerjaan_ayah, p.nama_ibu, p.pekerjaan_ibu,
              p.penghasilan_ortu, p.jumlah_tanggungan, p.kepemilikan_bantuan,
@@ -192,6 +192,8 @@ async function getApplicantDetail(req, res) {
           tempatLahir: user.tempat_lahir, tanggalLahir: user.tanggal_lahir, gender: user.gender,
           noHp: user.no_hp, statusPernikahan: user.status_pernikahan, alamatDomisili: user.alamat_domisili,
           hasSelfie: !!user.selfie_path,
+          perguruanTinggi: user.perguruan_tinggi,
+          fakultasProdi: user.fakultas_prodi,
           noKk: user.no_kk,
           alamatKtp: user.alamat_ktp,
           akreditasiProdi: user.akreditasi_prodi,

@@ -104,32 +104,43 @@ const refreshValidation = [
 
 const profileUpdateValidation = [
   body('tempatLahir')
-    .optional()
+    .optional({ values: 'falsy' })
     .trim()
     .isLength({ max: 100 }).withMessage('Tempat lahir maks 100 karakter.')
-    .matches(/^[a-zA-Z\s'.,-]+$/).withMessage('Tempat lahir mengandung karakter tidak valid.'),
+    .matches(/^[\p{L}0-9\s'.,()\/-]+$/u).withMessage('Tempat lahir mengandung karakter tidak valid.'),
   
   body('tanggalLahir')
-    .optional()
-    .isISO8601({ strict: true }).withMessage('Format tanggal tidak valid (gunakan YYYY-MM-DD).'),
+    .optional({ values: 'falsy' })
+    .customSanitizer((v) => (typeof v === 'string' ? v.split('T')[0] : v))
+    .isISO8601().withMessage('Format tanggal tidak valid (gunakan YYYY-MM-DD).'),
   
   body('gender')
-    .optional()
+    .optional({ values: 'falsy' })
     .isIn(['Laki-laki', 'Perempuan']).withMessage('Gender harus Laki-laki atau Perempuan.'),
   
   body('noHp')
-    .optional()
+    .optional({ values: 'falsy' })
     .trim()
     .matches(/^\+?[0-9\s-]{8,20}$/).withMessage('Nomor HP tidak valid.'),
   
   body('statusPernikahan')
-    .optional()
+    .optional({ values: 'falsy' })
     .isIn(['Belum Menikah', 'Menikah']).withMessage('Status pernikahan tidak valid.'),
   
   body('alamatDomisili')
-    .optional()
+    .optional({ values: 'falsy' })
     .trim()
     .isLength({ max: 500 }).withMessage('Alamat maks 500 karakter.'),
+
+  body('perguruanTinggi')
+    .optional({ values: 'falsy' })
+    .trim()
+    .isLength({ max: 255 }).withMessage('Nama perguruan tinggi maks 255 karakter.'),
+
+  body('fakultasProdi')
+    .optional({ values: 'falsy' })
+    .trim()
+    .isLength({ max: 255 }).withMessage('Fakultas/Prodi maks 255 karakter.'),
   
   handleValidation,
 ];
@@ -147,17 +158,25 @@ const educationValidation = [
     .isLength({ min: 2, max: 255 }).withMessage('Nama institusi harus 2-255 karakter.'),
   
   body('educationList.*.jurusan')
-    .optional()
+    .optional({ values: 'falsy' })
     .trim()
     .isLength({ max: 255 }).withMessage('Jurusan maks 255 karakter.'),
   
+  // Years are normalized leniently in the controller (invalid -> NULL) so one
+  // odd year value never blocks the whole education save.
   body('educationList.*.tahunMulai')
-    .optional()
-    .matches(/^\d{4}$/).withMessage('Tahun mulai harus 4 digit.'),
+    .optional({ values: 'null' })
+    .customSanitizer((v) => {
+      const m = String(v ?? '').match(/\d{4}/);
+      return m ? m[0] : null;
+    }),
   
   body('educationList.*.tahunLulus')
-    .optional()
-    .matches(/^(\d{4})?$/).withMessage('Tahun lulus harus 4 digit atau kosong.'),
+    .optional({ values: 'null' })
+    .customSanitizer((v) => {
+      const m = String(v ?? '').match(/\d{4}/);
+      return m ? m[0] : null;
+    }),
   
   handleValidation,
 ];
