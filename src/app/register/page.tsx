@@ -550,12 +550,9 @@ export default function RegisterPage() {
       }
 
       setError(null);
-      if (currentStep < totalSteps) {
-        setCurrentStep((prev) => prev + 1);
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      }
     } catch (err: any) {
       setError(err.message || 'Gagal mendaftarkan akun.');
+      throw err;
     } finally {
       setLoading(false);
     }
@@ -925,12 +922,12 @@ export default function RegisterPage() {
                   <button
                     type="button"
                     disabled={loading}
-                    onClick={handleRegisterAccount}
+                    onClick={validateAndNextStep}
                     className="w-full py-3.5 px-6 bg-[#0B3A6A] hover:bg-[#082a4d] text-white font-bold rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 text-base disabled:opacity-50"
                   >
                     {loading ? (
                       <>
-                        <Loader2 className="w-5 h-5 animate-spin" /> Daftarkan Akun...
+                        <Loader2 className="w-5 h-5 animate-spin" /> Memproses...
                       </>
                     ) : (
                       <>
