@@ -9,7 +9,7 @@
 
 const express = require('express');
 const router = express.Router();
-const { register, login, refresh, logout } = require('../controllers/auth.controller');
+const { register, login, refresh, logout, resetPassword } = require('../controllers/auth.controller');
 const { authLimiter } = require('../middleware/rateLimiter');
 const { registerValidation, loginValidation, refreshValidation } = require('../middleware/validator');
 const { authenticate } = require('../middleware/auth');
@@ -19,5 +19,6 @@ router.post('/register', authLimiter, registerValidation, register);
 router.post('/login', authLimiter, loginValidation, login);
 router.post('/refresh', refreshValidation, refresh);
 router.post('/logout', authenticate, logout);
+router.post('/reset-password', authLimiter, resetPassword);
 
 module.exports = router;

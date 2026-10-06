@@ -225,6 +225,11 @@ export default function LoginPage() {
                     {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
                 </div>
+                <div className="flex justify-end pt-1">
+                  <Link href="/lupa-password" className="text-xs font-semibold text-blue-900 hover:underline">
+                    Lupa Kata Sandi?
+                  </Link>
+                </div>
               </div>
             </div>
 

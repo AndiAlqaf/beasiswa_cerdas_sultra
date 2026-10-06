@@ -278,4 +278,61 @@ async function logout(req, res) {
   }
 }
 
-module.exports = { register, login, refresh, logout };
+/**
+ * POST /api/v1/auth/reset-password
+ */
+async function resetPassword(req, res) {
+  try {
+    const { identifier, newPassword } = req.body;
+    const clientIp = getClientIp(req);
+    const pool = getPool();
+
+    if (!identifier || !newPassword) {
+      return res.status(400).json({ success: false, message: 'NIK/Email dan kata sandi baru wajib diisi.' });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({ success: false, message: 'Kata sandi baru minimal 6 karakter.' });
+    }
+
+    const cleanIdentifier = identifier.trim();
+
+    // Find user by email or NIK
+    const [users] = await pool.execute(
+      'SELECT id, email, nik FROM users WHERE LOWER(email) = LOWER(?) OR nik = ?',
+      [cleanIdentifier, cleanIdentifier]
+    );
+
+    const user = users[0];
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'Akun dengan NIK atau Email tersebut tidak ditemukan.' });
+    }
+
+    // Hash new password
+    const passwordHash = await hashPassword(newPassword);
+
+    // Update password and reset lockout/failed attempts
+    await pool.execute(
+      'UPDATE users SET password_hash = ?, failed_login_attempts = 0, locked_until = NULL WHERE id = ?',
+      [passwordHash, user.id]
+    );
+
+    auditLog({
+      action: 'PASSWORD_RESET_SUCCESS',
+      userId: user.id,
+      ipAddress: clientIp,
+      userAgent: req.headers['user-agent'],
+      requestId: req.requestId
+    });
+
+    res.json({
+      success: true,
+      message: 'Kata sandi berhasil diperbarui. Silakan login dengan kata sandi baru Anda.'
+    });
+  } catch (err) {
+    log(LOG_LEVELS.ERROR, `Reset password error: ${err.message}`, { stack: err.stack });
+    res.status(500).json({ success: false, message: 'Terjadi kesalahan saat mereset kata sandi.' });
+  }
+}
+
+module.exports = { register, login, refresh, logout, resetPassword };
