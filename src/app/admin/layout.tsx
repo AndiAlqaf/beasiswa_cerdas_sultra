@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Users, FileCheck, Megaphone, Settings, LogOut, Menu, X, Bell } from 'lucide-react';
+import { LayoutDashboard, Users, UserCheck, FileCheck, Megaphone, Settings, LogOut, Menu, X, Bell } from 'lucide-react';
 import { getUser, clearTokens, fetchAPI } from '@/lib/api';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -63,6 +63,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const navItems = [
     { name: 'Dashboard Admin', href: '/admin', icon: LayoutDashboard },
     { name: 'Data Pendaftar', href: '/admin/pendaftar', icon: Users },
+    { name: 'Akun Pengguna', href: '/admin/pengguna', icon: UserCheck },
     { name: 'Verifikasi & Seleksi', href: '/admin/seleksi', icon: FileCheck },
     { name: 'Penerbitan Pengumuman', href: '/admin/pengumuman', icon: Megaphone },
     { name: 'Pengaturan', href: '/admin/pengaturan', icon: Settings },

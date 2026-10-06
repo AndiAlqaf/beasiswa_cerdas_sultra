@@ -315,4 +315,102 @@ async function viewDocument(req, res) {
   }
 }
 
-module.exports = { getDashboard, listApplicants, getApplicantDetail, verifyApplicant, viewDocument };
+/**
+ * GET /api/v1/admin/users
+ * List all registered accounts with search by name, NIK, or email
+ */
+async function listUsers(req, res) {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = Math.min(parseInt(req.query.limit) || 20, 100);
+    const offset = (page - 1) * limit;
+    const search = req.query.search ? req.query.search.trim() : null;
+    const jenjang = req.query.jenjang || null;
+    const role = req.query.role || null;
+    const hasApplied = req.query.has_applied || null;
+    const pool = getPool();
+
+    let whereClause = '1=1';
+    const params = [];
+
+    if (role) {
+      whereClause += ' AND u.role = ?';
+      params.push(role);
+    }
+
+    if (jenjang) {
+      whereClause += ' AND u.jenjang_target = ?';
+      params.push(jenjang);
+    }
+
+    if (hasApplied === 'yes') {
+      whereClause += ' AND a.id IS NOT NULL';
+    } else if (hasApplied === 'no') {
+      whereClause += ' AND a.id IS NULL';
+    }
+
+    if (search) {
+      whereClause += ' AND (u.nama_lengkap LIKE ? OR u.nik LIKE ? OR u.email LIKE ?)';
+      const term = `%${search}%`;
+      params.push(term, term, term);
+    }
+
+    const [[{ cnt }]] = await pool.execute(
+      `SELECT COUNT(DISTINCT u.id) as cnt
+       FROM users u
+       LEFT JOIN applications a ON a.user_id = u.id
+       WHERE ${whereClause}`,
+      params
+    );
+
+    const [users] = await pool.execute(
+      `SELECT u.id, u.nama_lengkap, u.email, u.nik, u.role, u.jenjang_target, u.created_at,
+              a.id as application_id, a.registration_no, a.status as application_status, a.submitted_at
+       FROM users u
+       LEFT JOIN applications a ON a.user_id = u.id
+       WHERE ${whereClause}
+       ORDER BY u.created_at DESC
+       LIMIT ? OFFSET ?`,
+      [...params, String(limit), String(offset)]
+    );
+
+    res.json({
+      success: true,
+      data: {
+        users: users.map(u => ({
+          id: u.id,
+          namaLengkap: u.nama_lengkap,
+          email: u.email,
+          nik: u.nik,
+          role: u.role,
+          jenjangTarget: u.jenjang_target,
+          createdAt: u.created_at,
+          application: u.application_id ? {
+            id: u.application_id,
+            registrationNo: u.registration_no,
+            status: u.application_status,
+            submittedAt: u.submitted_at,
+          } : null,
+        })),
+        pagination: {
+          page,
+          limit,
+          total: cnt,
+          totalPages: Math.ceil(cnt / limit) || 1,
+        },
+      },
+    });
+  } catch (err) {
+    log(LOG_LEVELS.ERROR, `List users error: ${err.message}`);
+    res.status(500).json({ success: false, message: 'Gagal mengambil data pengguna.' });
+  }
+}
+
+module.exports = {
+  getDashboard,
+  listApplicants,
+  getApplicantDetail,
+  verifyApplicant,
+  viewDocument,
+  listUsers,
+};

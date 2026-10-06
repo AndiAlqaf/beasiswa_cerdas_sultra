@@ -18,6 +18,7 @@ const {
   getApplicantDetail,
   verifyApplicant,
   viewDocument,
+  listUsers,
 } = require('../controllers/admin.controller');
 
 // All routes require authentication as admin
@@ -26,6 +27,9 @@ router.use(authorize(ROLES.ADMIN));
 
 // Dashboard
 router.get('/dashboard', getDashboard);
+
+// User accounts management (cek pengguna yang sudah bikin akun)
+router.get('/users', listUsers);
 
 // Applicant management
 router.get('/applicants', paginationValidation, listApplicants);
