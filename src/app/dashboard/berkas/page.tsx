@@ -16,33 +16,26 @@ interface DocumentInfo {
 const isDocTypeMatch = (doc: DocumentInfo, targetKey: string) => {
   if (!doc || !targetKey) return false;
   const dbType = (doc.docType || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-  const dbName = (doc.originalName || '').toLowerCase().replace(/[^a-z0-9]/g, '');
   const tgt = targetKey.toLowerCase().replace(/[^a-z0-9]/g, '');
 
-  if (dbType === tgt || (dbType && (dbType.includes(tgt) || tgt.includes(dbType)))) return true;
+  // 1. Direct match
+  if (dbType === tgt) return true;
 
-  if (tgt.includes('transkrip') && (dbType.includes('transkrip') || dbName.includes('transkrip'))) return true;
-  if ((tgt.includes('ktm') || tgt.includes('aktif')) && (dbType.includes('ktm') || dbType.includes('aktif') || dbName.includes('ktm') || dbName.includes('aktif'))) return true;
-  if ((tgt.includes('selfie') || tgt.includes('pasfoto')) && (dbType.includes('selfie') || dbType.includes('pasfoto') || dbName.includes('selfie') || dbName.includes('pasfoto'))) return true;
-  if (tgt.includes('pernyataan') && (dbType.includes('pernyataan') || dbName.includes('pernyataan'))) return true;
-  if ((tgt.includes('dtks') || tgt.includes('kip')) && (dbType.includes('dtks') || dbType.includes('kip') || dbName.includes('dtks') || dbName.includes('kip'))) return true;
-  if ((tgt.includes('ktp') || tgt.includes('kk')) && (dbType.includes('ktp') || dbType.includes('kk') || dbName.includes('ktp') || dbName.includes('kk'))) return true;
+  // 2. Controlled alias mapping based on docType ONLY (never match on user's arbitrary originalName)
+  if (tgt === 'pernyataan' && (dbType === 'suratpernyataan' || dbType === 'pernyataan')) return true;
+  if (tgt === 'selfie' && (dbType === 'pasfoto' || dbType === 'filepasfoto' || dbType === 'selfie')) return true;
+  if (tgt === 'ktm' && (dbType === 'surataktif' || dbType === 'filesurataktif' || dbType === 'ktm')) return true;
+  if (tgt === 'ktp' && (dbType === 'filektp' || dbType === 'ktp')) return true;
+  if (tgt === 'transkrip' && (dbType === 'filetranskrip' || dbType === 'transkrip')) return true;
+  if (tgt === 'dtks' && (dbType === 'filedtks' || dbType === 'dtks' || dbType === 'kip')) return true;
+  if (tgt === 'pendukung' && dbType === 'pendukung') return true;
 
   return false;
 };
 
-const DOCUMENT_TYPES = [
-  { key: 'ktm', label: 'KTM / Surat Aktif Kuliah', desc: 'Salinan Kartu Tanda Mahasiswa (KTM) aktif atau Surat Keterangan Aktif Kuliah.', required: true, accept: '.pdf,.png,.jpg,.jpeg' },
-  { key: 'selfie', label: 'Pasfoto / Selfie KTP', desc: 'Foto formal atau selfie memegang KTP dengan latar belakang jelas.', required: true, accept: '.png,.jpg,.jpeg' },
-  { key: 'transkrip', label: 'Transkrip Nilai Akademik', desc: 'Transkrip nilai semester terakhir yang disahkan stempel basah fakultas/prodi.', required: true, accept: '.pdf,.png,.jpg,.jpeg' },
-  { key: 'pernyataan', label: 'Surat Pernyataan Tidak Sedang Menerima Beasiswa Lain', desc: 'Surat Pernyataan resmi bermaterai Rp 10.000 tidak sedang menerima beasiswa lain.', required: true, accept: '.pdf,.png,.jpg,.jpeg' },
-  { key: 'dtks', label: 'Bukti DTKS / KIP / Suket Kurang Mampu', desc: 'Kartu Indonesia Pintar, Bukti Terdaftar DTKS Kemensos, atau Surat Keterangan Tidak Mampu.', required: false, accept: '.pdf,.png,.jpg,.jpeg' },
-  { key: 'ktp', label: 'Kartu Tanda Penduduk (KTP)', desc: 'Scan KTP asli domisili Kabupaten/Kota Sulawesi Tenggara.', required: true, accept: '.pdf,.png,.jpg,.jpeg' },
-  { key: 'pendukung', label: 'Berkas Sertifikat & Pendukung Lain', desc: 'Sertifikat keahlian, prestasi, atau dokumen pendukung tambahan.', required: false, accept: '.pdf,.png,.jpg,.jpeg' },
-];
-
 export default function BerkasPage() {
   const [documents, setDocuments] = useState<DocumentInfo[]>([]);
+  const [jenjang, setJenjang] = useState<string>('S1');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [uploadingKey, setUploadingKey] = useState<string | null>(null);
@@ -50,11 +43,30 @@ export default function BerkasPage() {
 
   const fileInputRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
 
+  const documentTypes = [
+    { key: 'ktm', label: jenjang === 'S2' ? 'KTM / Surat Aktif S2' : jenjang === 'S3' ? 'KTM / Surat Aktif S3' : 'KTM / Surat Aktif Kuliah', desc: 'Salinan Kartu Tanda Mahasiswa (KTM) aktif atau Surat Keterangan Aktif Kuliah.', required: true, accept: '.pdf,.png,.jpg,.jpeg' },
+    { key: 'selfie', label: 'Pasfoto / Selfie KTP', desc: 'Foto formal atau selfie memegang KTP dengan latar belakang jelas.', required: true, accept: '.png,.jpg,.jpeg' },
+    { key: 'transkrip', label: jenjang === 'S2' ? 'Transkrip Nilai Semester S2' : jenjang === 'S3' ? 'Transkrip Nilai Semester S3' : 'Transkrip Nilai Akademik', desc: 'Transkrip nilai semester terakhir yang disahkan stempel basah fakultas/prodi.', required: true, accept: '.pdf,.png,.jpg,.jpeg' },
+    { key: 'pernyataan', label: 'Surat Pernyataan Tidak Sedang Menerima Beasiswa Lain', desc: 'Surat Pernyataan resmi bermaterai Rp 10.000 tidak sedang menerima beasiswa lain.', required: true, accept: '.pdf,.png,.jpg,.jpeg' },
+    { 
+      key: 'dtks', 
+      label: jenjang === 'S2' ? 'Ijazah & Transkrip Nilai S1' : jenjang === 'S3' ? 'Ijazah & Transkrip S1 & S2' : 'Bukti DTKS / KIP / Suket Kurang Mampu', 
+      desc: jenjang === 'S2' ? 'Salinan ijazah dan transkrip nilai jenjang Sarjana (S1).' : jenjang === 'S3' ? 'Salinan ijazah dan transkrip jenjang S1 & Magister (S2).' : 'Kartu Indonesia Pintar, Bukti Terdaftar DTKS Kemensos, atau Surat Keterangan Tidak Mampu.', 
+      required: false, 
+      accept: '.pdf,.png,.jpg,.jpeg' 
+    },
+    { key: 'ktp', label: 'Kartu Tanda Penduduk (KTP)', desc: 'Scan KTP asli domisili Kabupaten/Kota Sulawesi Tenggara.', required: true, accept: '.pdf,.png,.jpg,.jpeg' },
+    { key: 'pendukung', label: 'Berkas Sertifikat & Pendukung Lain', desc: 'Sertifikat keahlian, prestasi, atau dokumen pendukung tambahan.', required: false, accept: '.pdf,.png,.jpg,.jpeg' },
+  ];
+
   const loadDocuments = async () => {
     try {
       const res = await fetchAPI('/applicant/profile');
       if (res.success && res.data) {
         setDocuments(res.data.documents || []);
+        if (res.data.user?.jenjangTarget) {
+          setJenjang(res.data.user.jenjangTarget);
+        }
       } else {
         setError(res.message || 'Gagal memuat berkas.');
       }
@@ -199,7 +211,7 @@ export default function BerkasPage() {
 
       {/* Grid Dokumen */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-        {DOCUMENT_TYPES.map((docTypeItem) => {
+        {documentTypes.map((docTypeItem) => {
           const matchingDocs = documents.filter((d) => isDocTypeMatch(d, docTypeItem.key));
           const uploadedDoc = matchingDocs[matchingDocs.length - 1]; // Latest uploaded file
           const hasMultipleVersions = matchingDocs.length > 1;
