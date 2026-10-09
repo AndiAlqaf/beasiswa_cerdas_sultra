@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { fetchAPI } from '@/lib/api';
-import { FileText, FileBadge, Calendar, HardDrive, Upload, ExternalLink, AlertCircle, Loader2, CheckCircle2, RefreshCw, XCircle } from 'lucide-react';
+import { FileText, FileBadge, Calendar, HardDrive, Upload, ExternalLink, AlertCircle, Loader2, CheckCircle2, RefreshCw, XCircle, Camera, Lock, X, Check, RotateCw } from 'lucide-react';
 
 interface DocumentInfo {
   id: string;
@@ -41,7 +41,148 @@ export default function BerkasPage() {
   const [uploadingKey, setUploadingKey] = useState<string | null>(null);
   const [toast, setToast] = useState<{ title: string; message: string; type: 'success' | 'error' } | null>(null);
 
+  // Camera Modal States for Selfie
+  const [isCameraModalOpen, setIsCameraModalOpen] = useState(false);
+  const [cameraLoading, setCameraLoading] = useState(false);
+  const [cameraError, setCameraError] = useState<string | null>(null);
+  const [capturedSelfie, setCapturedSelfie] = useState<string | null>(null);
+  const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
+  const [isUploadingSelfie, setIsUploadingSelfie] = useState(false);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+
   const fileInputRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
+
+  const startCamera = async (mode: 'user' | 'environment' = 'user') => {
+    setCameraLoading(true);
+    setCameraError(null);
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: mode,
+          width: { ideal: 640 },
+          height: { ideal: 480 },
+        },
+      });
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        await videoRef.current.play();
+      }
+    } catch (err: any) {
+      console.error('Camera access error:', err);
+      setCameraError('Tidak dapat mengakses kamera. Pastikan izin kamera telah diberikan pada browser atau buka halaman ini melalui smartphone Anda.');
+    } finally {
+      setCameraLoading(false);
+    }
+  };
+
+  const stopCamera = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+    }
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+  };
+
+  const openCameraModal = () => {
+    setCapturedSelfie(null);
+    setCameraError(null);
+    setIsCameraModalOpen(true);
+    setTimeout(() => {
+      startCamera(facingMode);
+    }, 150);
+  };
+
+  const closeCameraModal = () => {
+    stopCamera();
+    setCapturedSelfie(null);
+    setIsCameraModalOpen(false);
+  };
+
+  const handleCapturePhoto = () => {
+    if (!videoRef.current) return;
+    const video = videoRef.current;
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth || 640;
+    canvas.height = video.videoHeight || 480;
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      if (facingMode === 'user') {
+        ctx.translate(canvas.width, 0);
+        ctx.scale(-1, 1);
+      }
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+      setCapturedSelfie(dataUrl);
+      stopCamera();
+    }
+  };
+
+  const handleRetakePhoto = () => {
+    setCapturedSelfie(null);
+    startCamera(facingMode);
+  };
+
+  const handleSwitchCamera = () => {
+    const nextMode = facingMode === 'user' ? 'environment' : 'user';
+    setFacingMode(nextMode);
+    startCamera(nextMode);
+  };
+
+  const handleUploadCapturedSelfie = async () => {
+    if (!capturedSelfie) return;
+    setIsUploadingSelfie(true);
+    try {
+      const res = await fetch(capturedSelfie);
+      const blob = await res.blob();
+      const token = localStorage.getItem('bssc_access_token');
+      const formData = new FormData();
+      formData.append('file', blob, 'selfie_kamera.jpg');
+
+      const uploadRes = await fetch('/api/v1/applicant/upload/selfie', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      const data = await uploadRes.json();
+      if (!uploadRes.ok || !data.success) {
+        throw new Error(data.message || 'Gagal menyimpan foto selfie.');
+      }
+
+      setToast({
+        title: 'Foto Berhasil Diambil & Disimpan!',
+        message: 'Foto selfie / pasfoto Anda telah tersimpan langsung dari kamera dan kini terkunci.',
+        type: 'success',
+      });
+
+      closeCameraModal();
+      await loadDocuments();
+    } catch (err: any) {
+      setToast({
+        title: 'Gagal Menyimpan Foto',
+        message: err.message || 'Terjadi kesalahan saat mengunggah foto.',
+        type: 'error',
+      });
+    } finally {
+      setIsUploadingSelfie(false);
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      stopCamera();
+    };
+  }, []);
 
   const documentTypes = [
     { key: 'ktm', label: jenjang === 'S2' ? 'KTM / Surat Aktif S2' : jenjang === 'S3' ? 'KTM / Surat Aktif S3' : 'KTM / Surat Aktif Kuliah', desc: 'Salinan Kartu Tanda Mahasiswa (KTM) aktif atau Surat Keterangan Aktif Kuliah.', required: true, accept: '.pdf,.png,.jpg,.jpeg' },
@@ -334,11 +475,19 @@ export default function BerkasPage() {
 
                 <button
                   type="button"
-                  disabled={isUploading || docTypeItem.key === 'selfie'}
-                  onClick={() => handleTriggerUpload(docTypeItem.key)}
+                  disabled={isUploading || (docTypeItem.key === 'selfie' && !!uploadedDoc)}
+                  onClick={() => {
+                    if (docTypeItem.key === 'selfie' && !uploadedDoc) {
+                      openCameraModal();
+                    } else {
+                      handleTriggerUpload(docTypeItem.key);
+                    }
+                  }}
                   className={`flex-1 py-2 px-3 text-xs font-bold rounded-xl transition-all shadow-sm flex items-center justify-center gap-1.5 ${
-                    docTypeItem.key === 'selfie'
+                    docTypeItem.key === 'selfie' && uploadedDoc
                       ? 'bg-slate-200 text-slate-400 border border-slate-300 cursor-not-allowed shadow-none'
+                      : docTypeItem.key === 'selfie' && !uploadedDoc
+                      ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/20'
                       : isUploading
                       ? 'bg-slate-400 cursor-not-allowed text-white'
                       : uploadedDoc
@@ -349,6 +498,14 @@ export default function BerkasPage() {
                   {isUploading ? (
                     <>
                       <Loader2 className="w-3.5 h-3.5 animate-spin" /> Mengunggah...
+                    </>
+                  ) : docTypeItem.key === 'selfie' && uploadedDoc ? (
+                    <>
+                      <Lock className="w-3.5 h-3.5" /> Terkunci (SOP Foto)
+                    </>
+                  ) : docTypeItem.key === 'selfie' && !uploadedDoc ? (
+                    <>
+                      <Camera className="w-3.5 h-3.5" /> Ambil Foto via Kamera
                     </>
                   ) : uploadedDoc ? (
                     <>
@@ -367,6 +524,151 @@ export default function BerkasPage() {
       </div>
 
 
+
+      {/* Modal Pengambilan Foto Langsung via Kamera */}
+      {isCameraModalOpen && (
+        <div className="fixed inset-0 z-[250] flex items-center justify-center bg-slate-950/80 backdrop-blur-md p-4 animate-in fade-in">
+          <div className="bg-slate-900 text-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden border border-slate-800 flex flex-col animate-in zoom-in-95">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-5 border-b border-slate-800 bg-slate-950/40">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+                  <Camera className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-sm text-white">Ambil Pasfoto / Selfie Langsung</h3>
+                  <p className="text-[11px] text-slate-400">Wajib diambil langsung dari kamera live (bukan upload galeri)</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={closeCameraModal}
+                disabled={isUploadingSelfie}
+                className="w-8 h-8 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Viewfinder / Camera Screen */}
+            <div className="relative aspect-[4/3] w-full bg-black flex items-center justify-center overflow-hidden">
+              {capturedSelfie ? (
+                /* Pratinjau Foto yang Ditangkap */
+                <div className="relative w-full h-full">
+                  <img
+                    src={capturedSelfie}
+                    alt="Pratinjau Selfie"
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute top-3 left-3 bg-emerald-600/90 backdrop-blur-sm text-white text-[11px] font-bold px-3 py-1 rounded-full flex items-center gap-1.5 shadow-md">
+                    <Check className="w-3.5 h-3.5" /> Foto Berhasil Ditangkap
+                  </div>
+                </div>
+              ) : cameraError ? (
+                /* Pesan Error Kamera */
+                <div className="p-6 text-center max-w-sm space-y-3">
+                  <AlertCircle className="w-10 h-10 text-rose-500 mx-auto" />
+                  <p className="text-xs text-rose-300 leading-relaxed">{cameraError}</p>
+                  <button
+                    type="button"
+                    onClick={() => startCamera(facingMode)}
+                    className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-xs font-bold rounded-xl text-white inline-flex items-center gap-1.5"
+                  >
+                    <RotateCw className="w-3.5 h-3.5" /> Coba Lagi
+                  </button>
+                </div>
+              ) : (
+                /* Live Camera Stream */
+                <>
+                  <video
+                    ref={videoRef}
+                    autoPlay
+                    playsInline
+                    muted
+                    className={`w-full h-full object-cover ${facingMode === 'user' ? '-scale-x-100' : ''}`}
+                  />
+
+                  {/* Oval Face Guide Overlay */}
+                  <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                    <div className="w-44 h-56 border-2 border-dashed border-emerald-400/90 rounded-[50%] shadow-[0_0_0_9999px_rgba(0,0,0,0.5)]" />
+                    <span className="mt-3 text-[11px] font-medium text-emerald-200 bg-black/70 px-3 py-1 rounded-full backdrop-blur-sm">
+                      Posisikan wajah Anda di dalam bingkai oval
+                    </span>
+                  </div>
+
+                  {cameraLoading && (
+                    <div className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center space-y-2">
+                      <Loader2 className="w-8 h-8 text-emerald-400 animate-spin" />
+                      <p className="text-xs text-slate-300">Menghubungkan ke kamera...</p>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+
+            {/* Modal Controls Footer */}
+            <div className="p-4 border-t border-slate-800 bg-slate-950/60 flex items-center justify-between gap-3">
+              {capturedSelfie ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={handleRetakePhoto}
+                    disabled={isUploadingSelfie}
+                    className="flex-1 py-2.5 px-4 text-xs font-bold rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 transition-colors flex items-center justify-center gap-2"
+                  >
+                    <RotateCw className="w-3.5 h-3.5" /> Ulangi Foto
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleUploadCapturedSelfie}
+                    disabled={isUploadingSelfie}
+                    className="flex-1 py-2.5 px-4 text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white transition-all shadow-md shadow-emerald-600/30 flex items-center justify-center gap-2"
+                  >
+                    {isUploadingSelfie ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" /> Menyimpan Foto...
+                      </>
+                    ) : (
+                      <>
+                        <Check className="w-3.5 h-3.5" /> Gunakan & Simpan Foto
+                      </>
+                    )}
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    onClick={handleSwitchCamera}
+                    disabled={cameraLoading || !!cameraError}
+                    className="py-2 px-3 text-xs font-semibold rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors flex items-center gap-1.5"
+                    title="Ganti Kamera Depan/Belakang"
+                  >
+                    <RotateCw className="w-3.5 h-3.5" /> Ganti Kamera
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleCapturePhoto}
+                    disabled={cameraLoading || !!cameraError}
+                    className="py-2.5 px-6 text-xs font-bold rounded-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 transition-all shadow-lg shadow-emerald-500/25 flex items-center gap-2"
+                  >
+                    <Camera className="w-4 h-4" /> Ambil Foto
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={closeCameraModal}
+                    className="py-2 px-3 text-xs font-semibold rounded-xl bg-transparent hover:bg-slate-800 text-slate-400 transition-colors"
+                  >
+                    Batal
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Toast Notification Dialog */}
       {toast && (
