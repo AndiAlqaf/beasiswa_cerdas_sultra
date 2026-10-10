@@ -240,11 +240,11 @@ export default function BerkasPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Check size limit (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
+    // Check size limit (max 2MB — must match backend MAX_FILE_SIZES)
+    if (file.size > 2 * 1024 * 1024) {
       setToast({
         title: 'Ukuran File Terlalu Besar',
-        message: `Ukuran file ${file.name} melebihi batas maksimum 5MB. Silakan kompres file Anda.`,
+        message: `Ukuran file ${file.name} melebihi batas maksimum 2MB. Silakan kompres file Anda.`,
         type: 'error',
       });
       e.target.value = '';

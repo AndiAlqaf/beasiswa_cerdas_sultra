@@ -56,6 +56,40 @@ interface FetchOptions extends RequestInit {
 }
 
 /**
+ * fetch() wrapper that never leaks the raw browser message "Failed to fetch".
+ * That error means NO HTTP response was received at all (connection dropped,
+ * reset while uploading, server restarting, device offline, etc.).
+ * Idempotent GET requests are retried once to absorb transient drops.
+ */
+async function safeFetch(url: string, init: RequestInit): Promise<Response> {
+  const method = (init.method || 'GET').toUpperCase();
+  try {
+    return await fetch(url, init);
+  } catch (firstErr) {
+    let lastErr: unknown = firstErr;
+
+    if (method === 'GET') {
+      await new Promise((resolve) => setTimeout(resolve, 800));
+      try {
+        return await fetch(url, init);
+      } catch (secondErr) {
+        lastErr = secondErr;
+      }
+    }
+
+    const offline = typeof navigator !== 'undefined' && navigator.onLine === false;
+    const error = new Error(
+      offline
+        ? 'Perangkat Anda sedang tidak terhubung ke internet. Periksa koneksi lalu coba lagi.'
+        : 'Koneksi ke server terputus sebelum selesai. Pastikan sinyal stabil lalu coba lagi. Jika sedang mengunggah berkas, pastikan ukuran file maksimal 2 MB.'
+    ) as any;
+    error.isNetworkError = true;
+    error.originalError = lastErr;
+    throw error;
+  }
+}
+
+/**
  * Universal Fetch API wrapper with automatic authentication & token refresh retry
  */
 export async function fetchAPI(endpoint: string, options: FetchOptions = {}): Promise<any> {
@@ -77,7 +111,7 @@ export async function fetchAPI(endpoint: string, options: FetchOptions = {}): Pr
   // Always route through relative path /api/v1 to keep backend hidden
   const url = endpoint.startsWith('/api/v1') ? endpoint : `/api/v1${endpoint.startsWith('/') ? '' : '/'}${endpoint}`;
 
-  let res = await fetch(url, {
+  let res = await safeFetch(url, {
     ...customOptions,
     headers,
     body,
@@ -100,7 +134,7 @@ export async function fetchAPI(endpoint: string, options: FetchOptions = {}): Pr
             setTokens(refreshData.data.accessToken, refreshData.data.refreshToken || refreshToken);
             // Retry original request with new token
             headers['Authorization'] = `Bearer ${refreshData.data.accessToken}`;
-            res = await fetch(url, {
+            res = await safeFetch(url, {
               ...customOptions,
               headers,
               body,

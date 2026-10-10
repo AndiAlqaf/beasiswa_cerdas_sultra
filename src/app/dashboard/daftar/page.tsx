@@ -365,6 +365,16 @@ export default function RegistrationPage() {
   }, [isProfileLoaded, isSubmitted, currentStep, formData, signatureDataUrl]);
 
   const handleDocumentUpload = async (docKey: string, docType: string, file: File) => {
+    // Must match backend MAX_FILE_SIZES (2 MB). Checking here avoids sending a huge
+    // body that the server will reject mid-upload (appears as "Failed to fetch").
+    const MAX_UPLOAD_BYTES = 2 * 1024 * 1024;
+    if (file.size > MAX_UPLOAD_BYTES) {
+      alert(
+        `Ukuran file "${file.name}" (${(file.size / 1024 / 1024).toFixed(1)} MB) melebihi batas 2 MB.\n\nSilakan kecilkan/kompres file terlebih dahulu, lalu unggah kembali.`
+      );
+      return;
+    }
+
     setUploadingDocKey(docKey);
     try {
       const uploadFormData = new FormData();
