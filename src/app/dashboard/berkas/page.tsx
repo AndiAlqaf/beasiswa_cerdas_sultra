@@ -11,6 +11,7 @@ interface DocumentInfo {
   mimeType: string;
   fileSize: number;
   uploadedAt: string;
+  isMissing?: boolean;
 }
 
 const isDocTypeMatch = (doc: DocumentInfo, targetKey: string) => {
@@ -35,6 +36,7 @@ const isDocTypeMatch = (doc: DocumentInfo, targetKey: string) => {
 
 export default function BerkasPage() {
   const [documents, setDocuments] = useState<DocumentInfo[]>([]);
+  const [missingDocuments, setMissingDocuments] = useState<string[]>([]);
   const [jenjang, setJenjang] = useState<string>('S1');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -205,6 +207,7 @@ export default function BerkasPage() {
       const res = await fetchAPI('/applicant/profile');
       if (res.success && res.data) {
         setDocuments(res.data.documents || []);
+        setMissingDocuments(res.data.missingDocuments || []);
         if (res.data.user?.jenjangTarget) {
           setJenjang(res.data.user.jenjangTarget);
         }
@@ -350,6 +353,23 @@ export default function BerkasPage() {
         </div>
       </div>
 
+      {/* Banner Peringatan Berkas Hilang */}
+      {missingDocuments && missingDocuments.length > 0 && (
+        <div className="bg-gradient-to-r from-rose-50 to-amber-50 border-2 border-rose-300 rounded-3xl p-6 shadow-md flex items-start gap-4 animate-in fade-in">
+          <div className="p-3 bg-rose-600 text-white rounded-2xl shadow-xs shrink-0">
+            <AlertCircle className="w-6 h-6 animate-pulse" />
+          </div>
+          <div className="space-y-1">
+            <h3 className="text-base sm:text-lg font-extrabold text-rose-950">
+              Perhatian: Beberapa Berkas Anda Perlu Diunggah Ulang
+            </h3>
+            <p className="text-xs sm:text-sm text-slate-700 leading-relaxed font-medium">
+              Dokumen dengan label <span className="font-extrabold text-rose-700 bg-rose-100 px-2 py-0.5 rounded">⚠️ File Perlu Diunggah Ulang</span> di bawah mengalami kendala sinkronisasi pada server. Mohon pilih dan unggah kembali berkas fisik yang sesuai.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Grid Dokumen */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         {documentTypes.map((docTypeItem) => {
@@ -357,12 +377,15 @@ export default function BerkasPage() {
           const uploadedDoc = matchingDocs[matchingDocs.length - 1]; // Latest uploaded file
           const hasMultipleVersions = matchingDocs.length > 1;
           const isUploading = uploadingKey === docTypeItem.key;
+          const isFileMissing = !!uploadedDoc?.isMissing || missingDocuments.some(mKey => isDocTypeMatch({ docType: mKey } as any, docTypeItem.key));
 
           return (
             <div
               key={docTypeItem.key}
               className={`rounded-3xl p-6 transition-all flex flex-col justify-between border ${
-                uploadedDoc
+                isFileMissing
+                  ? 'bg-rose-50/40 border-rose-300 shadow-sm ring-1 ring-rose-200'
+                  : uploadedDoc
                   ? 'bg-white border-slate-200 shadow-sm hover:shadow-md'
                   : 'bg-slate-50/80 border-dashed border-slate-300'
               }`}
@@ -380,15 +403,21 @@ export default function BerkasPage() {
                 {/* Header Badge */}
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2">
-                    <span className={`text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${
-                      uploadedDoc
-                        ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
-                        : docTypeItem.required
-                        ? 'bg-amber-100 text-amber-800 border-amber-200'
-                        : 'bg-slate-200 text-slate-600 border-slate-300'
-                    }`}>
-                      {uploadedDoc ? '✓ Tersimpan' : docTypeItem.required ? 'Wajib Unggah' : 'Opsional'}
-                    </span>
+                    {isFileMissing ? (
+                      <span className="text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full border bg-rose-600 text-white border-rose-700 shadow-2xs animate-pulse">
+                        ⚠️ File Perlu Diunggah Ulang
+                      </span>
+                    ) : (
+                      <span className={`text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${
+                        uploadedDoc
+                          ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
+                          : docTypeItem.required
+                          ? 'bg-amber-100 text-amber-800 border-amber-200'
+                          : 'bg-slate-200 text-slate-600 border-slate-300'
+                      }`}>
+                        {uploadedDoc ? '✓ Tersimpan' : docTypeItem.required ? 'Wajib Unggah' : 'Opsional'}
+                      </span>
+                    )}
                     {hasMultipleVersions && (
                       <span className="text-[10px] font-extrabold uppercase bg-amber-100 text-amber-900 border border-amber-300 px-2 py-0.5 rounded-full">
                         🆕 Sanggahan Baru (#{matchingDocs.length})
@@ -401,6 +430,13 @@ export default function BerkasPage() {
                     )}
                   </div>
                 </div>
+
+                {isFileMissing && (
+                  <div className="p-3 bg-rose-100/80 border border-rose-300 rounded-2xl flex items-center gap-2 text-rose-900 text-xs font-bold mb-3 shadow-2xs">
+                    <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                    <span>File fisik dokumen ini belum terbaca di server. Silakan pilih & unggah ulang file ini.</span>
+                  </div>
+                )}
 
                 {/* Doc Title & Description */}
                 <h3 className="font-bold text-slate-900 text-base mb-1">{docTypeItem.label}</h3>

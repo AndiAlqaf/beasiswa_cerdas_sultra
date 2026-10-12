@@ -407,6 +407,98 @@ async function listUsers(req, res) {
   }
 }
 
+/**
+ * POST /api/v1/admin/broadcast-missing-files-email
+ * Mengirimkan email notifikasi unggah ulang berkas secara otomatis ke pendaftar yang berkasnya hilang
+ */
+async function broadcastMissingDocsEmail(req, res) {
+  try {
+    const pool = getPool();
+    const fs = require('fs');
+
+    const [docs] = await pool.execute(`
+      SELECT d.id AS docId, d.user_id, d.doc_type, d.file_path, d.original_name,
+             u.email, u.nama_lengkap, p.selfie_path, p.no_hp
+      FROM documents d
+      JOIN users u ON u.id = d.user_id
+      LEFT JOIN profiles p ON p.user_id = u.id
+    `);
+
+    const missingByUser = new Map();
+    for (const doc of docs) {
+      const exists = doc.file_path && fs.existsSync(doc.file_path);
+      if (!exists) {
+        if (!missingByUser.has(doc.email)) {
+          missingByUser.set(doc.email, {
+            email: doc.email,
+            namaLengkap: doc.nama_lengkap || 'Pendaftar',
+            missingDocs: new Set(),
+          });
+        }
+        missingByUser.get(doc.email).missingDocs.add(doc.doc_type);
+      }
+    }
+
+    const [profiles] = await pool.execute(`
+      SELECT p.user_id, p.selfie_path, u.email, u.nama_lengkap
+      FROM profiles p
+      JOIN users u ON u.id = p.user_id
+      WHERE p.selfie_path IS NOT NULL AND p.selfie_path != ''
+    `);
+
+    for (const prof of profiles) {
+      if (prof.selfie_path && !fs.existsSync(prof.selfie_path)) {
+        if (!missingByUser.has(prof.email)) {
+          missingByUser.set(prof.email, {
+            email: prof.email,
+            namaLengkap: prof.nama_lengkap || 'Pendaftar',
+            missingDocs: new Set(),
+          });
+        }
+        missingByUser.get(prof.email).missingDocs.add('selfie');
+      }
+    }
+
+    const recipients = Array.from(missingByUser.values()).map(r => ({
+      ...r,
+      missingDocList: Array.from(r.missingDocs),
+    }));
+
+    if (recipients.length === 0) {
+      return res.json({ success: true, message: 'Semua berkas aman. Tidak ada berkas fisik yang hilang terdeteksi.', totalSent: 0 });
+    }
+
+    // Jalankan pengiriman di background agar request HTTP admin tidak timeout
+    (async () => {
+      const { sendMail } = require('../utils/mailer');
+      const { generateEmailHtml } = require('../../broadcast_missing_docs_email');
+      for (const r of recipients) {
+        try {
+          const html = generateEmailHtml(r.namaLengkap, r.missingDocList);
+          await sendMail({
+            to: r.email,
+            subject: `[PENTING] Pemberitahuan Unggah Ulang Berkas - ${r.namaLengkap}`,
+            html,
+          });
+          await new Promise(resolve => setTimeout(resolve, 1200));
+        } catch (e) {
+          log(LOG_LEVELS.ERROR, `Failed sending missing docs email to ${r.email}: ${e.message}`);
+        }
+      }
+    })().catch(e => log(LOG_LEVELS.ERROR, `Background broadcast error: ${e.message}`));
+
+    res.json({
+      success: true,
+      message: `Proses pengiriman email resmi ke ${recipients.length} mahasiswa telah dimulai di latar belakang.`,
+      totalRecipients: recipients.length,
+      sampleRecipients: recipients.slice(0, 5),
+    });
+  } catch (err) {
+    log(LOG_LEVELS.ERROR, `Broadcast missing docs email error: ${err.message}`);
+    res.status(500).json({ success: false, message: 'Gagal memproses broadcast email.' });
+  }
+}
+
 module.exports = {
   getDashboard,
   listApplicants,
@@ -414,4 +506,5 @@ module.exports = {
   verifyApplicant,
   viewDocument,
   listUsers,
+  broadcastMissingDocsEmail,
 };

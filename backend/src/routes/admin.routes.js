@@ -19,6 +19,7 @@ const {
   verifyApplicant,
   viewDocument,
   listUsers,
+  broadcastMissingDocsEmail,
 } = require('../controllers/admin.controller');
 
 // All routes require authentication as admin
@@ -36,5 +37,8 @@ router.get('/applicants', paginationValidation, listApplicants);
 router.get('/applicants/:id', getApplicantDetail);
 router.get('/applicants/:id/documents/:docId/view', viewDocument);
 router.patch('/applicants/:id/verify', verifyStatusValidation, verifyApplicant);
+
+// Broadcast email pemberitahuan unggah ulang berkas hilang
+router.post('/broadcast-missing-files-email', broadcastMissingDocsEmail);
 
 module.exports = router;

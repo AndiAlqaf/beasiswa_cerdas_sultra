@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { CheckCircle2, XCircle, Clock, FileText, ExternalLink, Search, X, Loader2, AlertCircle, Printer, RefreshCw } from 'lucide-react';
+import { CheckCircle2, XCircle, Clock, FileText, ExternalLink, Search, X, Loader2, AlertCircle, Printer, RefreshCw, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import { fetchAPI } from '@/lib/api';
 
 const getDocTitle = (key: string) => {
@@ -95,6 +95,14 @@ export default function SeleksiPage() {
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [jenjangFilter, setJenjangFilter] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<string>('');
+  const [page, setPage] = useState<number>(1);
+  const [limit, setLimit] = useState<number>(20);
+  const [pagination, setPagination] = useState<{
+    currentPage: number;
+    totalPages: number;
+    totalItems: number;
+    itemsPerPage: number;
+  } | null>(null);
 
   // Custom Toast/Notification Modal State
   const [toast, setToast] = useState<{
@@ -204,11 +212,13 @@ export default function SeleksiPage() {
     }
   };
 
-  const loadApplicants = async () => {
+  const loadApplicants = async (pageToLoad = page, limitToLoad = limit) => {
     setLoading(true);
     setError(null);
     try {
       const params = new URLSearchParams();
+      params.set('page', String(pageToLoad));
+      params.set('limit', String(limitToLoad));
       if (searchTerm.trim()) params.set('search', searchTerm.trim());
       if (jenjangFilter) params.set('jenjang', jenjangFilter);
       if (statusFilter) params.set('status', statusFilter);
@@ -216,6 +226,7 @@ export default function SeleksiPage() {
       const res = await fetchAPI(`/admin/applicants?${params.toString()}`);
       if (res.success && res.data) {
         setApplicants(res.data.applicants || []);
+        setPagination(res.data.pagination || null);
       }
     } catch (err: any) {
       setError(err.message || 'Gagal memuat data seleksi pendaftar.');
@@ -225,8 +236,8 @@ export default function SeleksiPage() {
   };
 
   useEffect(() => {
-    loadApplicants();
-  }, [jenjangFilter, statusFilter]);
+    loadApplicants(page, limit);
+  }, [page, jenjangFilter, statusFilter, limit]);
 
   const handleOpenDetail = async (applicant: any) => {
     setSelectedApplicant(applicant);
@@ -246,7 +257,11 @@ export default function SeleksiPage() {
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    loadApplicants();
+    if (page === 1) {
+      loadApplicants(1, limit);
+    } else {
+      setPage(1);
+    }
   };
 
   return (
@@ -261,7 +276,10 @@ export default function SeleksiPage() {
         <form onSubmit={handleSearchSubmit} className="flex flex-col sm:flex-row gap-3">
           <select 
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
+            onChange={(e) => {
+              setStatusFilter(e.target.value);
+              setPage(1);
+            }}
             className="px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm w-full sm:w-auto"
           >
             <option value="">Semua Status</option>
@@ -273,7 +291,10 @@ export default function SeleksiPage() {
           </select>
           <select 
             value={jenjangFilter}
-            onChange={(e) => setJenjangFilter(e.target.value)}
+            onChange={(e) => {
+              setJenjangFilter(e.target.value);
+              setPage(1);
+            }}
             className="px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm w-full sm:w-auto"
           >
             <option value="">Semua Jenjang</option>
@@ -370,6 +391,93 @@ export default function SeleksiPage() {
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Pagination Bar */}
+        <div className="p-4 border-t border-slate-100 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-slate-600 bg-slate-50/50">
+          <div className="flex flex-wrap items-center gap-3">
+            <span>
+              Menampilkan{' '}
+              <strong className="text-slate-900 font-bold">
+                {pagination && pagination.totalItems > 0 
+                  ? (pagination.currentPage - 1) * pagination.itemsPerPage + 1 
+                  : 0}
+              </strong>{' '}
+              -{' '}
+              <strong className="text-slate-900 font-bold">
+                {pagination 
+                  ? Math.min(pagination.currentPage * pagination.itemsPerPage, pagination.totalItems) 
+                  : applicants.length}
+              </strong>{' '}
+              dari{' '}
+              <strong className="text-slate-900 font-bold">
+                {pagination?.totalItems ?? applicants.length}
+              </strong>{' '}
+              pendaftar
+            </span>
+            <div className="flex items-center gap-1.5 ml-2 border-l border-slate-200 pl-3">
+              <span className="text-slate-500 font-medium">Per halaman:</span>
+              <select
+                value={limit}
+                onChange={(e) => {
+                  setLimit(Number(e.target.value));
+                  setPage(1);
+                }}
+                className="px-2.5 py-1 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-2xs"
+              >
+                <option value={10}>10</option>
+                <option value={20}>20</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              disabled={page <= 1 || loading}
+              onClick={() => setPage(1)}
+              className="px-2.5 py-1.5 border border-slate-200 bg-white rounded-lg hover:bg-slate-50 disabled:opacity-40 disabled:hover:bg-white font-medium text-slate-700 transition-colors shadow-2xs flex items-center gap-1"
+              title="Halaman Pertama"
+            >
+              <ChevronsLeft className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Pertama</span>
+            </button>
+            <button
+              type="button"
+              disabled={page <= 1 || loading}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              className="px-3 py-1.5 border border-slate-200 bg-white rounded-lg hover:bg-slate-50 disabled:opacity-40 disabled:hover:bg-white font-semibold text-slate-700 transition-colors shadow-2xs flex items-center gap-1"
+            >
+              <ChevronLeft className="w-3.5 h-3.5" />
+              <span>Sebelumnya</span>
+            </button>
+
+            <span className="px-3 py-1.5 bg-blue-50 border border-blue-200 text-[#0B3A6A] font-bold rounded-lg text-xs">
+              Hal {pagination?.currentPage || page} / {pagination?.totalPages || 1}
+            </span>
+
+            <button
+              type="button"
+              disabled={page >= (pagination?.totalPages || 1) || loading}
+              onClick={() => setPage((p) => Math.min(pagination?.totalPages || 1, p + 1))}
+              className="px-3 py-1.5 border border-slate-200 bg-white rounded-lg hover:bg-slate-50 disabled:opacity-40 disabled:hover:bg-white font-semibold text-slate-700 transition-colors shadow-2xs flex items-center gap-1"
+            >
+              <span>Selanjutnya</span>
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              disabled={page >= (pagination?.totalPages || 1) || loading}
+              onClick={() => setPage(pagination?.totalPages || 1)}
+              className="px-2.5 py-1.5 border border-slate-200 bg-white rounded-lg hover:bg-slate-50 disabled:opacity-40 disabled:hover:bg-white font-medium text-slate-700 transition-colors shadow-2xs flex items-center gap-1"
+              title="Halaman Terakhir"
+            >
+              <span className="hidden sm:inline">Terakhir</span>
+              <ChevronsRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
         </div>
       </div>
 

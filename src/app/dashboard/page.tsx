@@ -10,6 +10,7 @@ export default function DashboardPage() {
   const [user, setUser] = useState<any>(null);
   const [application, setApplication] = useState<any>(null);
   const [documents, setDocuments] = useState<any[]>([]);
+  const [missingDocuments, setMissingDocuments] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [scheduleConfig, setScheduleConfig] = useState<ScheduleConfig>(getStoredScheduleConfig());
 
@@ -109,6 +110,7 @@ export default function DashboardPage() {
             ...p,
           }));
           setDocuments(profileRes.data.documents || []);
+          setMissingDocuments(profileRes.data.missingDocuments || []);
           if (p.namaBank) setNamaBank(p.namaBank);
           if (p.noRekening) setNoRekening(p.noRekening);
           if (p.namaRekening) setNamaRekening(p.namaRekening);
@@ -167,6 +169,34 @@ export default function DashboardPage() {
 
   const userName = user?.namaLengkap || user?.email || 'Peserta';
   const hasSubmitted = !!application?.registrationNo;
+
+  const getDocLabel = (docType: string) => {
+    const map: Record<string, string> = {
+      ktm: 'KTM / Surat Aktif Kuliah',
+      surataktif: 'Surat Aktif Kuliah',
+      filesurataktif: 'Surat Aktif Kuliah',
+      selfie: 'Pasfoto / Foto Wajah (Selfie)',
+      pasfoto: 'Pasfoto / Foto Wajah',
+      filepasfoto: 'Pasfoto / Foto Wajah',
+      transkrip: 'Transkrip Nilai Akademik',
+      filetranskrip: 'Transkrip Nilai Akademik',
+      pernyataan: 'Surat Pernyataan Bebas Beasiswa',
+      suratpernyataan: 'Surat Pernyataan Bebas Beasiswa',
+      surat_pernyataan: 'Surat Pernyataan Bebas Beasiswa',
+      ktp: 'Kartu Tanda Penduduk (KTP)',
+      filektp: 'Kartu Tanda Penduduk (KTP)',
+      dtks: 'Bukti DTKS / Suket Tidak Mampu / Ijazah',
+      filedtks: 'Bukti DTKS / Suket Tidak Mampu / Ijazah',
+      pendukung: 'Berkas Sertifikat / Prestasi',
+      surat_permohonan: 'Surat Permohonan',
+      suratpermohonan: 'Surat Permohonan',
+      filesuratpermohonan: 'Surat Permohonan',
+      esai: 'Motivation Letter / Esai',
+      filemotivationoresai: 'Motivation Letter / Esai',
+    };
+    const clean = (docType || '').toLowerCase().replace(/[^a-z0-9_]/g, '');
+    return map[clean] || docType.toUpperCase();
+  };
 
   const getStatusBadge = (status?: string) => {
     switch (status) {
@@ -241,6 +271,55 @@ export default function DashboardPage() {
           </p>
         </div>
       </div>
+
+      {/* Banner Peringatan Khusus Berkas Hilang / Perlu Diunggah Ulang */}
+      {missingDocuments && missingDocuments.length > 0 && (
+        <div className="bg-gradient-to-r from-rose-50 via-amber-50/80 to-rose-50 border-2 border-rose-300 rounded-3xl p-6 sm:p-7 shadow-md animate-in fade-in duration-300">
+          <div className="flex flex-col sm:flex-row items-start gap-4">
+            <div className="p-3 bg-rose-600 text-white rounded-2xl shadow-sm shrink-0">
+              <AlertCircle className="w-7 h-7 animate-pulse" />
+            </div>
+            <div className="flex-1 space-y-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="px-2.5 py-0.5 bg-rose-600 text-white text-[10px] font-extrabold uppercase tracking-wider rounded-full shadow-2xs">
+                  Penting & Mendesak
+                </span>
+                <span className="text-xs text-rose-800 font-bold">
+                  Sinkronisasi Server Dokumen
+                </span>
+              </div>
+              <h3 className="text-lg sm:text-xl font-extrabold text-rose-950">
+                Pemberitahuan: {missingDocuments.length} Berkas Anda Perlu Diunggah Ulang
+              </h3>
+              <p className="text-xs sm:text-sm text-slate-700 leading-relaxed font-medium">
+                Sistem mendeteksi bahwa berkas fisik berikut belum terbaca dengan sempurna pada server pusat verifikasi. Agar proses validasi berkas dan seleksi Anda tidak dibatalkan oleh tim penilai, mohon segera unggah kembali berkas fisik berikut:
+              </p>
+              <div className="flex flex-wrap gap-2 pt-1 pb-1">
+                {missingDocuments.map((docKey: string, i: number) => (
+                  <span
+                    key={i}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-rose-300 text-rose-900 font-extrabold text-xs rounded-xl shadow-2xs"
+                  >
+                    <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span>
+                    {getDocLabel(docKey)}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+          <div className="mt-5 pt-4 border-t border-rose-200/80 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <p className="text-xs text-slate-600 font-medium">
+              💡 Klik tombol di samping untuk langsung membuka form unggah ulang berkas di menu Berkas Persyaratan.
+            </p>
+            <Link
+              href="/dashboard/berkas"
+              className="w-full sm:w-auto px-6 py-3 bg-rose-600 hover:bg-rose-700 active:scale-[0.98] text-white font-extrabold text-xs sm:text-sm rounded-xl shadow-md transition-all flex items-center justify-center gap-2"
+            >
+              Unggah Ulang Berkas Sekarang <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Status Card */}

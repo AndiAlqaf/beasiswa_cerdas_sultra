@@ -42,10 +42,36 @@ async function getProfile(req, res) {
       [userId]
     );
 
+    const fs = require('fs');
     const [documents] = await pool.execute(
-      'SELECT id, doc_type, original_name, mime_type, file_size, uploaded_at FROM documents WHERE user_id = ?',
+      'SELECT id, doc_type, file_path, original_name, mime_type, file_size, uploaded_at FROM documents WHERE user_id = ?',
       [userId]
     );
+
+    const missingDocuments = [];
+    const docList = [];
+    for (const doc of documents) {
+      const exists = !!(doc.file_path && fs.existsSync(doc.file_path));
+      if (!exists) {
+        missingDocuments.push(doc.doc_type);
+      }
+      docList.push({
+        id: doc.id,
+        docType: doc.doc_type,
+        originalName: doc.original_name,
+        mimeType: doc.mime_type,
+        fileSize: doc.file_size,
+        uploadedAt: doc.uploaded_at,
+        isMissing: !exists,
+      });
+    }
+
+    const selfiePhysicallyExists = !!(user.selfie_path && fs.existsSync(user.selfie_path));
+    if (user.selfie_path && !selfiePhysicallyExists) {
+      if (!missingDocuments.includes('selfie') && !missingDocuments.includes('filePasfoto')) {
+        missingDocuments.push('selfie');
+      }
+    }
 
     const [appRows] = await pool.execute(
       'SELECT id, registration_no, status, notes, submitted_at, verified_at FROM applications WHERE user_id = ?',
@@ -74,7 +100,7 @@ async function getProfile(req, res) {
           gender: user.gender, noHp: user.no_hp,
           statusPernikahan: user.status_pernikahan, alamatDomisili: user.alamat_domisili,
           asalDaerah: user.asal_daerah,
-          hasSelfie: !!user.selfie_path,
+          hasSelfie: selfiePhysicallyExists,
           perguruanTinggi: user.perguruan_tinggi,
           fakultasProdi: user.fakultas_prodi,
           noKk: user.no_kk,
@@ -104,10 +130,9 @@ async function getProfile(req, res) {
           namaRekening: user.nama_rekening
         },
         education,
-        documents: documents.map(doc => ({
-          id: doc.id, docType: doc.doc_type, originalName: doc.original_name,
-          mimeType: doc.mime_type, fileSize: doc.file_size, uploadedAt: doc.uploaded_at,
-        })),
+        documents: docList,
+        missingDocuments: [...new Set(missingDocuments)],
+        hasMissingFiles: missingDocuments.length > 0,
         application
       },
     });
@@ -338,11 +363,14 @@ function uploadDocument(docType) {
                             appNotes.toLowerCase().includes('sanggah') ||
                             appNotes.includes('[SANGGAHAN');
 
-      if (!isAppealState) {
-        // Initial registration phase (not sanggahan): replace/delete old document of same type
-        const [oldDocs] = await pool.execute('SELECT id, file_path FROM documents WHERE user_id = ? AND doc_type = ?', [userId, docType]);
+      // Check if any existing document of this type is missing physically from disk
+      const [oldDocs] = await pool.execute('SELECT id, file_path FROM documents WHERE user_id = ? AND doc_type = ?', [userId, docType]);
+      const hasMissingPhysicalFile = oldDocs.length > 0 && oldDocs.some(d => !d.file_path || !fs.existsSync(d.file_path));
+
+      if (!isAppealState || hasMissingPhysicalFile) {
+        // Replace and cleanup broken/old document record of same type
         for (const oldDoc of oldDocs) {
-          if (fs.existsSync(oldDoc.file_path)) {
+          if (oldDoc.file_path && fs.existsSync(oldDoc.file_path)) {
             try { fs.unlinkSync(oldDoc.file_path); } catch (e) {}
           }
           await pool.execute('DELETE FROM documents WHERE id = ?', [oldDoc.id]);
