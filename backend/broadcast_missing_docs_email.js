@@ -173,67 +173,112 @@ async function main() {
   console.log('Sender From:', env.EMAIL_FROM);
   console.log('----------------------------------------------------');
 
-  const pool = getPool();
+  const csvPath = path.join(__dirname, 'data_pendaftar_berkas_hilang.csv');
+  let recipients = [];
 
-  // 1. Ambil seluruh berkas yang ada di database beserta informasi user
-  const [docs] = await pool.execute(`
-    SELECT d.id AS docId, d.user_id, d.doc_type, d.file_path, d.original_name,
-           u.email, u.nama_lengkap, p.selfie_path, p.no_hp
-    FROM documents d
-    JOIN users u ON u.id = d.user_id
-    LEFT JOIN profiles p ON p.user_id = u.id
-  `);
+  if (fs.existsSync(csvPath)) {
+    console.log(`[INFO] Memuat data dari file CSV resmi: ${csvPath}`);
+    const rawCsv = fs.readFileSync(csvPath, 'utf8').trim().split('\n');
+    for (let i = 1; i < rawCsv.length; i++) {
+      const line = rawCsv[i].trim();
+      if (!line || line.startsWith('NAMA,EMAIL')) continue;
 
-  // 2. Filter berkas yang file fisiknya tidak ada di disk
-  const missingByUser = new Map();
+      // Regex parser untuk menangani baris CSV dengan kutip pada nama atau jenis_dokumen
+      const regex = /(".*?"|[^",\s]+(?:\s+[^",\s]+)*?),\s*([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}),\s*([^,]*),\s*(\d+),\s*(.*)/;
+      const match = line.match(regex);
 
-  for (const doc of docs) {
-    const filePath = doc.file_path;
-    const exists = filePath && fs.existsSync(filePath);
+      let nama = '';
+      let email = '';
+      let noHp = '';
+      let docsStr = '';
 
-    if (!exists) {
-      if (!missingByUser.has(doc.email)) {
-        missingByUser.set(doc.email, {
-          userId: doc.user_id,
-          email: doc.email,
-          namaLengkap: doc.nama_lengkap || 'Pendaftar',
-          noHp: doc.no_hp || '-',
-          missingDocs: new Set(),
+      if (match) {
+        nama = match[1].replace(/^"|"$/g, '').trim();
+        email = match[2].trim();
+        noHp = match[3].trim();
+        docsStr = match[5].replace(/^"|"$/g, '').trim();
+      } else {
+        const parts = line.split(',');
+        nama = (parts[0] || '').replace(/^"|"$/g, '').trim();
+        email = (parts[1] || '').trim();
+        noHp = (parts[2] || '').trim();
+        docsStr = parts.slice(4).join(',').replace(/^"|"$/g, '').trim();
+      }
+
+      if (email && email.includes('@')) {
+        const docList = docsStr.split(',').map(s => s.trim()).filter(Boolean);
+        recipients.push({
+          namaLengkap: nama || 'Pendaftar',
+          email,
+          noHp,
+          missingDocList: docList.length > 0 ? docList : ['Dokumen Persyaratan'],
         });
       }
-      missingByUser.get(doc.email).missingDocs.add(doc.doc_type);
     }
-  }
+  } else {
+    console.log('[INFO] File CSV tidak ditemukan, melakukan audit langsung dari database MySQL...');
+    const pool = getPool();
 
-  // Periksa juga selfie di profiles
-  const [profiles] = await pool.execute(`
-    SELECT p.user_id, p.selfie_path, u.email, u.nama_lengkap, p.no_hp
-    FROM profiles p
-    JOIN users u ON u.id = p.user_id
-    WHERE p.selfie_path IS NOT NULL AND p.selfie_path != ''
-  `);
+    // 1. Ambil seluruh berkas yang ada di database beserta informasi user
+    const [docs] = await pool.execute(`
+      SELECT d.id AS docId, d.user_id, d.doc_type, d.file_path, d.original_name,
+             u.email, u.nama_lengkap, p.selfie_path, p.no_hp
+      FROM documents d
+      JOIN users u ON u.id = d.user_id
+      LEFT JOIN profiles p ON p.user_id = u.id
+    `);
 
-  for (const prof of profiles) {
-    if (prof.selfie_path && !fs.existsSync(prof.selfie_path)) {
-      if (!missingByUser.has(prof.email)) {
-        missingByUser.set(prof.email, {
-          userId: prof.user_id,
-          email: prof.email,
-          namaLengkap: prof.nama_lengkap || 'Pendaftar',
-          noHp: prof.no_hp || '-',
-          missingDocs: new Set(),
-        });
+    // 2. Filter berkas yang file fisiknya tidak ada di disk
+    const missingByUser = new Map();
+
+    for (const doc of docs) {
+      const filePath = doc.file_path;
+      const exists = filePath && fs.existsSync(filePath);
+
+      if (!exists) {
+        if (!missingByUser.has(doc.email)) {
+          missingByUser.set(doc.email, {
+            userId: doc.user_id,
+            email: doc.email,
+            namaLengkap: doc.nama_lengkap || 'Pendaftar',
+            noHp: doc.no_hp || '-',
+            missingDocs: new Set(),
+          });
+        }
+        missingByUser.get(doc.email).missingDocs.add(doc.doc_type);
       }
-      missingByUser.get(prof.email).missingDocs.add('selfie');
     }
+
+    // Periksa juga selfie di profiles
+    const [profiles] = await pool.execute(`
+      SELECT p.user_id, p.selfie_path, u.email, u.nama_lengkap, p.no_hp
+      FROM profiles p
+      JOIN users u ON u.id = p.user_id
+      WHERE p.selfie_path IS NOT NULL AND p.selfie_path != ''
+    `);
+
+    for (const prof of profiles) {
+      if (prof.selfie_path && !fs.existsSync(prof.selfie_path)) {
+        if (!missingByUser.has(prof.email)) {
+          missingByUser.set(prof.email, {
+            userId: prof.user_id,
+            email: prof.email,
+            namaLengkap: prof.nama_lengkap || 'Pendaftar',
+            noHp: prof.no_hp || '-',
+            missingDocs: new Set(),
+          });
+        }
+        missingByUser.get(prof.email).missingDocs.add('selfie');
+      }
+    }
+
+    recipients = Array.from(missingByUser.values()).map(r => ({
+      ...r,
+      missingDocList: Array.from(r.missingDocs),
+    }));
   }
 
-  const recipients = Array.from(missingByUser.values()).map(r => ({
-    ...r,
-    missingDocList: Array.from(r.missingDocs),
-  }));
-
-  console.log(`Ditemukan ${recipients.length} mahasiswa unik yang memiliki berkas hilang.`);
+  console.log(`Ditemukan total ${recipients.length} mahasiswa unik yang terdaftar.`);
   console.log('----------------------------------------------------');
 
   if (recipients.length === 0) {
