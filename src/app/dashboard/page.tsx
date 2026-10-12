@@ -228,6 +228,15 @@ export default function DashboardPage() {
           iconBg: 'bg-blue-50 text-blue-600',
           badgeText: 'Verifikasi',
         };
+      case 'PERLU_UNGGAH_ULANG':
+        return {
+          title: 'Perlu Unggah Ulang Berkas',
+          desc: 'Berkas KTM/Surat Aktif Kuliah Anda tidak terbaca di sistem. Unggah ulang lalu kirim ulang pendaftaran. Nomor registrasi Anda tetap.',
+          badgeBg: 'bg-rose-100 text-rose-800',
+          icon: AlertCircle,
+          iconBg: 'bg-rose-50 text-rose-600',
+          badgeText: 'Perlu Tindakan',
+        };
       case 'TERKIRIM':
       default:
         return {
@@ -271,6 +280,33 @@ export default function DashboardPage() {
           </p>
         </div>
       </div>
+
+      {effectiveStatus === 'PERLU_UNGGAH_ULANG' && (
+        <div className="bg-gradient-to-r from-rose-50 to-amber-50 border-2 border-rose-400 rounded-3xl p-6 sm:p-7 shadow-md">
+          <div className="flex flex-col sm:flex-row items-start gap-4">
+            <div className="p-3 bg-rose-600 text-white rounded-2xl shadow-sm shrink-0">
+              <AlertCircle className="w-7 h-7" />
+            </div>
+            <div className="flex-1 space-y-2">
+              <h3 className="text-lg sm:text-xl font-extrabold text-rose-950">
+                Tindakan Diperlukan: Unggah Ulang KTM / Surat Aktif Kuliah
+              </h3>
+              <p className="text-xs sm:text-sm text-slate-700 leading-relaxed font-medium">
+                Berkas KTM/Surat Aktif Kuliah Anda tidak terbaca di sistem kami. Pendaftaran Anda <strong>tetap tercatat</strong> dengan nomor registrasi{' '}
+                <strong className="font-mono">{application?.registrationNo}</strong>. Silakan unggah ulang berkas, lalu klik <strong>&quot;Kirim Ulang Pendaftaran&quot;</strong> agar berkas Anda diperiksa verifikator.
+              </p>
+            </div>
+          </div>
+          <div className="mt-5 pt-4 border-t border-rose-200/80 flex justify-end">
+            <Link
+              href="/dashboard/berkas"
+              className="w-full sm:w-auto px-6 py-3 bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs sm:text-sm rounded-xl shadow-md transition-all flex items-center justify-center gap-2"
+            >
+              Unggah Ulang & Kirim Ulang <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
+        </div>
+      )}
 
       {/* Banner Peringatan Khusus Berkas Hilang / Perlu Diunggah Ulang */}
       {missingDocuments && missingDocuments.length > 0 && (

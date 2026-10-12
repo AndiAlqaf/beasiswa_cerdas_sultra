@@ -284,6 +284,7 @@ export default function SeleksiPage() {
           >
             <option value="">Semua Status</option>
             <option value="TERKIRIM">Menunggu Verifikasi (TERKIRIM)</option>
+            <option value="PERLU_UNGGAH_ULANG">Perlu Unggah Ulang (KTM hilang)</option>
             <option value="VERIFIKASI_BERKAS">Proses Verifikasi (VERIFIKASI)</option>
             <option value="SELEKSI_ADMINISTRASI">Seleksi Administrasi</option>
             <option value="DITERIMA">Lolos Seleksi (DITERIMA)</option>
@@ -372,6 +373,7 @@ export default function SeleksiPage() {
                       <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
                         applicant.status === 'DITERIMA' ? 'bg-emerald-100 text-emerald-700' :
                         applicant.status === 'DITOLAK' ? 'bg-rose-100 text-rose-700' :
+                        applicant.status === 'PERLU_UNGGAH_ULANG' ? 'bg-rose-100 text-rose-700' :
                         'bg-amber-100 text-amber-700'
                       }`}>
                         {applicant.status}
@@ -681,7 +683,7 @@ export default function SeleksiPage() {
             {/* Modal Footer */}
             {(() => {
               const currentStatus = applicantDetail?.application?.status || selectedApplicant?.status;
-              const isStatusLocked = currentStatus === 'DITERIMA' || currentStatus === 'DITOLAK';
+              const isStatusLocked = currentStatus === 'DITERIMA' || currentStatus === 'DITOLAK' || currentStatus === 'PERLU_UNGGAH_ULANG';
 
               return (
                 <div className="p-5 border-t border-slate-100 bg-slate-50 flex items-center justify-end gap-3">

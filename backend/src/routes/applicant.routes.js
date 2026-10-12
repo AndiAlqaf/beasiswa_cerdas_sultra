@@ -24,6 +24,7 @@ const {
   uploadDocument,
   getApplication,
   submitApplication,
+  resubmitApplication,
   submitAppeal,
   viewDocument,
 } = require('../controllers/applicant.controller');
@@ -53,6 +54,7 @@ router.post('/upload/:docType', (req, res, next) => {
 // Application
 router.get('/application', getApplication);
 router.post('/application', submitApplication);
+router.post('/application/resubmit', resubmitApplication);
 router.post('/application/appeal', submitAppeal);
 
 module.exports = router;

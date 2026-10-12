@@ -125,7 +125,7 @@ async function runMigrations() {
       id CHAR(36) PRIMARY KEY,
       user_id CHAR(36) NOT NULL,
       registration_no VARCHAR(30) NOT NULL,
-      status ENUM('TERKIRIM', 'VERIFIKASI_BERKAS', 'SELEKSI_ADMINISTRASI', 'DITERIMA', 'DITOLAK', 'PENCAIRAN_TERMIN_1', 'PENCAIRAN_TERMIN_2') NOT NULL DEFAULT 'TERKIRIM',
+      status ENUM('TERKIRIM', 'PERLU_UNGGAH_ULANG', 'VERIFIKASI_BERKAS', 'SELEKSI_ADMINISTRASI', 'DITERIMA', 'DITOLAK', 'PENCAIRAN_TERMIN_1', 'PENCAIRAN_TERMIN_2') NOT NULL DEFAULT 'TERKIRIM',
       notes TEXT NULL,
       submitted_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
       verified_at DATETIME NULL,
@@ -257,6 +257,15 @@ async function runMigrations() {
         console.error(`[DB] Error adding column ${colName} to applications:`, e.message);
       }
     }
+  }
+
+  // Extend applications.status ENUM with PERLU_UNGGAH_ULANG (idempotent, data-preserving)
+  try {
+    await migrationConn.query(
+      `ALTER TABLE applications MODIFY COLUMN status ENUM('TERKIRIM', 'PERLU_UNGGAH_ULANG', 'VERIFIKASI_BERKAS', 'SELEKSI_ADMINISTRASI', 'DITERIMA', 'DITOLAK', 'PENCAIRAN_TERMIN_1', 'PENCAIRAN_TERMIN_2') NOT NULL DEFAULT 'TERKIRIM'`
+    );
+  } catch (e) {
+    console.error('[DB] Migration applications.status modify error:', e.message);
   }
 
   await migrationConn.end();

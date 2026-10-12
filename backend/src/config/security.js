@@ -92,6 +92,7 @@ module.exports = {
   // Application statuses
   APPLICATION_STATUSES: [
     'TERKIRIM',
+    'PERLU_UNGGAH_ULANG',
     'VERIFIKASI_BERKAS',
     'SELEKSI_ADMINISTRASI',
     'DITERIMA',

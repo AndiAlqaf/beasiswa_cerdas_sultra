@@ -251,6 +251,7 @@ export default function PendaftarPage() {
             >
               <option value="">Semua Status</option>
               <option value="TERKIRIM">Menunggu Verifikasi (TERKIRIM)</option>
+              <option value="PERLU_UNGGAH_ULANG">Perlu Unggah Ulang (KTM hilang)</option>
               <option value="VERIFIKASI_BERKAS">Proses Verifikasi (VERIFIKASI)</option>
               <option value="SELEKSI_ADMINISTRASI">Seleksi Administrasi</option>
               <option value="DITERIMA">Lolos Seleksi (DITERIMA)</option>
@@ -314,6 +315,7 @@ export default function PendaftarPage() {
                       <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
                         user.status === 'DITERIMA' ? 'bg-emerald-100 text-emerald-700' :
                         user.status === 'DITOLAK' ? 'bg-rose-100 text-rose-700' :
+                        user.status === 'PERLU_UNGGAH_ULANG' ? 'bg-rose-100 text-rose-700' :
                         'bg-amber-100 text-amber-700'
                       }`}>
                         {user.status}

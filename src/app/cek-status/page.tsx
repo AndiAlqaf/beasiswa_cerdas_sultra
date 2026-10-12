@@ -54,6 +54,11 @@ export default function CheckStatusPage() {
           }
         }
 
+        if (effectiveStatus === 'PERLU_UNGGAH_ULANG') {
+          effectiveStatus = 'TERKIRIM';
+          effectiveNotes = 'Berkas KTM/Surat Aktif Kuliah Anda tidak terbaca di sistem. Silakan login ke dashboard, unggah ulang berkas, lalu klik "Kirim Ulang Pendaftaran". Nomor registrasi Anda tidak berubah.';
+        }
+
         setSearchedApp({
           registrationNo: res.data.registrationNo,
           name: res.data.namaLengkap,

@@ -484,6 +484,56 @@ async function submitApplication(req, res) {
 }
 
 /**
+ * POST /api/v1/applicant/application/resubmit
+ * Untuk pendaftar berstatus PERLU_UNGGAH_ULANG: setelah melengkapi berkas (KTM),
+ * kirim ulang TANPA mengubah nomor registrasi.
+ */
+async function resubmitApplication(req, res) {
+  try {
+    const userId = req.user.id;
+    const pool = getPool();
+    const fs = require('fs');
+
+    const [appRows] = await pool.execute(
+      'SELECT id, registration_no, status FROM applications WHERE user_id = ?',
+      [userId]
+    );
+    if (appRows.length === 0) {
+      return res.status(404).json({ success: false, message: 'Pendaftaran tidak ditemukan.' });
+    }
+    const app = appRows[0];
+    if (app.status !== 'PERLU_UNGGAH_ULANG') {
+      return res.status(400).json({ success: false, message: 'Pendaftaran Anda tidak memerlukan pengiriman ulang.' });
+    }
+
+    const [ktmRows] = await pool.execute(
+      "SELECT id, file_path FROM documents WHERE user_id = ? AND doc_type = 'ktm'",
+      [userId]
+    );
+    const hasValidKtm = ktmRows.some(d => d.file_path && fs.existsSync(d.file_path));
+    if (!hasValidKtm) {
+      return res.status(400).json({ success: false, message: 'Unggah KTM/Surat Aktif Kuliah terlebih dahulu sebelum mengirim ulang.' });
+    }
+
+    await pool.execute(
+      `UPDATE applications SET status = 'TERKIRIM', notes = NULL, submitted_at = NOW() WHERE id = ?`,
+      [app.id]
+    );
+
+    auditLog({ action: 'APPLICATION_RESUBMITTED', userId, ipAddress: getClientIp(req), details: { registrationNo: app.registration_no }, requestId: req.requestId });
+
+    res.json({
+      success: true,
+      message: 'Pendaftaran berhasil dikirim ulang. Nomor registrasi Anda tidak berubah.',
+      data: { id: app.id, registrationNo: app.registration_no, status: 'TERKIRIM' },
+    });
+  } catch (err) {
+    log(LOG_LEVELS.ERROR, `Resubmit application error: ${err.message}`);
+    res.status(500).json({ success: false, message: 'Gagal mengirim ulang pendaftaran.' });
+  }
+}
+
+/**
  * POST /api/v1/applicant/application/appeal
  */
 async function submitAppeal(req, res) {
@@ -569,4 +619,4 @@ async function viewDocument(req, res) {
   }
 }
 
-module.exports = { getProfile, updateProfile, updateEducation, uploadDocument, getApplication, submitApplication, submitAppeal, viewDocument };
+module.exports = { getProfile, updateProfile, updateEducation, uploadDocument, getApplication, submitApplication, resubmitApplication, submitAppeal, viewDocument };

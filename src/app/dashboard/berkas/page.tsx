@@ -36,6 +36,8 @@ const isDocTypeMatch = (doc: DocumentInfo, targetKey: string) => {
 
 export default function BerkasPage() {
   const [documents, setDocuments] = useState<DocumentInfo[]>([]);
+  const [applicationStatus, setApplicationStatus] = useState<string | null>(null);
+  const [resubmitting, setResubmitting] = useState(false);
   const [missingDocuments, setMissingDocuments] = useState<string[]>([]);
   const [jenjang, setJenjang] = useState<string>('S1');
   const [loading, setLoading] = useState(true);
@@ -208,6 +210,7 @@ export default function BerkasPage() {
       if (res.success && res.data) {
         setDocuments(res.data.documents || []);
         setMissingDocuments(res.data.missingDocuments || []);
+        setApplicationStatus(res.data.application?.status || null);
         if (res.data.user?.jenjangTarget) {
           setJenjang(res.data.user.jenjangTarget);
         }
@@ -218,6 +221,24 @@ export default function BerkasPage() {
       setError(err.message || 'Terjadi kesalahan sistem.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResubmit = async () => {
+    setResubmitting(true);
+    try {
+      const res = await fetchAPI('/applicant/application/resubmit', { method: 'POST' });
+      if (!res.success) throw new Error(res.message || 'Gagal mengirim ulang pendaftaran.');
+      setToast({
+        title: 'Pendaftaran Terkirim Ulang',
+        message: res.message || 'Pendaftaran Anda berhasil dikirim ulang.',
+        type: 'success',
+      });
+      await loadDocuments();
+    } catch (err: any) {
+      setToast({ title: 'Gagal Mengirim Ulang', message: err.message || 'Terjadi kesalahan sistem.', type: 'error' });
+    } finally {
+      setResubmitting(false);
     }
   };
 
@@ -352,6 +373,41 @@ export default function BerkasPage() {
           </p>
         </div>
       </div>
+
+      {applicationStatus === 'PERLU_UNGGAH_ULANG' && (() => {
+        const hasValidKtm = documents.some((d) => isDocTypeMatch(d, 'ktm') && !d.isMissing);
+        return (
+          <div className="bg-gradient-to-r from-rose-50 to-amber-50 border-2 border-rose-400 rounded-3xl p-6 shadow-md space-y-4">
+            <div className="flex items-start gap-4">
+              <div className="p-3 bg-rose-600 text-white rounded-2xl shrink-0">
+                <AlertCircle className="w-6 h-6" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-base sm:text-lg font-extrabold text-rose-950">
+                  Langkah 1: Unggah KTM / Surat Aktif Kuliah &nbsp;•&nbsp; Langkah 2: Kirim Ulang
+                </h3>
+                <p className="text-xs sm:text-sm text-slate-700 leading-relaxed font-medium">
+                  Berkas KTM/Surat Aktif Kuliah Anda tidak terbaca di sistem. Unggah ulang pada kartu <strong>KTM</strong> di bawah, lalu tekan tombol kirim ulang. Nomor registrasi Anda <strong>tidak berubah</strong>.
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <p className={`text-xs font-bold ${hasValidKtm ? 'text-emerald-700' : 'text-rose-700'}`}>
+                {hasValidKtm ? '✓ KTM sudah terunggah. Anda dapat mengirim ulang pendaftaran.' : '✗ KTM belum terunggah.'}
+              </p>
+              <button
+                type="button"
+                disabled={!hasValidKtm || resubmitting}
+                onClick={handleResubmit}
+                className="px-6 py-3 bg-rose-600 hover:bg-rose-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-extrabold text-xs sm:text-sm rounded-xl shadow-md transition-all flex items-center justify-center gap-2"
+              >
+                {resubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                Kirim Ulang Pendaftaran
+              </button>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Banner Peringatan Berkas Hilang */}
       {missingDocuments && missingDocuments.length > 0 && (

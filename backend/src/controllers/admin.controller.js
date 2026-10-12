@@ -260,6 +260,13 @@ async function verifyApplicant(req, res) {
       });
     }
 
+    if (currentStatus === 'PERLU_UNGGAH_ULANG') {
+      return res.status(400).json({
+        success: false,
+        message: 'Pendaftar ini belum mengunggah ulang berkas (KTM). Verifikasi baru dapat dilakukan setelah pendaftar mengirim ulang.'
+      });
+    }
+
     await pool.execute(
       `UPDATE applications SET status = ?, notes = COALESCE(?, notes), verified_at = NOW(), verified_by = ? WHERE user_id = ?`,
       [status, notes || null, adminUserId, applicantUserId]
