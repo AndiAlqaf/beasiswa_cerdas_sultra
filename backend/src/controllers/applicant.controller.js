@@ -20,7 +20,7 @@ async function getProfile(req, res) {
     const [userRows] = await pool.execute(`
       SELECT u.id, u.email, u.nik, u.nama_lengkap, u.jenjang_target, u.role, u.created_at,
              p.tempat_lahir, p.tanggal_lahir, p.gender, p.no_hp, p.status_pernikahan,
-             p.alamat_domisili, p.selfie_path, p.perguruan_tinggi, p.fakultas_prodi,
+             p.alamat_domisili, p.asal_daerah, p.selfie_path, p.perguruan_tinggi, p.fakultas_prodi,
              p.no_kk, p.alamat_ktp, p.akreditasi_prodi, p.nim, p.semester, p.ipk, p.target_lulus,
              p.beasiswa_lain, p.nama_ayah, p.pekerjaan_ayah, p.nama_ibu, p.pekerjaan_ibu,
              p.penghasilan_ortu, p.jumlah_tanggungan, p.kepemilikan_bantuan,
@@ -73,6 +73,7 @@ async function getProfile(req, res) {
           tempatLahir: user.tempat_lahir, tanggalLahir: user.tanggal_lahir,
           gender: user.gender, noHp: user.no_hp,
           statusPernikahan: user.status_pernikahan, alamatDomisili: user.alamat_domisili,
+          asalDaerah: user.asal_daerah,
           hasSelfie: !!user.selfie_path,
           perguruanTinggi: user.perguruan_tinggi,
           fakultasProdi: user.fakultas_prodi,
@@ -124,7 +125,7 @@ async function updateProfile(req, res) {
     const userId = req.user.id;
     const { 
       namaLengkap, jenjangTarget,
-      tempatLahir, tanggalLahir, gender, noHp, statusPernikahan, alamatDomisili,
+      tempatLahir, tanggalLahir, gender, noHp, statusPernikahan, alamatDomisili, asalDaerah,
       perguruanTinggi, fakultasProdi,
       noKk, alamatKtp, akreditasiProdi, nim, semester, ipk, targetLulus,
       beasiswaLain, namaAyah, pekerjaanAyah, namaIbu, pekerjaanIbu,
@@ -180,6 +181,7 @@ async function updateProfile(req, res) {
           no_hp = COALESCE(?, no_hp),
           status_pernikahan = COALESCE(?, status_pernikahan),
           alamat_domisili = COALESCE(?, alamat_domisili),
+          asal_daerah = COALESCE(?, asal_daerah),
           perguruan_tinggi = COALESCE(?, perguruan_tinggi),
           fakultas_prodi = COALESCE(?, fakultas_prodi),
           no_kk = COALESCE(?, no_kk),
@@ -210,7 +212,7 @@ async function updateProfile(req, res) {
       WHERE user_id = ?
     `, [
       tempatLahir || null, formattedTanggalLahir, gender || null,
-      noHp || null, statusPernikahan || null, alamatDomisili || null,
+      noHp || null, statusPernikahan || null, alamatDomisili || null, asalDaerah || null,
       perguruanTinggi || null, fakultasProdi || null,
       noKk || null, alamatKtp || null, akreditasiProdi || null, nim || null,
       formattedSemester, formattedIpk, targetLulus || null, beasiswaLain || 'Tidak Ada (Bukan Double Funding)',

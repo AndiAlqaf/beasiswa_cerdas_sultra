@@ -175,6 +175,7 @@ async function runMigrations() {
 
   // Dynamically add missing columns to profiles table without losing existing data
   const columnsToAdd = [
+    'asal_daerah VARCHAR(100) NULL',
     'perguruan_tinggi VARCHAR(255) NULL',
     'fakultas_prodi VARCHAR(255) NULL',
     'no_kk VARCHAR(20) NULL',

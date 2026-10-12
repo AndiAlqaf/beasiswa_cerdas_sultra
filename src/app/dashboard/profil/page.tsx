@@ -11,6 +11,15 @@ import { SULTRA_DISTRICTS } from '@/data/bsscData';
 import { parseAchievementString, formatAchievementItems, DynamicAchievementItem } from '@/lib/achievementHelpers';
 import DynamicAchievementBlock from '@/components/DynamicAchievementBlock';
 
+const normalizeDistrictCode = (val?: string) => {
+  if (!val) return 'KOTA_KENDARI';
+  const trimmed = String(val).trim();
+  const found = SULTRA_DISTRICTS.find(
+    (d) => d.code === trimmed || d.name.toLowerCase() === trimmed.toLowerCase() || d.name.toLowerCase().replace(/^(kabupaten|kota)\s+/i, '') === trimmed.toLowerCase()
+  );
+  return found ? found.code : trimmed;
+};
+
 export default function ProfilPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -102,7 +111,7 @@ export default function ProfilPage() {
 
           email: u.email || '',
           noHp: p.noHp || p.no_hp || '',
-          asalDaerah: p.asalDaerah || p.asal_daerah || 'KOTA_KENDARI',
+          asalDaerah: normalizeDistrictCode(p.asalDaerah || p.asal_daerah),
           alamatKtp: p.alamatKtp || p.alamat_ktp || '',
           alamatDomisili: p.alamatDomisili || p.alamat_domisili || '',
 

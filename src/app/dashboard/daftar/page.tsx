@@ -204,6 +204,15 @@ export default function RegistrationPage() {
     return asal.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
   };
 
+  const normalizeDistrictCode = (val?: string) => {
+    if (!val) return 'KOTA_KENDARI';
+    const trimmed = String(val).trim();
+    const found = SULTRA_DISTRICTS.find(
+      (d) => d.code === trimmed || d.name.toLowerCase() === trimmed.toLowerCase() || d.name.toLowerCase().replace(/^(kabupaten|kota)\s+/i, '') === trimmed.toLowerCase()
+    );
+    return found ? found.code : trimmed;
+  };
+
   useEffect(() => {
     async function loadUserProfile() {
       setLoadingProfile(true);
@@ -257,6 +266,7 @@ export default function RegistrationPage() {
             tanggalLahir: p.tanggalLahir ? String(p.tanggalLahir).split('T')[0] : (regDraft?.tanggalLahir || ''),
             jenisKelamin: p.gender || regDraft?.gender || 'Laki-laki',
             noHp: p.noHp || regDraft?.noHp || '',
+            asalDaerah: normalizeDistrictCode(p.asalDaerah || p.asal_daerah || regDraft?.asalDaerah || 'KOTA_KENDARI'),
             alamatDomisili: p.alamatDomisili || p.alamat_domisili || regDraft?.alamatDomisili || '',
             alamatKtp: p.alamatKtp || p.alamat_ktp || '',
             noKk: p.noKk || '',
@@ -500,6 +510,7 @@ export default function RegistrationPage() {
           tanggalLahir: formData.tanggalLahir,
           gender: formData.jenisKelamin === 'Laki-laki' ? 'Laki-laki' : 'Perempuan',
           noHp: formData.noHp,
+          asalDaerah: formData.asalDaerah,
           alamatDomisili: formData.alamatDomisili,
           noKk: formData.noKk,
           alamatKtp: formData.alamatKtp,

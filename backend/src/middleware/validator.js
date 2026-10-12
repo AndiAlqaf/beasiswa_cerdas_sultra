@@ -132,6 +132,11 @@ const profileUpdateValidation = [
     .trim()
     .isLength({ max: 500 }).withMessage('Alamat maks 500 karakter.'),
 
+  body('asalDaerah')
+    .optional({ values: 'falsy' })
+    .trim()
+    .isLength({ max: 100 }).withMessage('Asal daerah maks 100 karakter.'),
+
   body('perguruanTinggi')
     .optional({ values: 'falsy' })
     .trim()
