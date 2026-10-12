@@ -47,7 +47,7 @@ function formatDocName(type) {
   return DOC_NAME_MAP[clean] || (type || 'Dokumen Persyaratan').toUpperCase();
 }
 
-function generateEmailHtml(namaLengkap, missingDocList) {
+function generateEmailHtml(namaLengkap, missingDocList, regNo = null, appStatus = null) {
   const docListHtml = missingDocList
     .map(
       (d) => `
@@ -57,6 +57,28 @@ function generateEmailHtml(namaLengkap, missingDocList) {
     `
     )
     .join('');
+
+  const statusBoxHtml = regNo
+    ? `
+      <div style="background-color: #eff6ff; border: 1px solid #bfdbfe; border-radius: 12px; padding: 14px 18px; margin: 0 0 18px 0;">
+        <p style="margin: 0; font-size: 13px; color: #1e40af; line-height: 1.5;">
+          <strong>Nomor Registrasi Anda:</strong> <span style="font-family: monospace; font-weight: 700; background-color: #dbeafe; padding: 2px 6px; border-radius: 4px;">${regNo}</span> (Tetap Tercatat & Aman)<br>
+          <span style="font-size: 12px; color: #1d4ed8; display: inline-block; margin-top: 4px;">
+            Setelah mengunggah berkas di bawah, silakan klik tombol <strong>"Kirim Ulang Pendaftaran"</strong> pada portal agar berkas Anda diperiksa verifikator.
+          </span>
+        </p>
+      </div>
+    `
+    : `
+      <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px 18px; margin: 0 0 18px 0;">
+        <p style="margin: 0; font-size: 13px; color: #475569; line-height: 1.5;">
+          <strong>Status Akun:</strong> Belum Mengajukan Pendaftaran (Draft)<br>
+          <span style="font-size: 12px; color: #64748b; display: inline-block; margin-top: 4px;">
+            Silakan unggah dokumen persyaratan Anda pada portal agar Anda dapat menyelesaikan dan mengajukan permohonan beasiswa.
+          </span>
+        </p>
+      </div>
+    `;
 
   return `
 <!DOCTYPE html>
@@ -103,6 +125,7 @@ function generateEmailHtml(namaLengkap, missingDocList) {
               <p style="margin: 0 0 16px 0;">
                 Yth. Sdr/i <strong>${namaLengkap}</strong>,
               </p>
+              ${statusBoxHtml}
               <p style="margin: 0 0 16px 0;">
                 Sehubungan dengan tahapan verifikasi berkas administrasi Beasiswa Stimulan Sultra Cerdas, sistem kami mendeteksi bahwa berkas fisik berikut ini <strong>mengalami kendala saat sinkronisasi server</strong> sehingga belum dapat terbaca dengan sempurna oleh verifikator:
               </p>
@@ -133,7 +156,7 @@ function generateEmailHtml(namaLengkap, missingDocList) {
               </table>
 
               <p style="margin: 28px 0 0 0; font-size: 12px; color: #64748b; line-height: 1.5; border-top: 1px solid #e2e8f0; padding-top: 16px;">
-                <em>Catatan: Dokumen yang Anda unggah otomatis menggantikan data lama. Apabila Anda telah mengunggah ulang dokumen tersebut sebelumnya dan telah berstatus terbaca di dashboard, Anda dapat mengabaikan email ini.</em>
+                <em>Catatan: Dokumen yang Anda unggah otomatis menggantikan data lama. Apabila Anda telah mengunggah ulang dokumen tersebut sebelumnya dan telah berstatus lengkap di dashboard, Anda dapat mengabaikan email ini.</em>
               </p>
             </td>
           </tr>
@@ -286,11 +309,49 @@ async function main() {
     process.exit(0);
   }
 
+  // Sinkronisasi status pendaftaran dari database untuk prioritas pengiriman:
+  // Prioritas 1: Mahasiswa yang SUDAH mengajukan pendaftaran (ada di tabel applications)
+  // Prioritas 2: Mahasiswa yang BELUM mengajukan pendaftaran (draft)
+  let countPriority1 = 0;
+  let countPriority2 = 0;
+  try {
+    const pool = getPool();
+    const [appRows] = await pool.execute(`
+      SELECT LOWER(u.email) as email, a.registration_no, a.status as app_status
+      FROM applications a
+      JOIN users u ON u.id = a.user_id
+    `);
+    const appMap = new Map();
+    for (const row of appRows) {
+      if (row.email) appMap.set(row.email.trim(), row);
+    }
+
+    for (const r of recipients) {
+      const emailLower = (r.email || '').toLowerCase().trim();
+      const app = appMap.get(emailLower);
+      if (app) {
+        r.hasApplication = true;
+        r.regNo = app.registration_no;
+        r.appStatus = app.app_status;
+        r.priority = 1;
+        countPriority1++;
+      } else {
+        r.hasApplication = false;
+        r.regNo = null;
+        r.appStatus = 'DRAFT';
+        r.priority = 2;
+        countPriority2++;
+      }
+    }
+  } catch (dbErr) {
+    console.warn('[WARN] Gagal menyinkronkan status aplikasi dari database:', dbErr.message);
+  }
+
   // Jika mode test email tunggal
   if (testEmail) {
-    const sample = recipients[0];
+    const sample = recipients.find(r => r.priority === 1) || recipients[0];
     console.log(`Mengirim 1 email percobaan ke: ${testEmail}...`);
-    const html = generateEmailHtml(sample.namaLengkap, sample.missingDocList);
+    const html = generateEmailHtml(sample.namaLengkap, sample.missingDocList, sample.regNo, sample.appStatus);
     try {
       await sendMail({
         to: testEmail,
@@ -317,47 +378,59 @@ async function main() {
   // Filter penerima yang belum pernah dikirimi email sukses
   const pendingRecipients = recipients.filter(r => !sentHistory.has(r.email));
 
+  // URUTKAN: Prioritas 1 (Sudah Mendaftar/Terkirim) duluan, baru Prioritas 2 (Belum Mendaftar/Draft)
+  pendingRecipients.sort((a, b) => a.priority - b.priority);
+
+  const pendingP1 = pendingRecipients.filter(r => r.priority === 1).length;
+  const pendingP2 = pendingRecipients.filter(r => r.priority === 2).length;
+
   const limitArg = args.find(a => a.startsWith('--limit='));
   const maxToSend = limitArg ? parseInt(limitArg.split('=')[1], 10) : pendingRecipients.length;
   const toSendBatch = pendingRecipients.slice(0, maxToSend);
 
   console.log(`Total terdeteksi berkas hilang : ${recipients.length} mahasiswa`);
+  console.log(`  • Prioritas 1 (SUDAH DAFTAR) : ${countPriority1} mahasiswa`);
+  console.log(`  • Prioritas 2 (BELUM DAFTAR) : ${countPriority2} mahasiswa`);
   console.log(`Sudah pernah terkirim sukses   : ${sentHistory.size} mahasiswa`);
   console.log(`Antrean belum terkirim         : ${pendingRecipients.length} mahasiswa`);
+  console.log(`  • Sisa antrean Prioritas 1   : ${pendingP1} mahasiswa`);
+  console.log(`  • Sisa antrean Prioritas 2   : ${pendingP2} mahasiswa`);
   if (limitArg) {
-    console.log(`Batas pengiriman hari ini      : ${toSendBatch.length} email (--limit=${maxToSend})`);
+    console.log(`Batas pengiriman batch ini     : ${toSendBatch.length} email (--limit=${maxToSend})`);
   }
   console.log('----------------------------------------------------');
 
   // Jika dry-run, cetak ringkasan saja
   if (isDryRun) {
-    console.log('DAFTAR MAHASISWA DALAM ANTREAN:');
+    console.log('DAFTAR MAHASISWA DALAM ANTREAN (DIPROSES URUT PRIORITAS):');
     toSendBatch.slice(0, 15).forEach((r, idx) => {
-      console.log(`${idx + 1}. ${r.namaLengkap} (${r.email}) -> [${r.missingDocList.join(', ')}]`);
+      const tag = r.priority === 1 ? `[PRIORITAS 1 - NoReg: ${r.regNo || '-'}]` : '[PRIORITAS 2 - DRAFT]';
+      console.log(`${idx + 1}. ${tag} ${r.namaLengkap} (${r.email}) -> [${r.missingDocList.join(', ')}]`);
     });
     if (toSendBatch.length > 15) {
       console.log(`... dan ${toSendBatch.length - 15} mahasiswa lainnya.`);
     }
     console.log('\n[PANDUAN EKSEKUSI PENGIRIMAN]:');
-    console.log('  Kirim sesuai kuota harian Brevo (misal 200 email hari ini):');
-    console.log('    node broadcast_missing_docs_email.js --send --limit=200');
+    console.log('  Kirim sesuai kuota harian Brevo (misal 300 email hari ini):');
+    console.log('    node broadcast_missing_docs_email.js --send --limit=300');
     console.log('  Kirim seluruh antrean:');
     console.log('    node broadcast_missing_docs_email.js --send');
     process.exit(0);
   }
 
   // Jika live send
-  console.log(`MEMULAI PENGIRIMAN EMAIL NYATA KE ${toSendBatch.length} PENDAFTAR...`);
+  console.log(`MEMULAI PENGIRIMAN EMAIL NYATA KE ${toSendBatch.length} PENDAFTAR (URUT PRIORITAS)...`);
   let successCount = 0;
   let failCount = 0;
 
   for (let i = 0; i < toSendBatch.length; i++) {
     const r = toSendBatch[i];
-    const html = generateEmailHtml(r.namaLengkap, r.missingDocList);
+    const html = generateEmailHtml(r.namaLengkap, r.missingDocList, r.regNo, r.appStatus);
+    const tag = r.priority === 1 ? `[P-1: SUDAH DAFTAR]` : `[P-2: DRAFT]`;
     const subject = `[PENTING] Pemberitahuan Unggah Ulang Berkas - ${r.namaLengkap}`;
 
     try {
-      console.log(`[${i + 1}/${toSendBatch.length}] Mengirim email ke ${r.email} (${r.missingDocList.join(', ')})...`);
+      console.log(`[${i + 1}/${toSendBatch.length}] ${tag} Mengirim ke ${r.email} (${r.missingDocList.join(', ')})...`);
       await sendMail({
         to: r.email,
         subject,
