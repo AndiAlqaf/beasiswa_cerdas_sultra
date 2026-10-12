@@ -137,7 +137,7 @@ function validateMagicBytes(filePath, declaredMime) {
  * @returns {Function} Express middleware
  */
 function createUploadMiddleware(docType) {
-  const maxSize = MAX_FILE_SIZES[docType] || env.MAX_FILE_SIZE;
+  const maxSize = MAX_FILE_SIZES[docType] || env.MAX_FILE_SIZE || (10 * 1024 * 1024);
   
   const upload = multer({
     storage: createStorage(docType),

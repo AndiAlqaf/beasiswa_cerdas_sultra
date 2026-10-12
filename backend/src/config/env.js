@@ -53,8 +53,8 @@ const env = {
   RATE_LIMIT_MAX: parseInt(process.env.RATE_LIMIT_MAX, 10) || 100,
   AUTH_RATE_LIMIT_MAX: parseInt(process.env.AUTH_RATE_LIMIT_MAX, 10) || 5,
 
-  // File Upload
-  MAX_FILE_SIZE: parseInt(process.env.MAX_FILE_SIZE, 10) || 10 * 1024 * 1024, // 10MB
+  // File Upload — Guarantee at least 10MB even if server .env still has old 2097152 value
+  MAX_FILE_SIZE: Math.max(parseInt(process.env.MAX_FILE_SIZE, 10) || 0, 10 * 1024 * 1024), // 10MB minimum
   UPLOAD_DIR: process.env.UPLOAD_DIR || path.join(__dirname, '..', '..', 'uploads'),
 
   // MySQL
