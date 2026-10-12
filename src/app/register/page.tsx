@@ -1598,7 +1598,7 @@ export default function RegisterPage() {
                               Klik atau seret file PDF / JPG ke sini
                             </p>
                             <p className="text-xs text-slate-400 mt-1">
-                              Ukuran maksimal file 2 MB (PDF, JPG, PNG)
+                              Ukuran maksimal file 10 MB (PDF, JPG, PNG)
                             </p>
                           </div>
                         )}

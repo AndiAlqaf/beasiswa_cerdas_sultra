@@ -53,19 +53,19 @@ module.exports = {
     ],
   },
 
-  // Max file sizes per type (bytes) — 2MB default max
+  // Max file sizes per type (bytes) — 10MB default max
   MAX_FILE_SIZES: {
-    selfie: 2 * 1024 * 1024,
-    ktm: 2 * 1024 * 1024,
-    pendukung: 2 * 1024 * 1024,
-    fileSuratPermohonan: 2 * 1024 * 1024,
-    filePasfoto: 2 * 1024 * 1024,
-    fileKtp: 2 * 1024 * 1024,
-    fileSuratAktif: 2 * 1024 * 1024,
-    fileTranskrip: 2 * 1024 * 1024,
-    fileDtks: 2 * 1024 * 1024,
-    fileSuratPernyataan: 2 * 1024 * 1024,
-    fileMotivationOrEsai: 2 * 1024 * 1024,
+    selfie: 10 * 1024 * 1024,
+    ktm: 10 * 1024 * 1024,
+    pendukung: 10 * 1024 * 1024,
+    fileSuratPermohonan: 10 * 1024 * 1024,
+    filePasfoto: 10 * 1024 * 1024,
+    fileKtp: 10 * 1024 * 1024,
+    fileSuratAktif: 10 * 1024 * 1024,
+    fileTranskrip: 10 * 1024 * 1024,
+    fileDtks: 10 * 1024 * 1024,
+    fileSuratPernyataan: 10 * 1024 * 1024,
+    fileMotivationOrEsai: 10 * 1024 * 1024,
   },
 
   // Dangerous input patterns to reject
@@ -79,9 +79,9 @@ module.exports = {
     /data:text\/html/i,
   ],
 
-  // Request body size limits — 10MB to comfortably support canvas signature base64 & rich profile data
-  JSON_BODY_LIMIT: '10mb',
-  URL_ENCODED_LIMIT: '10mb',
+  // Request body size limits — 25MB to comfortably support canvas signature base64 & rich profile data
+  JSON_BODY_LIMIT: '25mb',
+  URL_ENCODED_LIMIT: '25mb',
 
   // Valid roles
   ROLES: {

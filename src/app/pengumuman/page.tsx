@@ -121,7 +121,7 @@ export default function PublicPengumumanPage() {
               Penerbitan Petunjuk Teknis (Juknis) &amp; Panduan Unggah Dokumen
             </h2>
             <p className="text-xs sm:text-sm text-slate-500 leading-relaxed font-normal">
-              Petunjuk Teknis (Juknis) resmi BSSC TA 2026 telah diterbitkan. Pastikan seluruh dokumen persyaratan (KTM, KTP, Transkrip Nilai, dan Surat Pernyataan) diunggah berformat PDF/JPG/PNG dengan ukuran maksimal 2MB per berkas.
+              Petunjuk Teknis (Juknis) resmi BSSC TA 2026 telah diterbitkan. Pastikan seluruh dokumen persyaratan (KTM, KTP, Transkrip Nilai, dan Surat Pernyataan) diunggah berformat PDF/JPG/PNG dengan ukuran maksimal 10MB per berkas.
             </p>
             <div className="pt-2">
               <a

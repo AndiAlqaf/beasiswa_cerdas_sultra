@@ -81,7 +81,7 @@ async function safeFetch(url: string, init: RequestInit): Promise<Response> {
     const error = new Error(
       offline
         ? 'Perangkat Anda sedang tidak terhubung ke internet. Periksa koneksi lalu coba lagi.'
-        : 'Koneksi ke server terputus sebelum selesai. Pastikan sinyal stabil lalu coba lagi. Jika sedang mengunggah berkas, pastikan ukuran file maksimal 2 MB.'
+        : 'Koneksi ke server terputus sebelum selesai. Pastikan sinyal stabil lalu coba lagi. Jika sedang mengunggah berkas, pastikan ukuran file maksimal 10 MB.'
     ) as any;
     error.isNetworkError = true;
     error.originalError = lastErr;
@@ -164,7 +164,7 @@ export async function fetchAPI(endpoint: string, options: FetchOptions = {}): Pr
       if (res.status === 401) {
         friendlyMessage = 'Sesi login Anda telah berakhir. Silakan login kembali.';
       } else if (res.status === 413) {
-        friendlyMessage = 'Gagal Mengunggah Berkas: Ukuran file yang Anda unggah terlalu besar. Silakan kompres/kecilkan ukuran PDF atau foto Anda di bawah 2MB.';
+        friendlyMessage = 'Gagal Mengunggah Berkas: Ukuran file yang Anda unggah terlalu besar. Silakan kompres/kecilkan ukuran PDF atau foto Anda di bawah 10MB.';
       } else if (res.status === 502 || res.status === 504) {
         friendlyMessage = 'Server portal sedang dalam pemeliharaan atau mengalami gangguan koneksi sementara. Silakan coba beberapa saat lagi.';
       } else if (res.status >= 500) {

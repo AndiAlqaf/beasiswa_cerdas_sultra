@@ -156,7 +156,7 @@ function createUploadMiddleware(docType) {
           if (err.code === 'LIMIT_FILE_SIZE') {
             return res.status(413).json({
               success: false,
-              message: 'Ukuran file melebihi batas maksimum (2MB)',
+              message: 'Ukuran file melebihi batas maksimum (10MB)',
             });
           }
           if (err.code === 'LIMIT_FILE_COUNT') {
