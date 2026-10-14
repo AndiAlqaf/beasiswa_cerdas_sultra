@@ -23,8 +23,10 @@ import {
   RotateCcw,
   Eraser,
   X,
-  Clock
+  Clock,
+  Camera
 } from 'lucide-react';
+import SelfieLivenessModal from '@/components/SelfieLivenessModal';
 import { fetchAPI, getUser } from '@/lib/api';
 import { parseAchievementString, formatAchievementItems, DynamicAchievementItem } from '@/lib/achievementHelpers';
 import DynamicAchievementBlock from '@/components/DynamicAchievementBlock';
@@ -36,6 +38,7 @@ export default function RegistrationPage() {
   const [registrationCode, setRegistrationCode] = useState<string>('');
   const [loadingProfile, setLoadingProfile] = useState<boolean>(true);
   const [scheduleConfig, setScheduleConfig] = useState<ScheduleConfig>(getStoredScheduleConfig());
+  const [isSelfieModalOpen, setIsSelfieModalOpen] = useState<boolean>(false);
 
   useEffect(() => {
     setScheduleConfig(getStoredScheduleConfig());
@@ -1425,10 +1428,11 @@ export default function RegistrationPage() {
                             {isSelfie ? (
                               <button
                                 type="button"
-                                disabled
-                                className="shrink-0 px-3 py-1.5 sm:py-1 bg-slate-100 text-slate-400 border border-slate-200 rounded font-semibold text-xs sm:text-[11px] cursor-not-allowed text-center"
+                                onClick={() => setIsSelfieModalOpen(true)}
+                                className="shrink-0 cursor-pointer px-3 py-1.5 sm:py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded font-semibold text-xs sm:text-[11px] transition-colors text-center flex items-center justify-center gap-1.5 shadow-2xs"
                               >
-                                {displayVal ? 'Ganti File' : 'Unggah File'}
+                                <Camera className="w-3.5 h-3.5" />
+                                {displayVal ? 'Ambil Ulang Selfie (Liveness)' : 'Ambil Foto Selfie (Liveness)'}
                               </button>
                             ) : (
                               <label className="shrink-0 cursor-pointer px-3 py-1.5 sm:py-1 bg-blue-50 hover:bg-blue-100 text-blue-900 rounded font-semibold text-xs sm:text-[11px] transition-colors text-center">
@@ -1848,6 +1852,17 @@ export default function RegistrationPage() {
           </div>
         </div>
       )}
+
+      {/* Modal Selfie Liveness Detection */}
+      <SelfieLivenessModal
+        isOpen={isSelfieModalOpen}
+        onClose={() => setIsSelfieModalOpen(false)}
+        onSuccess={() => {
+          setFormData((prev: any) => ({ ...prev, filePasfoto: 'selfie.webp' }));
+        }}
+        title="Ambil Ulang Pasfoto / Selfie KTP"
+        subtitle="Verifikasi keaktifan wajah (Hadap Kanan, Hadap Kiri, Senyum)"
+      />
     </div>
   );
 }
