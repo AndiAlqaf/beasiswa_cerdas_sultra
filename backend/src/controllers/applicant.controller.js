@@ -363,8 +363,25 @@ function uploadDocument(docType) {
                             appNotes.toLowerCase().includes('sanggah') ||
                             appNotes.includes('[SANGGAHAN');
 
-      // Check if any existing document of this type is missing physically from disk
-      const [oldDocs] = await pool.execute('SELECT id, file_path FROM documents WHERE user_id = ? AND doc_type = ?', [userId, docType]);
+      // Same logical document can be stored under different doc_type aliases (legacy form keys vs. berkas page keys)
+      const DOC_ALIAS_GROUPS = [
+        ['selfie', 'filePasfoto', 'pasfoto'],
+        ['ktm', 'fileSuratAktif', 'surataktif'],
+        ['ktp', 'fileKtp'],
+        ['transkrip', 'fileTranskrip'],
+        ['dtks', 'fileDtks', 'kip'],
+        ['pernyataan', 'surat_pernyataan', 'fileSuratPernyataan'],
+        ['surat_permohonan', 'fileSuratPermohonan'],
+        ['esai', 'fileMotivationOrEsai'],
+      ];
+      const aliasGroup = DOC_ALIAS_GROUPS.find((g) => g.includes(docType)) || [docType];
+      const aliasPlaceholders = aliasGroup.map(() => '?').join(',');
+
+      // Check if any existing document of this type (or alias) is missing physically from disk
+      const [oldDocs] = await pool.execute(
+        `SELECT id, file_path FROM documents WHERE user_id = ? AND doc_type IN (${aliasPlaceholders})`,
+        [userId, ...aliasGroup]
+      );
       const hasMissingPhysicalFile = oldDocs.length > 0 && oldDocs.some(d => !d.file_path || !fs.existsSync(d.file_path));
 
       if (!isAppealState || hasMissingPhysicalFile) {

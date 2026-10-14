@@ -23,7 +23,9 @@ const isDocTypeMatch = (doc: DocumentInfo, targetKey: string) => {
   if (dbType === tgt) return true;
 
   // 2. Controlled alias mapping based on docType ONLY (never match on user's arbitrary originalName)
-  if (tgt === 'pernyataan' && (dbType === 'suratpernyataan' || dbType === 'pernyataan')) return true;
+  if (tgt === 'pernyataan' && (dbType === 'suratpernyataan' || dbType === 'filesuratpernyataan' || dbType === 'pernyataan')) return true;
+  if (tgt === 'suratpermohonan' && (dbType === 'filesuratpermohonan' || dbType === 'suratpermohonan')) return true;
+  if (tgt === 'esai' && (dbType === 'filemotivationoresai' || dbType === 'motivationletter' || dbType === 'esai')) return true;
   if (tgt === 'selfie' && (dbType === 'pasfoto' || dbType === 'filepasfoto' || dbType === 'selfie')) return true;
   if (tgt === 'ktm' && (dbType === 'surataktif' || dbType === 'filesurataktif' || dbType === 'ktm')) return true;
   if (tgt === 'ktp' && (dbType === 'filektp' || dbType === 'ktp')) return true;
@@ -189,6 +191,7 @@ export default function BerkasPage() {
   }, []);
 
   const documentTypes = [
+    { key: 'surat_permohonan', label: 'Surat Permohonan Beasiswa (Kepada Gubernur Sultra)', desc: 'Surat permohonan beasiswa BSSC yang ditujukan kepada Gubernur Sulawesi Tenggara.', required: true, accept: '.pdf,.png,.jpg,.jpeg' },
     { key: 'ktm', label: jenjang === 'S2' ? 'KTM / Surat Aktif S2' : jenjang === 'S3' ? 'KTM / Surat Aktif S3' : 'KTM / Surat Aktif Kuliah', desc: 'Salinan Kartu Tanda Mahasiswa (KTM) aktif atau Surat Keterangan Aktif Kuliah.', required: true, accept: '.pdf,.png,.jpg,.jpeg' },
     { key: 'selfie', label: 'Pasfoto / Selfie KTP', desc: 'Foto formal atau selfie memegang KTP dengan latar belakang jelas.', required: true, accept: '.png,.jpg,.jpeg' },
     { key: 'transkrip', label: jenjang === 'S2' ? 'Transkrip Nilai Semester S2' : jenjang === 'S3' ? 'Transkrip Nilai Semester S3' : 'Transkrip Nilai Akademik', desc: 'Transkrip nilai semester terakhir yang disahkan stempel basah fakultas/prodi.', required: true, accept: '.pdf,.png,.jpg,.jpeg' },
@@ -201,6 +204,7 @@ export default function BerkasPage() {
       accept: '.pdf,.png,.jpg,.jpeg' 
     },
     { key: 'ktp', label: 'Kartu Tanda Penduduk (KTP)', desc: 'Scan KTP asli domisili Kabupaten/Kota Sulawesi Tenggara.', required: true, accept: '.pdf,.png,.jpg,.jpeg' },
+    { key: 'esai', label: jenjang === 'S2' ? 'Esai Rencana Penelitian & Kontribusi Sultra (S2)' : jenjang === 'S3' ? 'Proposal Disertasi & Esai Kontribusi Sultra (S3)' : 'Motivation Letter / Esai (S1/D4)', desc: 'Surat motivasi atau esai sesuai jenjang pendidikan yang Anda daftarkan.', required: true, accept: '.pdf,.png,.jpg,.jpeg' },
     { key: 'pendukung', label: 'Berkas Sertifikat & Pendukung Lain', desc: 'Sertifikat keahlian, prestasi, atau dokumen pendukung tambahan.', required: false, accept: '.pdf,.png,.jpg,.jpeg' },
   ];
 
@@ -430,10 +434,14 @@ export default function BerkasPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         {documentTypes.map((docTypeItem) => {
           const matchingDocs = documents.filter((d) => isDocTypeMatch(d, docTypeItem.key));
-          const uploadedDoc = matchingDocs[matchingDocs.length - 1]; // Latest uploaded file
-          const hasMultipleVersions = matchingDocs.length > 1;
+          const presentDocs = matchingDocs.filter((d) => !d.isMissing);
+          const uploadedDoc = presentDocs.length > 0 ? presentDocs[presentDocs.length - 1] : matchingDocs[matchingDocs.length - 1]; // Latest physically-present file
+          const hasMultipleVersions = presentDocs.length > 1;
           const isUploading = uploadingKey === docTypeItem.key;
-          const isFileMissing = !!uploadedDoc?.isMissing || missingDocuments.some(mKey => isDocTypeMatch({ docType: mKey } as any, docTypeItem.key));
+          const isFileMissing = uploadedDoc ? !!uploadedDoc.isMissing : missingDocuments.some(mKey => isDocTypeMatch({ docType: mKey } as any, docTypeItem.key));
+          // Selfie normally locked (SOP: live camera only). Allow live-camera retake if file is missing or applicant must re-upload.
+          const canRetakeSelfie = isFileMissing || applicationStatus === 'PERLU_UNGGAH_ULANG';
+          const isSelfieLocked = docTypeItem.key === 'selfie' && !!uploadedDoc && !canRetakeSelfie;
 
           return (
             <div
@@ -567,18 +575,18 @@ export default function BerkasPage() {
 
                 <button
                   type="button"
-                  disabled={isUploading || (docTypeItem.key === 'selfie' && !!uploadedDoc)}
+                  disabled={isUploading || isSelfieLocked}
                   onClick={() => {
-                    if (docTypeItem.key === 'selfie' && !uploadedDoc) {
+                    if (docTypeItem.key === 'selfie') {
                       openCameraModal();
                     } else {
                       handleTriggerUpload(docTypeItem.key);
                     }
                   }}
                   className={`flex-1 py-2 px-3 text-xs font-bold rounded-xl transition-all shadow-sm flex items-center justify-center gap-1.5 ${
-                    docTypeItem.key === 'selfie' && uploadedDoc
+                    isSelfieLocked
                       ? 'bg-slate-200 text-slate-400 border border-slate-300 cursor-not-allowed shadow-none'
-                      : docTypeItem.key === 'selfie' && !uploadedDoc
+                      : docTypeItem.key === 'selfie'
                       ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/20'
                       : isUploading
                       ? 'bg-slate-400 cursor-not-allowed text-white'
@@ -591,13 +599,13 @@ export default function BerkasPage() {
                     <>
                       <Loader2 className="w-3.5 h-3.5 animate-spin" /> Mengunggah...
                     </>
-                  ) : docTypeItem.key === 'selfie' && uploadedDoc ? (
+                  ) : isSelfieLocked ? (
                     <>
                       <Lock className="w-3.5 h-3.5" /> Terkunci (SOP Foto)
                     </>
-                  ) : docTypeItem.key === 'selfie' && !uploadedDoc ? (
+                  ) : docTypeItem.key === 'selfie' ? (
                     <>
-                      <Camera className="w-3.5 h-3.5" /> Ambil Foto via Kamera
+                      <Camera className="w-3.5 h-3.5" /> {uploadedDoc ? 'Ambil Ulang Foto via Kamera' : 'Ambil Foto via Kamera'}
                     </>
                   ) : uploadedDoc ? (
                     <>
