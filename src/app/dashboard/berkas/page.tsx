@@ -204,7 +204,7 @@ export default function BerkasPage() {
       accept: '.pdf,.png,.jpg,.jpeg' 
     },
     { key: 'ktp', label: 'Kartu Tanda Penduduk (KTP)', desc: 'Scan KTP asli domisili Kabupaten/Kota Sulawesi Tenggara.', required: true, accept: '.pdf,.png,.jpg,.jpeg' },
-    { key: 'esai', label: jenjang === 'S2' ? 'Esai Rencana Penelitian & Kontribusi Sultra (S2)' : jenjang === 'S3' ? 'Proposal Disertasi & Esai Kontribusi Sultra (S3)' : 'Motivation Letter / Esai (S1/D4)', desc: 'Surat motivasi atau esai sesuai jenjang pendidikan yang Anda daftarkan.', required: true, accept: '.pdf,.png,.jpg,.jpeg' },
+    { key: 'esai', label: (jenjang === 'S2' || jenjang === 'S3') ? 'Esai Kontribusi Daerah (5 Tahun)' : 'Motivation Letter (S1/D4)', desc: (jenjang === 'S2' || jenjang === 'S3') ? 'Esai rencana nyata kontribusi bagi Sulawesi Tenggara dalam 5 tahun ke depan.' : 'Surat motivasi yang memuat alasan dan motivasi akademik Anda.', required: true, accept: '.pdf,.png,.jpg,.jpeg' },
     { key: 'pendukung', label: 'Berkas Sertifikat & Pendukung Lain', desc: 'Sertifikat keahlian, prestasi, atau dokumen pendukung tambahan.', required: false, accept: '.pdf,.png,.jpg,.jpeg' },
   ];
 

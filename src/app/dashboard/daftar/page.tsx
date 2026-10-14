@@ -1387,7 +1387,7 @@ export default function RegistrationPage() {
                           { key: 'fileTranskrip', docType: 'transkrip', title: '5. Transkrip Nilai Semester S2' },
                           { key: 'fileDtks', docType: 'dtks', title: '6. Ijazah & Transkrip Nilai S1' },
                           { key: 'fileSuratPernyataan', docType: 'surat_pernyataan', title: '7. Surat Pernyataan Tidak Sedang Menerima Beasiswa Lain' },
-                          { key: 'fileMotivationOrEsai', docType: 'esai', title: '8. Esai Rencana Penelitian & Kontribusi Sultra (S2)' }
+                          { key: 'fileMotivationOrEsai', docType: 'esai', title: '8. Esai Kontribusi Daerah (5 Tahun)' }
                         ]
                       : [
                           { key: 'fileSuratPermohonan', docType: 'surat_permohonan', title: '1. Surat Permohonan BSSC (Gubernur Sultra)' },
@@ -1397,7 +1397,7 @@ export default function RegistrationPage() {
                           { key: 'fileTranskrip', docType: 'transkrip', title: '5. Transkrip Nilai Semester S3' },
                           { key: 'fileDtks', docType: 'dtks', title: '6. Ijazah & Transkrip S1 & S2' },
                           { key: 'fileSuratPernyataan', docType: 'surat_pernyataan', title: '7. Surat Pernyataan Tidak Sedang Menerima Beasiswa Lain' },
-                          { key: 'fileMotivationOrEsai', docType: 'esai', title: '8. Proposal Disertasi & Esai Kontribusi Sultra (S3)' }
+                          { key: 'fileMotivationOrEsai', docType: 'esai', title: '8. Esai Kontribusi Daerah (5 Tahun)' }
                         ]
                     ).map((docItem, idx) => {
                       const currentVal = (formData as any)[docItem.key];
