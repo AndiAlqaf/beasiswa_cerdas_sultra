@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { CheckCircle2, Clock, FileText, Calendar, ChevronRight, AlertCircle, Award, XCircle, ArrowRight, Send, Loader2, RefreshCw, Landmark, Save, CreditCard, ExternalLink } from 'lucide-react';
+import { CheckCircle2, Clock, FileText, Calendar, ChevronRight, AlertCircle, Award, XCircle, ArrowRight, Send, Loader2, RefreshCw, Landmark, Save, CreditCard, ExternalLink, ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
 import { getUser, fetchAPI } from '@/lib/api';
 import { getStoredScheduleConfig, getDynamicTimeline, ScheduleConfig } from '@/lib/schedule';
@@ -144,6 +144,7 @@ export default function DashboardPage() {
 
   const sanggahStep = timeline.find((s) => s.id === 'sanggah');
   const isSanggahPeriodOpen = sanggahStep ? sanggahStep.status === 'active' : false;
+  const isSanggahPeriodCompleted = sanggahStep ? sanggahStep.status === 'completed' : false;
 
   const pengumumanSanggahStep = timeline.find((s) => s.id === 'pengumuman-sanggah');
   const isPengumumanSanggahPeriodOpen = pengumumanSanggahStep
@@ -568,7 +569,7 @@ export default function DashboardPage() {
       )}
 
       {/* INFORMASI MENUNGGU MASA SANGGAH (Jika Status DITOLAK dan Masa Sanggah Belum Buka) */}
-      {!isSanggahPeriodOpen && effectiveStatus === 'DITOLAK' && !isSanggahan && (
+      {!isSanggahPeriodOpen && !isSanggahPeriodCompleted && effectiveStatus === 'DITOLAK' && !isSanggahan && (
         <div className="bg-amber-50 rounded-3xl border border-amber-200 p-6 sm:p-8 shadow-sm space-y-4">
           <div className="flex items-center gap-3">
             <div className="p-3 bg-amber-600 text-white rounded-2xl shadow-sm">
@@ -587,6 +588,31 @@ export default function DashboardPage() {
             </p>
             <p className="text-slate-500 text-[11px]">
               Silakan siapkan dokumen perbaikan Anda (seperti perbaikan KTP/KK atau Surat Pernyataan) dan ajukan sanggahan ketika jadwal Masa Sanggah resmi dibuka.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* INFORMASI PENETAPAN FINAL (Jika Masa Sanggah Telah Ditutup / Masuk Fase Penetapan) */}
+      {isSanggahPeriodCompleted && effectiveStatus === 'DITOLAK' && (
+        <div className="bg-slate-50 rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="p-3 bg-slate-800 text-white rounded-2xl shadow-sm">
+              <ShieldCheck className="w-6 h-6 text-amber-400" />
+            </div>
+            <div>
+              <span className="text-[10px] font-extrabold uppercase tracking-wider bg-slate-200 text-slate-700 px-3 py-1 rounded-full border border-slate-300">
+                Penetapan Hasil Seleksi Final
+              </span>
+              <h3 className="text-lg font-black text-slate-900 mt-1">Masa Sanggah Telah Ditutup</h3>
+            </div>
+          </div>
+          <div className="bg-white p-5 rounded-2xl border border-slate-200 text-xs text-slate-700 leading-relaxed space-y-2">
+            <p>
+              Masa pengajuan sanggahan telah resmi berakhir pada jadwal <strong>{sanggahStep?.date || '5 - 8 November 2026'}</strong>.
+            </p>
+            <p className="text-slate-600">
+              Hasil penetapan penerima beasiswa saat ini telah bersifat <strong>final dan mengikat</strong> berdasarkan Surat Keputusan (SK) Gubernur Sulawesi Tenggara. Terima kasih atas partisipasi dan dedikasi Anda dalam mengikuti proses seleksi Beasiswa Stimulan Sultra Cerdas 2026.
             </p>
           </div>
         </div>

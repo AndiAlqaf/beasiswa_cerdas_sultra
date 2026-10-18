@@ -51,6 +51,8 @@ export default function PengumumanPage() {
 
   const timeline = getDynamicTimeline(scheduleConfig);
   const pengumumanStep = timeline.find((s) => s.id === 'pengumuman');
+  const sanggahStep = timeline.find((s) => s.id === 'sanggah');
+  const isSanggahPeriodOpen = sanggahStep ? sanggahStep.status === 'active' : false;
 
   // Check if announcement stage is currently active or completed according to admin schedule
   const isAnnouncementPeriodOpen = pengumumanStep
@@ -139,8 +141,8 @@ export default function PengumumanPage() {
         </div>
       )}
 
-      {/* Sanggahan Alert Banner (jika DITOLAK dan masa sanggah terbuka) */}
-      {isAnnouncementPeriodOpen && myApp?.status === 'DITOLAK' && (
+      {/* Sanggahan Alert Banner (jika DITOLAK dan masa sanggah SEDANG DIBUKA) */}
+      {isAnnouncementPeriodOpen && isSanggahPeriodOpen && myApp?.status === 'DITOLAK' && (
         <div className="bg-rose-50 border border-rose-200 rounded-2xl p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="p-2.5 bg-rose-600 text-white rounded-xl shadow-xs">
@@ -157,6 +159,21 @@ export default function PengumumanPage() {
           >
             Ajukan Sanggahan
           </Link>
+        </div>
+      )}
+
+      {/* Informasi Masa Sanggah Selesai (Fase Penetapan / Pasca Sanggah) */}
+      {isAnnouncementPeriodOpen && sanggahStep?.status === 'completed' && myApp?.status === 'DITOLAK' && (
+        <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 bg-slate-800 text-white rounded-xl shadow-xs">
+              <ShieldCheck className="w-5 h-5 text-amber-400" />
+            </div>
+            <div>
+              <h4 className="font-extrabold text-xs text-slate-900 uppercase">Masa Sanggah Berakhir &bull; Penetapan Hasil Seleksi Final</h4>
+              <p className="text-xs text-slate-600">Masa pengajuan sanggahan telah resmi ditutup. Seluruh keputusan penetapan penerima beasiswa bersifat final dan mengikat sesuai SK Gubernur Sulawesi Tenggara.</p>
+            </div>
+          </div>
         </div>
       )}
 

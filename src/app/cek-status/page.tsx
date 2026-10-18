@@ -59,6 +59,10 @@ export default function CheckStatusPage() {
           effectiveNotes = 'Berkas KTM/Surat Aktif Kuliah Anda tidak terbaca di sistem. Silakan login ke dashboard, unggah ulang berkas, lalu klik "Kirim Ulang Pendaftaran". Nomor registrasi Anda tidak berubah.';
         }
 
+        const sanggahStep = timeline.find((s) => s.id === 'sanggah');
+        const isSanggahOpen = sanggahStep ? sanggahStep.status === 'active' : false;
+        const isSanggahCompleted = sanggahStep ? sanggahStep.status === 'completed' : false;
+
         setSearchedApp({
           registrationNo: res.data.registrationNo,
           name: res.data.namaLengkap,
@@ -66,6 +70,8 @@ export default function CheckStatusPage() {
           status: effectiveStatus,
           dateSubmitted: res.data.submittedAt ? new Date(res.data.submittedAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : '-',
           notes: effectiveNotes,
+          isSanggahOpen,
+          isSanggahCompleted,
         });
       } else {
         setSearchedApp(null);
@@ -198,7 +204,7 @@ export default function CheckStatusPage() {
                   </div>
                   <p className="text-xs leading-relaxed font-medium whitespace-pre-line">{searchedApp.notes || 'Berkas belum memenuhi kualifikasi seleksi administrasi.'}</p>
 
-                  {searchedApp.status === 'DITOLAK' && (
+                  {searchedApp.status === 'DITOLAK' && searchedApp.isSanggahOpen && (
                     <div className="pt-3 border-t border-rose-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                       <p className="text-[11px] text-rose-800 font-semibold">
                         Ingin mengajukan sanggahan &amp; memperbarui berkas yang ditolak?
@@ -209,6 +215,14 @@ export default function CheckStatusPage() {
                       >
                         Masuk Portal Mahasiswa &amp; Kirim Sanggahan →
                       </Link>
+                    </div>
+                  )}
+
+                  {searchedApp.status === 'DITOLAK' && searchedApp.isSanggahCompleted && (
+                    <div className="pt-3 border-t border-rose-200">
+                      <p className="text-[11px] text-slate-600 font-semibold">
+                        Masa sanggah telah berakhir. Keputusan penetapan penerima beasiswa bersifat final.
+                      </p>
                     </div>
                   )}
                 </div>
