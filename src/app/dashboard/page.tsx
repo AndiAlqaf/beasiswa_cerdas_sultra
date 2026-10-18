@@ -21,14 +21,36 @@ export default function DashboardPage() {
 
   // Bank Account State (Penyaluran Beasiswa 50% Termin 1)
   const [namaBank, setNamaBank] = useState('');
+  const [bankLainnya, setBankLainnya] = useState('');
   const [noRekening, setNoRekening] = useState('');
   const [namaRekening, setNamaRekening] = useState('');
   const [savingBank, setSavingBank] = useState(false);
 
+  const STANDARD_BANKS = [
+    'Bank Sultra (BPD Sultra)',
+    'Bank Mandiri',
+    'Bank BNI',
+    'Bank BRI',
+    'Bank BCA',
+    'Bank BSI (Bank Syariah Indonesia)',
+    'Bank BTN',
+  ];
+
   const handleSaveBank = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!namaBank.trim() || !noRekening.trim() || !namaRekening.trim()) {
-      setToast({ title: 'Perhatian', message: 'Harap lengkapi Nama Bank, Nomor Rekening, dan Nama Pemilik Rekening.', type: 'error' });
+    const finalBank = namaBank === 'Lainnya' ? bankLainnya.trim() : namaBank.trim();
+    if (!finalBank) {
+      setToast({
+        title: 'Perhatian',
+        message: namaBank === 'Lainnya'
+          ? 'Harap ketikkan nama bank Anda pada kolom Nama Bank Lainnya.'
+          : 'Harap pilih Nama Bank Anda.',
+        type: 'error',
+      });
+      return;
+    }
+    if (!noRekening.trim() || !namaRekening.trim()) {
+      setToast({ title: 'Perhatian', message: 'Harap lengkapi Nomor Rekening dan Nama Pemilik Rekening.', type: 'error' });
       return;
     }
     setSavingBank(true);
@@ -36,7 +58,7 @@ export default function DashboardPage() {
       const res = await fetchAPI('/applicant/profile', {
         method: 'PUT',
         body: JSON.stringify({
-          namaBank: namaBank.trim(),
+          namaBank: finalBank,
           noRekening: noRekening.trim(),
           namaRekening: namaRekening.trim(),
         }),
@@ -44,7 +66,7 @@ export default function DashboardPage() {
       if (res.success) {
         setToast({
           title: 'Berhasil Disimpan!',
-          message: 'Informasi rekening bank Anda berhasil disimpan untuk proses penyaluran dana beasiswa 50% tahap pertama.',
+          message: `Informasi rekening ${finalBank} berhasil disimpan untuk proses penyaluran dana beasiswa 50% tahap pertama.`,
           type: 'success',
         });
       } else {
@@ -110,8 +132,15 @@ export default function DashboardPage() {
             ...p,
           }));
           setDocuments(profileRes.data.documents || []);
-          setMissingDocuments(profileRes.data.missingDocuments || []);
-          if (p.namaBank) setNamaBank(p.namaBank);
+          if (p.namaBank) {
+            if (STANDARD_BANKS.includes(p.namaBank)) {
+              setNamaBank(p.namaBank);
+              setBankLainnya('');
+            } else {
+              setNamaBank('Lainnya');
+              setBankLainnya(p.namaBank);
+            }
+          }
           if (p.noRekening) setNoRekening(p.noRekening);
           if (p.namaRekening) setNamaRekening(p.namaRekening);
         }
@@ -520,10 +549,26 @@ export default function DashboardPage() {
                   <option value="Bank BNI">Bank BNI</option>
                   <option value="Bank BRI">Bank BRI</option>
                   <option value="Bank BCA">Bank BCA</option>
-                  <option value="Bank BSI (Bank Syariah Indonesia)">Bank BSI</option>
+                  <option value="Bank BSI (Bank Syariah Indonesia)">Bank BSI (Bank Syariah Indonesia)</option>
                   <option value="Bank BTN">Bank BTN</option>
-                  <option value="Lainnya">Lainnya</option>
+                  <option value="Lainnya">Lainnya (Bank Lain)</option>
                 </select>
+
+                {namaBank === 'Lainnya' && (
+                  <div className="mt-2.5 animate-in fade-in slide-in-from-top-1">
+                    <label className="block text-[11px] font-bold text-blue-900 mb-1">
+                      Ketik Nama Bank Lainnya *
+                    </label>
+                    <input
+                      type="text"
+                      value={bankLainnya}
+                      onChange={(e) => setBankLainnya(e.target.value)}
+                      placeholder="Contoh: Bank Danamon / CIMB Niaga / Muamalat"
+                      className="w-full px-3.5 py-2 rounded-xl border border-blue-400 bg-blue-50/50 text-xs font-semibold focus:ring-2 focus:ring-blue-600 focus:outline-none text-slate-900"
+                      autoFocus
+                    />
+                  </div>
+                )}
               </div>
 
               <div>
