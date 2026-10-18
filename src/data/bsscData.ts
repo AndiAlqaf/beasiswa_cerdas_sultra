@@ -304,14 +304,14 @@ export const SCHOLARSHIP_AMOUNTS = [
 ];
 
 export const SCHEDULE_TIMELINE = [
-  { date: '13 - 30 September 2026', title: 'Pendaftaran Online', desc: 'Pembuatan akun, pengisian formulir, & unggah berkas di portal resmi.', status: 'active' },
-  { date: '1 - 15 Oktober 2026', title: 'Proses Seleksi & Verifikasi', desc: 'Verifikasi berkas & validasi kualifikasi pendaftar oleh tim seleksi.', status: 'upcoming' },
-  { date: '16 - 17 Oktober 2026', title: 'Pengumuman Hasil Seleksi', desc: 'Pengumuman kelulusan administrasi & seleksi tahap awal.', status: 'upcoming' },
-  { date: '19 - 21 Oktober 2026', title: 'Masa Sanggah', desc: 'Pengajuan sanggahan bagi pendaftar yang berkasnya memerlukan klarifikasi.', status: 'upcoming' },
-  { date: '22 - 29 Oktober 2026', title: 'Pengumuman Hasil Sanggah', desc: 'Pengumuman final setelah proses verifikasi sanggahan.', status: 'upcoming' },
-  { date: '30 - 31 Oktober 2026', title: 'Penetapan Penerima Resmi', desc: 'SK Gubernur penetapan nama penerima Beasiswa Stimulan Sultra Cerdas.', status: 'upcoming' },
-  { date: '2 - 3 November 2026', title: 'Penandatanganan Kontrak & Pakta Integritas', desc: 'Penandatanganan dokumen komitmen penerima beasiswa.', status: 'upcoming' },
-  { date: 'Mulai 4 November 2026', title: 'Penyaluran Beasiswa Termin I', desc: 'Pencairan dana 50% tahap pertama langsung ke rekening bank penerima.', status: 'upcoming' }
+  { date: '1 - 18 Oktober 2026', title: 'Pendaftaran Online', desc: 'Pembuatan akun, pengisian formulir, & unggah berkas di portal resmi.', status: 'active' },
+  { date: '19 - 31 Oktober 2026', title: 'Proses Seleksi & Verifikasi', desc: 'Verifikasi berkas & validasi kualifikasi pendaftar oleh tim seleksi.', status: 'upcoming' },
+  { date: '2 - 4 November 2026', title: 'Pengumuman Hasil Seleksi', desc: 'Pengumuman kelulusan administrasi & seleksi tahap awal.', status: 'upcoming' },
+  { date: '5 - 8 November 2026', title: 'Masa Sanggah', desc: 'Pengajuan sanggahan bagi pendaftar yang berkasnya memerlukan klarifikasi.', status: 'upcoming' },
+  { date: '9 - 11 November 2026', title: 'Pengumuman Hasil Sanggah', desc: 'Pengumuman final setelah proses verifikasi sanggahan.', status: 'upcoming' },
+  { date: '16 - 17 November 2026', title: 'Penetapan Penerima Resmi', desc: 'SK Gubernur penetapan nama penerima Beasiswa Stimulan Sultra Cerdas.', status: 'upcoming' },
+  { date: '18 - 19 November 2026', title: 'Penandatanganan Kontrak & Pakta Integritas', desc: 'Penandatanganan dokumen komitmen penerima beasiswa.', status: 'upcoming' },
+  { date: 'Mulai 23 November 2026', title: 'Penyaluran Beasiswa Termin I', desc: 'Pencairan dana 50% tahap pertama langsung ke rekening bank penerima.', status: 'upcoming' }
 ];
 
 export const TEMPLATE_DOCUMENTS: DocumentTemplate[] = [

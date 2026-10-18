@@ -49,7 +49,9 @@ export default function RegistrationPage() {
 
   const timeline = getDynamicTimeline(scheduleConfig);
   const pendaftaranStep = timeline.find((s) => s.id === 'pendaftaran');
+  const pengumumanStep = timeline.find((s) => s.id === 'pengumuman');
   const isRegistrationOpen = pendaftaranStep ? pendaftaranStep.status === 'active' : true;
+  const announcementDateStr = pengumumanStep?.date || '2 - 4 November 2026';
 
   // 5 Categories Dynamic State
   const [prestasiAkademikList, setPrestasiAkademikList] = useState<DynamicAchievementItem[]>([]);
@@ -1578,7 +1580,7 @@ export default function RegistrationPage() {
             </div>
 
             <p className="text-xs text-slate-600 leading-relaxed max-w-md mx-auto">
-              Seluruh data diri, akademik, dan berkas persyaratan Anda telah masuk ke dalam sistem validasi Pemprov Sulawesi Tenggara. Hasil verifikasi administrasi akan diumumkan pada <strong>16 - 17 Oktober 2026</strong>.
+              Seluruh data diri, akademik, dan berkas persyaratan Anda telah masuk ke dalam sistem validasi Pemprov Sulawesi Tenggara. Hasil verifikasi administrasi akan diumumkan pada <strong>{announcementDateStr}</strong>.
             </p>
 
             <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-3">

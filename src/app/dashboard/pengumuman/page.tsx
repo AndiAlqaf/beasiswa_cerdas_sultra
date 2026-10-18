@@ -176,7 +176,7 @@ export default function PengumumanPage() {
             <div className="shrink-0">
               <span className="inline-flex items-center gap-1.5 px-4 py-2 rounded-2xl text-xs font-bold bg-blue-50 text-blue-900 border border-blue-200 shadow-xs">
                 <Clock className="w-4 h-4 text-blue-700" />
-                {activeStep?.date || '13 - 30 September 2026'}
+                {activeStep?.date || '1 - 18 Oktober 2026'}
               </span>
             </div>
           </div>
@@ -186,7 +186,7 @@ export default function PengumumanPage() {
               Pengumuman resmi hasil seleksi dan daftar penerima beasiswa belum dirilis. Saat ini alur pelaksanaan beasiswa masih berada pada tahap <strong className="text-slate-900">{activeStep?.title}</strong> ({activeStep?.date}).
             </p>
             <p className="text-slate-500 text-xs">
-              Jadwal rilis resmi pengumuman kelulusan: <strong className="text-slate-800">{pengumumanStep?.date || '16 - 17 Oktober 2026'}</strong>.
+              Jadwal rilis resmi pengumuman kelulusan: <strong className="text-slate-800">{pengumumanStep?.date || '2 - 4 November 2026'}</strong>.
             </p>
           </div>
 
