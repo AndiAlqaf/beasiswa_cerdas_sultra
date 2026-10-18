@@ -22,7 +22,6 @@ interface Recipient {
 
 export default function PengumumanPage() {
   const [myApp, setMyApp] = useState<any>(null);
-  const [mockStatus, setMockStatus] = useState<string | null>(null);
   const [recipients, setRecipients] = useState<Recipient[]>([]);
   const [loadingRecipients, setLoadingRecipients] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -46,14 +45,6 @@ export default function PengumumanPage() {
 
     loadMyStatus();
 
-    if (typeof window !== 'undefined') {
-      setMockStatus(localStorage.getItem('bssc_mock_status'));
-    }
-    const handleStatusUpdate = () => {
-      setMockStatus(localStorage.getItem('bssc_mock_status'));
-    };
-    window.addEventListener('bssc_status_updated', handleStatusUpdate);
-
     // Schedule listener
     setScheduleConfig(getStoredScheduleConfig());
     const handleUpdate = () => {
@@ -62,7 +53,6 @@ export default function PengumumanPage() {
     window.addEventListener('bssc_schedule_updated', handleUpdate);
     return () => {
       window.removeEventListener('bssc_schedule_updated', handleUpdate);
-      window.removeEventListener('bssc_status_updated', handleStatusUpdate);
     };
   }, []);
 
@@ -136,7 +126,7 @@ export default function PengumumanPage() {
     loadRecipients();
   };
 
-  const effectiveMyStatus = mockStatus || myApp?.status;
+  const effectiveMyStatus = myApp?.status;
   const isUserAccepted =
     isAnnouncementPeriodOpen &&
     (effectiveMyStatus === 'DITERIMA' ||

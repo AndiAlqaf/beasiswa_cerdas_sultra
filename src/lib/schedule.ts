@@ -63,6 +63,7 @@ export interface TimelineStep {
 }
 
 if (typeof window !== 'undefined') {
+  localStorage.removeItem('bssc_mock_status');
   (window as any).setPhase = async (phase: string) => {
     const config = getStoredScheduleConfig();
     let mockTime = '';
@@ -87,92 +88,31 @@ if (typeof window !== 'undefined') {
       (window as any).__MOCK_TIME = mockTime;
     }
     window.dispatchEvent(new Event('bssc_schedule_updated'));
-    console.log(`%c[BSSC TEST] 🕒 Fase simulasi aktif: ${phase.toUpperCase()} (Waktu Sistem: ${mockTime || 'Real Time'})`, 'color: #10b981; font-weight: bold;');
-
-    // Panduan jika memilih penetapan
-    if (p.includes('penetapan')) {
-      console.log('%c[BSSC TEST] 🏛️ FASE PENETAPAN PENERIMA RESMI (SK GUBERNUR) AKTIF!', 'color: #3b82f6; font-weight: bold;');
-      console.log('%c💡 Ingin menguji input Nomor Rekening Bank? Ketik: testNorek() di console ini!', 'color: #ec4899; font-weight: bold;');
-    }
+    console.log(`[BSSC] Fase aktif: ${phase} (${mockTime || 'Waktu Real'})`);
 
     // 1. Jika phase diubah ke 'pengumuman', otomatis trigger blast email kelulusan awal ke peserta LULUS
     if (p === 'pengumuman') {
-      console.log('%c[BSSC EMAIL] 🚀 Memicu server untuk mengirimkan blast email kelulusan awal...', 'color: #3b82f6; font-weight: bold;');
       try {
-        const res = await fetch('/api/v1/public/trigger-announcement-blast', {
+        await fetch('/api/v1/public/trigger-announcement-blast', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
         });
-        const data = await res.json();
-        if (data.success) {
-          console.log(`%c[BSSC EMAIL] ✅ SUKSES! ${data.data?.sent ?? 0} email kelulusan awal berhasil terkirim ke kotak masuk peserta!`, 'color: #10b981; font-weight: bold; font-size: 13px;');
-        } else {
-          console.warn('[BSSC EMAIL] Respon server:', data.message);
-        }
       } catch (err: any) {
-        console.error('[BSSC EMAIL] Gagal memicu pengiriman email kelulusan awal:', err.message);
+        console.warn('Gagal memicu email pengumuman:', err.message);
       }
     }
 
     // 2. Jika phase diubah ke 'hasil-sanggah', otomatis trigger blast email KHUSUS bagi yang lulus lewat sanggahan
     if (p === 'hasil-sanggah' || p === 'pengumuman-sanggah') {
-      console.log('%c[BSSC EMAIL] 🚀 Memicu server untuk mengirimkan blast email kelulusan HASIL SANGGAH...', 'color: #3b82f6; font-weight: bold;');
       try {
-        const res = await fetch('/api/v1/public/trigger-appeal-blast', {
+        await fetch('/api/v1/public/trigger-appeal-blast', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
         });
-        const data = await res.json();
-        if (data.success) {
-          console.log(`%c[BSSC EMAIL] ✅ SUKSES! ${data.data?.sent ?? 0} email kelulusan hasil sanggah berhasil terkirim (peserta lulus awal tidak dikirimi ulang)!`, 'color: #10b981; font-weight: bold; font-size: 13px;');
-        } else {
-          console.warn('[BSSC EMAIL] Respon server:', data.message);
-        }
       } catch (err: any) {
-        console.error('[BSSC EMAIL] Gagal memicu pengiriman email hasil sanggah:', err.message);
+        console.warn('Gagal memicu email hasil sanggah:', err.message);
       }
     }
-  };
-
-  // Helper untuk simulasi status pendaftar (DITERIMA, DITOLAK, VERIFIKASI_BERKAS)
-  (window as any).setTestStatus = (status: string) => {
-    const s = (status || '').toUpperCase();
-    if (s === 'RESET') {
-      localStorage.removeItem('bssc_mock_status');
-      console.log('%c[BSSC TEST] Status pendaftar dikembalikan ke status server sebenarnya.', 'color: #10b981;');
-    } else {
-      localStorage.setItem('bssc_mock_status', s);
-      console.log(`%c[BSSC TEST] ✅ Status simulasi pendaftar diubah menjadi: ${s}`, 'color: #10b981; font-weight: bold;');
-    }
-    window.dispatchEvent(new Event('bssc_status_updated'));
-    window.dispatchEvent(new Event('bssc_schedule_updated'));
-  };
-
-  // Shortcut otomatis untuk langsung menguji Formulir Rekening Bank
-  (window as any).testNorek = async () => {
-    console.log('%c[BSSC TEST] 💳 Mengaktifkan Mode Testing Rekening Bank...', 'color: #3b82f6; font-weight: bold;');
-    await (window as any).setPhase('penetapan');
-    (window as any).setTestStatus('DITERIMA');
-    console.log('%c[BSSC TEST] 🎉 BERHASIL! Fase: Penetapan Penerima Resmi | Status: DITERIMA.', 'color: #10b981; font-weight: bold;');
-    console.log('%cFormulir "Rekening Bank Penerima Beasiswa" sekarang sudah tampil di Dashboard Anda. Silakan isi Nama Bank, No Rekening, dan Nama Pemilik Rekening lalu klik Simpan!', 'color: #047857;');
-  };
-
-  // Bantuan perintah testing
-  (window as any).helpTest = () => {
-    console.log(`
-%c=== BSSC TESTING CONSOLE COMMANDS ===
-1. testNorek()             -> Langsung aktifkan fase Penetapan & status DITERIMA untuk isi nomor rekening!
-2. setPhase('penetapan')   -> Masuk ke fase Penetapan Penerima Resmi (SK Gubernur)
-3. setPhase('hasil-sanggah') -> Masuk ke fase Pengumuman Hasil Sanggah
-4. setPhase('sanggah')     -> Masuk ke fase Masa Sanggah
-5. setPhase('pengumuman')  -> Masuk ke fase Pengumuman Awal
-6. setTestStatus('DITERIMA') -> Simulasi status akun Anda jadi Lolos / Diterima
-7. setTestStatus('DITOLAK')  -> Simulasi status akun Anda jadi Ditolak
-8. setTestStatus('VERIFIKASI_BERKAS') -> Simulasi status akun Anda sedang diverifikasi
-9. setPhase('reset')       -> Kembalikan waktu ke waktu nyata
-10. setTestStatus('reset') -> Kembalikan status akun ke database asli
-======================================
-    `, 'color: #6366f1; font-weight: bold;');
   };
 }
 
