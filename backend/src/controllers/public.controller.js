@@ -74,15 +74,24 @@ async function checkStatus(req, res) {
 async function getAcceptedRecipients(req, res) {
   try {
     const pool = getPool();
-    const { search, jenjang } = req.query;
+    const { search, jenjang, mode } = req.query;
+
+    let baseWhere = "a.status IN ('DITERIMA', 'PENCAIRAN_TERMIN_1', 'PENCAIRAN_TERMIN_2')";
+    if (mode === 'sanggah') {
+      // Khusus pengumuman hasil sanggah: pendaftar yang memiliki riwayat pengajuan sanggahan
+      baseWhere = "(a.is_lulus_sanggah = 1 OR a.notes LIKE '%[SANGGAHAN%' OR a.status = 'VERIFIKASI_BERKAS')";
+    } else if (mode === 'awal') {
+      // Khusus yang lolos seleksi awal tanpa jalur sanggah
+      baseWhere = "a.status IN ('DITERIMA', 'PENCAIRAN_TERMIN_1', 'PENCAIRAN_TERMIN_2') AND a.is_lulus_sanggah = 0 AND (a.notes IS NULL OR a.notes NOT LIKE '%[SANGGAHAN%')";
+    }
 
     let query = `
-      SELECT u.nama_lengkap, u.jenjang_target, a.registration_no, a.status, a.verified_at,
+      SELECT u.nama_lengkap, u.jenjang_target, a.registration_no, a.status, a.verified_at, a.notes, a.is_lulus_sanggah,
              eh.institusi, eh.jurusan
       FROM applications a
       JOIN users u ON u.id = a.user_id
       LEFT JOIN education_history eh ON eh.user_id = u.id AND eh.sort_order = 0
-      WHERE a.status IN ('DITERIMA', 'PENCAIRAN_TERMIN_1', 'PENCAIRAN_TERMIN_2')
+      WHERE ${baseWhere}
     `;
     const params = [];
 
@@ -105,15 +114,22 @@ async function getAcceptedRecipients(req, res) {
       success: true,
       data: {
         total: rows.length,
-        recipients: rows.map(r => ({
-          namaLengkap: r.nama_lengkap,
-          jenjangTarget: r.jenjang_target,
-          registrationNo: r.registration_no,
-          status: r.status,
-          verifiedAt: r.verified_at,
-          institusi: r.institusi || '-',
-          jurusan: r.jurusan || '-'
-        }))
+        recipients: rows.map(r => {
+          const isSanggah = r.is_lulus_sanggah === 1 || (r.notes && r.notes.includes('[SANGGAHAN'));
+          return {
+            namaLengkap: r.nama_lengkap,
+            jenjangTarget: r.jenjang_target,
+            registrationNo: r.registration_no,
+            status: r.status,
+            verifiedAt: r.verified_at,
+            institusi: r.institusi || '-',
+            jurusan: r.jurusan || '-',
+            isLulusSanggah: r.is_lulus_sanggah === 1,
+            isSanggah,
+            jalur: isSanggah ? 'Pasca Sanggah' : 'Seleksi Awal',
+            notes: r.notes || null,
+          };
+        })
       }
     });
   } catch (err) {

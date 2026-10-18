@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Award, Search, Calendar, FileText, CheckCircle2, Download, Printer, Filter, ShieldCheck, Sparkles, Loader2, Clock, ArrowRight } from 'lucide-react';
+import { Award, Search, Calendar, FileText, CheckCircle2, Download, Printer, Filter, ShieldCheck, Sparkles, Loader2, Clock, ArrowRight, XCircle, RefreshCw } from 'lucide-react';
 import { fetchAPI } from '@/lib/api';
 import { getStoredScheduleConfig, getDynamicTimeline, ScheduleConfig } from '@/lib/schedule';
 import Link from 'next/link';
@@ -14,16 +14,22 @@ interface Recipient {
   verifiedAt: string;
   institusi: string;
   jurusan: string;
+  isLulusSanggah?: boolean;
+  isSanggah?: boolean;
+  jalur?: string;
+  notes?: string;
 }
 
 export default function PengumumanPage() {
   const [myApp, setMyApp] = useState<any>(null);
+  const [mockStatus, setMockStatus] = useState<string | null>(null);
   const [recipients, setRecipients] = useState<Recipient[]>([]);
   const [loadingRecipients, setLoadingRecipients] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [jenjangFilter, setJenjangFilter] = useState('');
   const [showSkModal, setShowSkModal] = useState(false);
   const [scheduleConfig, setScheduleConfig] = useState<ScheduleConfig>(getStoredScheduleConfig());
+  const [activeTab, setActiveTab] = useState<'all' | 'sanggah' | 'awal'>('all');
 
   useEffect(() => {
     // Fetch user's own status
@@ -40,24 +46,57 @@ export default function PengumumanPage() {
 
     loadMyStatus();
 
+    if (typeof window !== 'undefined') {
+      setMockStatus(localStorage.getItem('bssc_mock_status'));
+    }
+    const handleStatusUpdate = () => {
+      setMockStatus(localStorage.getItem('bssc_mock_status'));
+    };
+    window.addEventListener('bssc_status_updated', handleStatusUpdate);
+
     // Schedule listener
     setScheduleConfig(getStoredScheduleConfig());
     const handleUpdate = () => {
       setScheduleConfig(getStoredScheduleConfig());
     };
     window.addEventListener('bssc_schedule_updated', handleUpdate);
-    return () => window.removeEventListener('bssc_schedule_updated', handleUpdate);
+    return () => {
+      window.removeEventListener('bssc_schedule_updated', handleUpdate);
+      window.removeEventListener('bssc_status_updated', handleStatusUpdate);
+    };
   }, []);
 
   const timeline = getDynamicTimeline(scheduleConfig);
   const pengumumanStep = timeline.find((s) => s.id === 'pengumuman');
   const sanggahStep = timeline.find((s) => s.id === 'sanggah');
+  const pengumumanSanggahStep = timeline.find((s) => s.id === 'pengumuman-sanggah');
+  const penetapanStep = timeline.find((s) => s.id === 'penetapan');
+
   const isSanggahPeriodOpen = sanggahStep ? sanggahStep.status === 'active' : false;
 
   // Check if announcement stage is currently active or completed according to admin schedule
   const isAnnouncementPeriodOpen = pengumumanStep
     ? pengumumanStep.status === 'active' || pengumumanStep.status === 'completed'
     : false;
+
+  const isPengumumanSanggahPeriodOpen = pengumumanSanggahStep
+    ? pengumumanSanggahStep.status === 'active' || pengumumanSanggahStep.status === 'completed'
+    : false;
+
+  const isPenetapanPeriodOpen = penetapanStep
+    ? penetapanStep.status === 'active' || penetapanStep.status === 'completed'
+    : false;
+
+  // Set default tab based on period
+  useEffect(() => {
+    if (isPenetapanPeriodOpen) {
+      setActiveTab('all');
+    } else if (isPengumumanSanggahPeriodOpen) {
+      setActiveTab('sanggah');
+    } else {
+      setActiveTab('awal');
+    }
+  }, [isPenetapanPeriodOpen, isPengumumanSanggahPeriodOpen]);
 
   // Find currently active timeline step (or fallback to upcoming/first step)
   const activeStep =
@@ -75,6 +114,7 @@ export default function PengumumanPage() {
       const params = new URLSearchParams();
       if (searchTerm.trim()) params.set('search', searchTerm.trim());
       if (jenjangFilter) params.set('jenjang', jenjangFilter);
+      if (activeTab) params.set('mode', activeTab);
 
       const res = await fetchAPI(`/public/announcements/recipients?${params.toString()}`);
       if (res.success && res.data) {
@@ -89,18 +129,19 @@ export default function PengumumanPage() {
 
   useEffect(() => {
     loadRecipients();
-  }, [jenjangFilter, isAnnouncementPeriodOpen]);
+  }, [jenjangFilter, isAnnouncementPeriodOpen, activeTab]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     loadRecipients();
   };
 
+  const effectiveMyStatus = mockStatus || myApp?.status;
   const isUserAccepted =
     isAnnouncementPeriodOpen &&
-    (myApp?.status === 'DITERIMA' ||
-      myApp?.status === 'PENCAIRAN_TERMIN_1' ||
-      myApp?.status === 'PENCAIRAN_TERMIN_2');
+    (effectiveMyStatus === 'DITERIMA' ||
+      effectiveMyStatus === 'PENCAIRAN_TERMIN_1' ||
+      effectiveMyStatus === 'PENCAIRAN_TERMIN_2');
 
   return (
     <div className="w-full space-y-6 max-w-6xl mx-auto pb-16">
@@ -110,19 +151,45 @@ export default function PengumumanPage() {
           <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
             <div className="space-y-3 max-w-3xl">
               <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-extrabold tracking-wider uppercase border border-emerald-400/30">
-                <Award className="w-4 h-4 text-emerald-300" /> SELAMAT! ANDA DINYATAKAN LOLOS SELEKSI
+                <Award className="w-4 h-4 text-emerald-300" />{' '}
+                {isPenetapanPeriodOpen
+                  ? 'RESMI DITETAPKAN (SK GUBERNUR)'
+                  : isPengumumanSanggahPeriodOpen
+                  ? 'HASIL SANGGAH: ANDA DINYATAKAN LOLOS'
+                  : 'SELAMAT! ANDA DINYATAKAN LOLOS SELEKSI'}
               </div>
               <h1 className="text-2xl sm:text-4xl font-black tracking-tight text-white">
-                Penerima Beasiswa Sultra Cerdas 2026
+                {isPenetapanPeriodOpen
+                  ? 'Penerima Resmi Beasiswa Sultra Cerdas 2026'
+                  : isPengumumanSanggahPeriodOpen
+                  ? 'Kelulusan Hasil Evaluasi Sanggahan'
+                  : 'Penerima Beasiswa Sultra Cerdas 2026'}
               </h1>
               <p className="text-blue-100 text-xs sm:text-sm leading-relaxed font-light">
-                Nomor Registrasi: <strong className="font-mono bg-white/10 px-2.5 py-1 rounded text-white font-bold">{myApp?.registrationNo}</strong>. Berkas dan kualifikasi Anda telah dinyatakan lengkap dan memenuhi seluruh kriteria kelulusan.
+                Nomor Registrasi:{' '}
+                <strong className="font-mono bg-white/10 px-2.5 py-1 rounded text-white font-bold">
+                  {myApp?.registrationNo || 'BSSC-2026-REG'}
+                </strong>
+                .{' '}
+                {isPenetapanPeriodOpen
+                  ? 'Nama Anda telah tercantum dalam SK Gubernur sebagai penerima sah. Silakan lengkapi nomor rekening bank Anda di Beranda Dashboard untuk pencairan Termin 1.'
+                  : isPengumumanSanggahPeriodOpen
+                  ? 'Sanggahan Anda telah disetujui oleh tim seleksi. Penetapan resmi SK Gubernur dijadwalkan pada 16 - 17 November 2026.'
+                  : 'Berkas dan kualifikasi Anda telah dinyatakan lengkap dan memenuhi seluruh kriteria kelulusan.'}
               </p>
             </div>
-            <div className="shrink-0">
+            <div className="shrink-0 flex flex-col sm:flex-row gap-3">
+              {isPenetapanPeriodOpen && (
+                <Link
+                  href="/dashboard"
+                  className="px-5 py-3.5 bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-xs sm:text-sm rounded-2xl shadow-sm transition-all flex items-center justify-center gap-2 border border-blue-400/40"
+                >
+                  💳 Input Norek Bank
+                </Link>
+              )}
               <button
                 onClick={() => setShowSkModal(true)}
-                className="px-6 py-3.5 bg-emerald-700 hover:bg-emerald-800 text-white font-extrabold text-xs sm:text-sm rounded-2xl shadow-sm transition-all flex items-center gap-2 border border-emerald-600"
+                className="px-6 py-3.5 bg-emerald-700 hover:bg-emerald-800 text-white font-extrabold text-xs sm:text-sm rounded-2xl shadow-sm transition-all flex items-center justify-center gap-2 border border-emerald-600"
               >
                 <Printer className="w-4 h-4" /> Cetak SK &amp; Bukti Lolos (PDF)
               </button>
@@ -142,7 +209,7 @@ export default function PengumumanPage() {
       )}
 
       {/* Sanggahan Alert Banner (jika DITOLAK dan masa sanggah SEDANG DIBUKA) */}
-      {isAnnouncementPeriodOpen && isSanggahPeriodOpen && myApp?.status === 'DITOLAK' && (
+      {isAnnouncementPeriodOpen && isSanggahPeriodOpen && effectiveMyStatus === 'DITOLAK' && (
         <div className="bg-rose-50 border border-rose-200 rounded-2xl p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="p-2.5 bg-rose-600 text-white rounded-xl shadow-xs">
@@ -163,7 +230,7 @@ export default function PengumumanPage() {
       )}
 
       {/* Informasi Masa Sanggah Selesai (Fase Penetapan / Pasca Sanggah) */}
-      {isAnnouncementPeriodOpen && sanggahStep?.status === 'completed' && myApp?.status === 'DITOLAK' && (
+      {isAnnouncementPeriodOpen && sanggahStep?.status === 'completed' && effectiveMyStatus === 'DITOLAK' && (
         <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="p-2.5 bg-slate-800 text-white rounded-xl shadow-xs">
@@ -221,12 +288,35 @@ export default function PengumumanPage() {
         <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-5">
             <div>
+              <div className="flex items-center gap-2 mb-1.5">
+                <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider ${
+                  isPenetapanPeriodOpen
+                    ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                    : isPengumumanSanggahPeriodOpen
+                    ? 'bg-amber-100 text-amber-900 border border-amber-200'
+                    : 'bg-blue-100 text-blue-900 border border-blue-200'
+                }`}>
+                  {isPenetapanPeriodOpen
+                    ? 'SK GUBERNUR • KEPUTUSAN FINAL'
+                    : isPengumumanSanggahPeriodOpen
+                    ? 'PENGUMUMAN HASIL SANGGAHAN'
+                    : 'PENGUMUMAN HASIL SELEKSI AWAL'}
+                </span>
+              </div>
               <h3 className="text-xl font-black text-slate-900 flex items-center gap-2">
                 <ShieldCheck className="w-6 h-6 text-blue-900" />
-                Daftar Nama-Nama Penerima Beasiswa Resmi
+                {isPenetapanPeriodOpen
+                  ? 'Penetapan Penerima Resmi Beasiswa (SK Gubernur)'
+                  : isPengumumanSanggahPeriodOpen
+                  ? 'Pengumuman Hasil Verifikasi Sanggahan'
+                  : 'Daftar Nama Lolos Seleksi Awal'}
               </h3>
               <p className="text-xs text-slate-500 mt-1">
-                Cari nama atau nomor registrasi mahasiswa penerima beasiswa yang telah lolos verifikasi.
+                {isPenetapanPeriodOpen
+                  ? 'Daftar KESELURUHAN penerima resmi beasiswa (gabungan seleksi awal dan pasca sanggah) yang telah ditetapkan secara sah.'
+                  : isPengumumanSanggahPeriodOpen
+                  ? 'Pengumuman hasil peninjauan ulang berkas bagi pendaftar yang berstatus VERIFIKASI BERKAS / mengajukan sanggahan.'
+                  : 'Daftar nama mahasiswa yang dinyatakan memenuhi kualifikasi seleksi administrasi tahap awal.'}
               </p>
             </div>
             <button
@@ -234,6 +324,47 @@ export default function PengumumanPage() {
               className="inline-flex items-center gap-2 px-4 py-2.5 bg-slate-900 text-white font-bold text-xs rounded-xl hover:bg-slate-800 transition-colors shrink-0 shadow-xs"
             >
               <Printer className="w-4 h-4 text-amber-400" /> Lihat Format SK Resmi
+            </button>
+          </div>
+
+          {/* Mode Switcher Tabs */}
+          <div className="flex flex-wrap items-center gap-2 border-b border-slate-100 pb-3">
+            {isPenetapanPeriodOpen && (
+              <button
+                type="button"
+                onClick={() => setActiveTab('all')}
+                className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all ${
+                  activeTab === 'all'
+                    ? 'bg-blue-900 text-white shadow-sm'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                🏛️ Keseluruhan Penerima Resmi (SK Gubernur)
+              </button>
+            )}
+            {(isPengumumanSanggahPeriodOpen || isPenetapanPeriodOpen) && (
+              <button
+                type="button"
+                onClick={() => setActiveTab('sanggah')}
+                className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all ${
+                  activeTab === 'sanggah'
+                    ? 'bg-blue-900 text-white shadow-sm'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                🔄 {isPenetapanPeriodOpen ? 'Penerima Jalur Pasca Sanggah' : 'Hasil Verifikasi Sanggahan'}
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setActiveTab('awal')}
+              className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all ${
+                activeTab === 'awal'
+                  ? 'bg-blue-900 text-white shadow-sm'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              }`}
+            >
+              📋 {isPenetapanPeriodOpen ? 'Penerima Jalur Seleksi Awal' : 'Lolos Seleksi Awal'}
             </button>
           </div>
 
@@ -277,9 +408,9 @@ export default function PengumumanPage() {
           ) : recipients.length === 0 ? (
             <div className="py-16 text-center space-y-3 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
               <Award className="w-12 h-12 text-slate-300 mx-auto" />
-              <h4 className="font-bold text-slate-800 text-sm">Belum Ada Data Penerima</h4>
+              <h4 className="font-bold text-slate-800 text-sm">Belum Ada Data</h4>
               <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                Tidak ada data penerima beasiswa yang cocok dengan pencarian <strong>"{searchTerm}"</strong>.
+                Tidak ada data pada tab ini yang cocok dengan pencarian <strong>"{searchTerm}"</strong>.
               </p>
             </div>
           ) : (
@@ -292,6 +423,7 @@ export default function PengumumanPage() {
                     <th className="py-3.5 px-4">Nama Mahasiswa</th>
                     <th className="py-3.5 px-4">Jenjang</th>
                     <th className="py-3.5 px-4">Perguruan Tinggi / Prodi</th>
+                    <th className="py-3.5 px-4 text-center">Jalur Kelulusan</th>
                     <th className="py-3.5 px-4 text-center">Status Penetapan</th>
                   </tr>
                 </thead>
@@ -311,9 +443,29 @@ export default function PengumumanPage() {
                         <p className="text-[10px] text-slate-500">{rec.jurusan}</p>
                       </td>
                       <td className="py-3.5 px-4 text-center">
-                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[10px] font-extrabold uppercase bg-emerald-100 text-emerald-800 border border-emerald-200">
-                          <CheckCircle2 className="w-3 h-3 text-emerald-600" /> DITERIMA
+                        <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                          rec.isSanggah
+                            ? 'bg-amber-100 text-amber-900 border border-amber-200'
+                            : 'bg-blue-50 text-blue-900 border border-blue-200'
+                        }`}>
+                          {rec.isSanggah ? 'Pasca Sanggah' : 'Seleksi Awal'}
                         </span>
+                      </td>
+                      <td className="py-3.5 px-4 text-center">
+                        {rec.status === 'DITERIMA' || rec.status === 'PENCAIRAN_TERMIN_1' || rec.status === 'PENCAIRAN_TERMIN_2' ? (
+                          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[10px] font-extrabold uppercase bg-emerald-100 text-emerald-800 border border-emerald-200">
+                            <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                            {isPenetapanPeriodOpen ? 'RESMI DITETAPKAN' : 'DITERIMA'}
+                          </span>
+                        ) : rec.status === 'DITOLAK' ? (
+                          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[10px] font-extrabold uppercase bg-rose-100 text-rose-800 border border-rose-200">
+                            <XCircle className="w-3 h-3 text-rose-600" /> DITOLAK
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[10px] font-extrabold uppercase bg-blue-100 text-blue-800 border border-blue-200">
+                            <Clock className="w-3 h-3 text-blue-600" /> PROSES
+                          </span>
+                        )}
                       </td>
                     </tr>
                   ))}

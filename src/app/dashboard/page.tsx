@@ -136,7 +136,25 @@ export default function DashboardPage() {
     return () => window.removeEventListener('bssc_schedule_updated', handleUpdate);
   }, []);
 
+  const [mockStatus, setMockStatus] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setMockStatus(localStorage.getItem('bssc_mock_status'));
+    }
+    const handleStatusUpdate = () => {
+      setMockStatus(localStorage.getItem('bssc_mock_status'));
+    };
+    window.addEventListener('bssc_status_updated', handleStatusUpdate);
+    return () => window.removeEventListener('bssc_status_updated', handleStatusUpdate);
+  }, []);
+
   const timeline = getDynamicTimeline(scheduleConfig);
+  const activeStep =
+    timeline.find((step) => step.status === 'active') ||
+    timeline.find((step) => step.status === 'upcoming') ||
+    timeline[0];
+
   const pengumumanStep = timeline.find((s) => s.id === 'pengumuman');
   const isAnnouncementPeriodOpen = pengumumanStep
     ? pengumumanStep.status === 'active' || pengumumanStep.status === 'completed'
@@ -153,10 +171,16 @@ export default function DashboardPage() {
 
   const isSanggahan = application?.notes?.includes('[SANGGAHAN MAHASISWA]');
 
-  let effectiveStatus = application?.status;
+  let effectiveStatus = mockStatus || application?.status;
   let effectiveNotes = application?.notes;
 
-  if (isSanggahan) {
+  if (mockStatus) {
+    if (mockStatus === 'DITERIMA') {
+      effectiveNotes = 'Selamat! Anda dinyatakan lolos seleksi penerima Beasiswa Stimulan Sultra Cerdas 2026.';
+    } else if (mockStatus === 'DITOLAK') {
+      effectiveNotes = effectiveNotes || 'Berkas belum memenuhi kualifikasi seleksi administrasi.';
+    }
+  } else if (isSanggahan) {
     if (!isPengumumanSanggahPeriodOpen && (application?.status === 'DITERIMA' || application?.status === 'DITOLAK')) {
       effectiveStatus = 'VERIFIKASI_BERKAS';
       effectiveNotes = 'Sanggahan sedang diperiksa. Mohon pantau kembali pada masa pengumuman hasil sanggah.';
@@ -169,7 +193,7 @@ export default function DashboardPage() {
   }
 
   const userName = user?.namaLengkap || user?.email || 'Peserta';
-  const hasSubmitted = !!application?.registrationNo;
+  const hasSubmitted = !!application?.registrationNo || !!mockStatus;
 
   const getDocLabel = (docType: string) => {
     const map: Record<string, string> = {
@@ -258,6 +282,58 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6 w-full max-w-7xl mx-auto">
+      {/* Test / Simulator Banner (Hanya muncul jika mode test setPhase / setTestStatus sedang aktif) */}
+      {(mockStatus || (typeof window !== 'undefined' && (window as any).__MOCK_TIME)) && (
+        <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white rounded-3xl p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 text-xs shadow-lg border border-indigo-500/40 animate-in fade-in">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-amber-400 text-slate-950 flex items-center justify-center font-black text-sm shrink-0 shadow-md">
+              🧪
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="px-2.5 py-0.5 rounded-full bg-amber-400 text-slate-950 font-black text-[10px] uppercase tracking-wider">
+                  Mode Pengujian Aktif
+                </span>
+                <span className="text-slate-300 text-xs">
+                  Fase: <strong className="text-white">{activeStep?.title || 'Simulasi'}</strong>
+                </span>
+              </div>
+              <p className="text-slate-300 text-[11px] mt-0.5">
+                Simulasi Status Pendaftar: <strong className="text-emerald-400 uppercase font-mono">{effectiveStatus || 'ASLI'}</strong>
+              </p>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => (window as any).testNorek?.()}
+              className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold text-xs transition-all shadow-sm flex items-center gap-1.5"
+            >
+              💳 Uji Input Norek Bank
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                (window as any).setPhase?.('penetapan');
+              }}
+              className="px-3 py-2 bg-indigo-700 hover:bg-indigo-600 text-white rounded-xl font-semibold text-xs transition-colors"
+            >
+              Fase Penetapan
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                (window as any).setPhase?.('reset');
+                (window as any).setTestStatus?.('reset');
+              }}
+              className="px-3 py-2 bg-white/10 hover:bg-white/20 text-slate-200 rounded-xl font-semibold text-xs transition-colors"
+            >
+              Reset ke Asli
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Welcome Banner */}
       <div className="bg-[#0B3A6A] rounded-3xl p-8 sm:p-10 text-white relative overflow-hidden shadow-md">
         <div className="relative z-10 max-w-2xl">
