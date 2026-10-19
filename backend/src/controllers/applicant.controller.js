@@ -10,6 +10,15 @@ const { getPool } = require('../config/database');
 const { auditLog, getClientIp, log, LOG_LEVELS } = require('../utils/logger');
 
 /**
+ * Batas akhir pendaftaran online & perbaikan berkas: 18 Oktober 2026 pukul 23:59:59 WITA (UTC+8)
+ */
+function isRegistrationDeadlinePassed() {
+  const REGISTRATION_DEADLINE_MS = new Date('2026-10-18T23:59:59+08:00').getTime();
+  return Date.now() > REGISTRATION_DEADLINE_MS;
+}
+
+
+/**
  * GET /api/v1/applicant/profile
  */
 async function getProfile(req, res) {
@@ -359,6 +368,17 @@ function uploadDocument(docType) {
       const appStatus = appRows.length > 0 ? appRows[0].status : null;
       const appNotes = appRows.length > 0 ? (appRows[0].notes || '') : '';
 
+      // Kunci unggah berkas jika status PERLU_UNGGAH_ULANG dan masa pendaftaran sudah berakhir
+      if (appStatus === 'PERLU_UNGGAH_ULANG' && isRegistrationDeadlinePassed()) {
+        if (req.file && req.file.path && fs.existsSync(req.file.path)) {
+          try { fs.unlinkSync(req.file.path); } catch (e) {}
+        }
+        return res.status(403).json({
+          success: false,
+          message: 'Masa pendaftaran online dan batas perbaikan berkas telah resmi ditutup pada 18 Oktober 2026 pukul 23:59 WITA. Berkas pendaftaran telah dikunci.',
+        });
+      }
+
       const isAppealState = appStatus === 'DITOLAK' ||
                             appNotes.toLowerCase().includes('sanggah') ||
                             appNotes.includes('[SANGGAHAN');
@@ -460,6 +480,13 @@ async function submitApplication(req, res) {
     const userId = req.user.id;
     const pool = getPool();
 
+    if (isRegistrationDeadlinePassed()) {
+      return res.status(403).json({
+        success: false,
+        message: 'Masa pendaftaran online telah resmi ditutup pada 18 Oktober 2026 pukul 23:59 WITA. Pengajuan formulir baru tidak dapat dilakukan.',
+      });
+    }
+
     const [existing] = await pool.execute('SELECT id FROM applications WHERE user_id = ?', [userId]);
     if (existing.length > 0) {
       return res.status(409).json({ success: false, message: 'Anda sudah mengajukan pendaftaran beasiswa.' });
@@ -521,6 +548,13 @@ async function resubmitApplication(req, res) {
     const app = appRows[0];
     if (app.status !== 'PERLU_UNGGAH_ULANG') {
       return res.status(400).json({ success: false, message: 'Pendaftaran Anda tidak memerlukan pengiriman ulang.' });
+    }
+
+    if (isRegistrationDeadlinePassed()) {
+      return res.status(403).json({
+        success: false,
+        message: 'Batas waktu perbaikan dan pengiriman ulang berkas telah berakhir seiring ditutupnya masa pendaftaran online (18 Oktober 2026 pukul 23:59 WITA). Berkas pendaftaran telah dikunci.',
+      });
     }
 
     const [ktmRows] = await pool.execute(

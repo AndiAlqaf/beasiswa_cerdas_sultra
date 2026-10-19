@@ -54,9 +54,14 @@ export default function CheckStatusPage() {
           }
         }
 
+        const pendaftaranStep = timeline.find((s) => s.id === 'pendaftaran');
+        const isRegistrationClosed = pendaftaranStep ? pendaftaranStep.status === 'completed' : false;
+
         if (effectiveStatus === 'PERLU_UNGGAH_ULANG') {
           effectiveStatus = 'TERKIRIM';
-          effectiveNotes = 'Berkas KTM/Surat Aktif Kuliah Anda tidak terbaca di sistem. Silakan login ke dashboard, unggah ulang berkas, lalu klik "Kirim Ulang Pendaftaran". Nomor registrasi Anda tidak berubah.';
+          effectiveNotes = isRegistrationClosed
+            ? 'Batas waktu perbaikan berkas telah berakhir seiring ditutupnya masa pendaftaran online (18 Oktober 2026 pukul 23:59 WITA). Berkas KTM belum dilengkapi sebelum batas penutupan sehingga pendaftaran terkunci.'
+            : 'Berkas KTM/Surat Aktif Kuliah Anda tidak terbaca di sistem. Silakan login ke dashboard, unggah ulang berkas, lalu klik "Kirim Ulang Pendaftaran". Nomor registrasi Anda tidak berubah.';
         }
 
         const sanggahStep = timeline.find((s) => s.id === 'sanggah');

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { fetchAPI } from '@/lib/api';
+import { getStoredScheduleConfig, getDynamicTimeline, ScheduleConfig } from '@/lib/schedule';
 import { FileText, FileBadge, Calendar, HardDrive, Upload, ExternalLink, AlertCircle, Loader2, CheckCircle2, RefreshCw, XCircle, Camera, Lock } from 'lucide-react';
 import SelfieLivenessModal from '@/components/SelfieLivenessModal';
 
@@ -47,6 +48,7 @@ export default function BerkasPage() {
   const [error, setError] = useState('');
   const [uploadingKey, setUploadingKey] = useState<string | null>(null);
   const [toast, setToast] = useState<{ title: string; message: string; type: 'success' | 'error' } | null>(null);
+  const [scheduleConfig, setScheduleConfig] = useState<ScheduleConfig>(getStoredScheduleConfig());
 
   // Camera Modal State for Selfie Liveness
   const [isCameraModalOpen, setIsCameraModalOpen] = useState(false);
@@ -91,6 +93,14 @@ export default function BerkasPage() {
   };
 
   const handleResubmit = async () => {
+    if (isLockedByRegistrationClose) {
+      setToast({
+        title: 'Pendaftaran Terkunci',
+        message: 'Masa pendaftaran dan batas perbaikan berkas telah resmi ditutup pada 18 Oktober 2026 pukul 23:59 WITA.',
+        type: 'error',
+      });
+      return;
+    }
     setResubmitting(true);
     try {
       const res = await fetchAPI('/applicant/application/resubmit', { method: 'POST' });
@@ -110,7 +120,18 @@ export default function BerkasPage() {
 
   useEffect(() => {
     loadDocuments();
+    setScheduleConfig(getStoredScheduleConfig());
+    const handleUpdate = () => {
+      setScheduleConfig(getStoredScheduleConfig());
+    };
+    window.addEventListener('bssc_schedule_updated', handleUpdate);
+    return () => window.removeEventListener('bssc_schedule_updated', handleUpdate);
   }, []);
+
+  const timeline = getDynamicTimeline(scheduleConfig);
+  const pendaftaranStep = timeline.find((s) => s.id === 'pendaftaran');
+  const isRegistrationClosed = pendaftaranStep ? pendaftaranStep.status === 'completed' : false;
+  const isLockedByRegistrationClose = applicationStatus === 'PERLU_UNGGAH_ULANG' && isRegistrationClosed;
 
   const formatSize = (bytes: number) => {
     if (!bytes || bytes === 0) return '0 B';
@@ -121,6 +142,14 @@ export default function BerkasPage() {
   };
 
   const handleTriggerUpload = (docKey: string) => {
+    if (isLockedByRegistrationClose) {
+      setToast({
+        title: 'Berkas Terkunci',
+        message: 'Masa pendaftaran dan batas perbaikan berkas telah resmi ditutup pada 18 Oktober 2026 pukul 23:59 WITA.',
+        type: 'error',
+      });
+      return;
+    }
     if (fileInputRefs.current[docKey]) {
       fileInputRefs.current[docKey]?.click();
     }
@@ -242,6 +271,44 @@ export default function BerkasPage() {
 
       {applicationStatus === 'PERLU_UNGGAH_ULANG' && (() => {
         const hasValidKtm = documents.some((d) => isDocTypeMatch(d, 'ktm') && !d.isMissing);
+        if (isRegistrationClosed) {
+          return (
+            <div className="bg-slate-50 border-2 border-slate-300 rounded-3xl p-6 shadow-sm space-y-4">
+              <div className="flex items-start gap-4">
+                <div className="p-3 bg-slate-700 text-white rounded-2xl shrink-0">
+                  <Lock className="w-6 h-6" />
+                </div>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-rose-100 text-rose-800 border border-rose-200">
+                      Batas Waktu Habis
+                    </span>
+                    <span className="text-xs text-slate-500 font-semibold">Pendaftaran Terkunci</span>
+                  </div>
+                  <h3 className="text-base sm:text-lg font-extrabold text-slate-900">
+                    Masa Pendaftaran & Perbaikan Berkas Telah Berakhir
+                  </h3>
+                  <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-medium">
+                    Batas akhir pendaftaran online dan perbaikan berkas telah resmi ditutup pada <strong>18 Oktober 2026 pukul 23:59 WITA</strong>. Berkas KTM Anda belum dilengkapi sebelum batas penutupan, sehingga seluruh berkas dan pendaftaran Anda telah dikunci oleh sistem.
+                  </p>
+                </div>
+              </div>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-3 border-t border-slate-200">
+                <p className="text-xs font-bold text-slate-500 italic">
+                  Status: Berkas Terkunci (Tidak dapat diunggah ulang / dikirim ulang)
+                </p>
+                <button
+                  type="button"
+                  disabled
+                  className="px-6 py-2.5 bg-slate-300 cursor-not-allowed text-slate-600 font-extrabold text-xs sm:text-sm rounded-xl flex items-center justify-center gap-2"
+                >
+                  <Lock className="w-4 h-4" />
+                  Pendaftaran Terkunci
+                </button>
+              </div>
+            </div>
+          );
+        }
         return (
           <div className="bg-gradient-to-r from-rose-50 to-amber-50 border-2 border-rose-400 rounded-3xl p-6 shadow-md space-y-4">
             <div className="flex items-start gap-4">
@@ -276,7 +343,7 @@ export default function BerkasPage() {
       })()}
 
       {/* Banner Peringatan Berkas Hilang */}
-      {missingDocuments && missingDocuments.length > 0 && (
+      {!isLockedByRegistrationClose && missingDocuments && missingDocuments.length > 0 && (
         <div className="bg-gradient-to-r from-rose-50 to-amber-50 border-2 border-rose-300 rounded-3xl p-6 shadow-md flex items-start gap-4 animate-in fade-in">
           <div className="p-3 bg-rose-600 text-white rounded-2xl shadow-xs shrink-0">
             <AlertCircle className="w-6 h-6 animate-pulse" />
@@ -436,8 +503,9 @@ export default function BerkasPage() {
 
                 <button
                   type="button"
-                  disabled={isUploading}
+                  disabled={isUploading || isLockedByRegistrationClose}
                   onClick={() => {
+                    if (isLockedByRegistrationClose) return;
                     if (docTypeItem.key === 'selfie') {
                       setIsCameraModalOpen(true);
                     } else {
@@ -445,7 +513,9 @@ export default function BerkasPage() {
                     }
                   }}
                   className={`flex-1 py-2 px-3 text-xs font-bold rounded-xl transition-all shadow-sm flex items-center justify-center gap-1.5 ${
-                    docTypeItem.key === 'selfie'
+                    isLockedByRegistrationClose
+                      ? 'bg-slate-200 text-slate-500 cursor-not-allowed border border-slate-300'
+                      : docTypeItem.key === 'selfie'
                       ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/20'
                       : isUploading
                       ? 'bg-slate-400 cursor-not-allowed text-white'
@@ -454,7 +524,11 @@ export default function BerkasPage() {
                       : 'bg-blue-900 hover:bg-blue-950 text-white'
                   }`}
                 >
-                  {isUploading ? (
+                  {isLockedByRegistrationClose ? (
+                    <>
+                      <Lock className="w-3.5 h-3.5" /> Terkunci
+                    </>
+                  ) : isUploading ? (
                     <>
                       <Loader2 className="w-3.5 h-3.5 animate-spin" /> Mengunggah...
                     </>

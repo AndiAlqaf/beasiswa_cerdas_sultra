@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { CheckCircle2, Clock, FileText, Calendar, ChevronRight, AlertCircle, Award, XCircle, ArrowRight, Send, Loader2, RefreshCw, Landmark, Save, CreditCard, ExternalLink, ShieldCheck } from 'lucide-react';
+import { CheckCircle2, Clock, FileText, Calendar, ChevronRight, AlertCircle, Award, XCircle, ArrowRight, Send, Loader2, RefreshCw, Landmark, Save, CreditCard, ExternalLink, ShieldCheck, Lock } from 'lucide-react';
 import Link from 'next/link';
 import { getUser, fetchAPI } from '@/lib/api';
 import { getStoredScheduleConfig, getDynamicTimeline, ScheduleConfig } from '@/lib/schedule';
@@ -176,6 +176,9 @@ export default function DashboardPage() {
     ? pengumumanStep.status === 'active' || pengumumanStep.status === 'completed'
     : false;
 
+  const pendaftaranStep = timeline.find((s) => s.id === 'pendaftaran');
+  const isRegistrationClosed = pendaftaranStep ? pendaftaranStep.status === 'completed' : false;
+
   const sanggahStep = timeline.find((s) => s.id === 'sanggah');
   const isSanggahPeriodOpen = sanggahStep ? sanggahStep.status === 'active' : false;
   const isSanggahPeriodCompleted = sanggahStep ? sanggahStep.status === 'completed' : false;
@@ -264,6 +267,16 @@ export default function DashboardPage() {
           badgeText: 'Verifikasi',
         };
       case 'PERLU_UNGGAH_ULANG':
+        if (isRegistrationClosed) {
+          return {
+            title: 'Pendaftaran Terkunci (Batas Waktu Berakhir)',
+            desc: 'Batas waktu perbaikan berkas telah ditutup seiring berakhirnya masa pendaftaran online (18 Oktober 2026 pukul 23:59 WITA). Berkas KTM tidak sempat diperbaiki sebelum batas akhir sehingga pendaftaran terkunci.',
+            badgeBg: 'bg-slate-200 text-slate-800',
+            icon: Lock,
+            iconBg: 'bg-slate-100 text-slate-600',
+            badgeText: 'Terkunci (Waktu Habis)',
+          };
+        }
         return {
           title: 'Perlu Unggah Ulang Berkas',
           desc: 'Berkas KTM/Surat Aktif Kuliah Anda tidak terbaca di sistem. Unggah ulang lalu kirim ulang pendaftaran. Nomor registrasi Anda tetap.',
@@ -317,30 +330,65 @@ export default function DashboardPage() {
       </div>
 
       {effectiveStatus === 'PERLU_UNGGAH_ULANG' && (
-        <div className="bg-gradient-to-r from-rose-50 to-amber-50 border-2 border-rose-400 rounded-3xl p-6 sm:p-7 shadow-md">
-          <div className="flex flex-col sm:flex-row items-start gap-4">
-            <div className="p-3 bg-rose-600 text-white rounded-2xl shadow-sm shrink-0">
-              <AlertCircle className="w-7 h-7" />
+        isRegistrationClosed ? (
+          <div className="bg-slate-50 border-2 border-slate-300 rounded-3xl p-6 sm:p-7 shadow-sm">
+            <div className="flex flex-col sm:flex-row items-start gap-4">
+              <div className="p-3 bg-slate-700 text-white rounded-2xl shadow-sm shrink-0">
+                <Lock className="w-7 h-7" />
+              </div>
+              <div className="flex-1 space-y-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider bg-rose-100 text-rose-800 border border-rose-200">
+                    Batas Waktu Habis
+                  </span>
+                  <span className="text-xs text-slate-500 font-medium">Pendaftaran Ditutup</span>
+                </div>
+                <h3 className="text-lg sm:text-xl font-extrabold text-slate-900">
+                  Masa Perbaikan Berkas Telah Berakhir (Pendaftaran Terkunci)
+                </h3>
+                <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-medium">
+                  Masa pendaftaran online dan batas perbaikan berkas telah resmi ditutup pada <strong>18 Oktober 2026 pukul 23:59 WITA</strong>. Nomor registrasi <strong className="font-mono text-slate-800">{application?.registrationNo}</strong> tercatat belum melengkapi berkas KTM hingga batas waktu berakhir, sehingga sistem telah mengunci berkas dan pendaftaran Anda secara permanen.
+                </p>
+              </div>
             </div>
-            <div className="flex-1 space-y-2">
-              <h3 className="text-lg sm:text-xl font-extrabold text-rose-950">
-                Tindakan Diperlukan: Unggah Ulang KTM / Surat Aktif Kuliah
-              </h3>
-              <p className="text-xs sm:text-sm text-slate-700 leading-relaxed font-medium">
-                Berkas KTM/Surat Aktif Kuliah Anda tidak terbaca di sistem kami. Pendaftaran Anda <strong>tetap tercatat</strong> dengan nomor registrasi{' '}
-                <strong className="font-mono">{application?.registrationNo}</strong>. Silakan unggah ulang berkas, lalu klik <strong>&quot;Kirim Ulang Pendaftaran&quot;</strong> agar berkas Anda diperiksa verifikator.
+            <div className="mt-5 pt-4 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3">
+              <p className="text-xs text-slate-500 italic">
+                * Sesuai ketentuan panitia seleksi, berkas yang belum lengkap hingga batas penutupan pendaftaran tidak dapat diikutsertakan ke tahap seleksi administrasi.
               </p>
+              <Link
+                href="/dashboard/berkas"
+                className="w-full sm:w-auto px-5 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-2"
+              >
+                Lihat Berkas Tersimpan <ArrowRight className="w-4 h-4" />
+              </Link>
             </div>
           </div>
-          <div className="mt-5 pt-4 border-t border-rose-200/80 flex justify-end">
-            <Link
-              href="/dashboard/berkas"
-              className="w-full sm:w-auto px-6 py-3 bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs sm:text-sm rounded-xl shadow-md transition-all flex items-center justify-center gap-2"
-            >
-              Unggah Ulang & Kirim Ulang <ArrowRight className="w-4 h-4" />
-            </Link>
+        ) : (
+          <div className="bg-gradient-to-r from-rose-50 to-amber-50 border-2 border-rose-400 rounded-3xl p-6 sm:p-7 shadow-md">
+            <div className="flex flex-col sm:flex-row items-start gap-4">
+              <div className="p-3 bg-rose-600 text-white rounded-2xl shadow-sm shrink-0">
+                <AlertCircle className="w-7 h-7" />
+              </div>
+              <div className="flex-1 space-y-2">
+                <h3 className="text-lg sm:text-xl font-extrabold text-rose-950">
+                  Tindakan Diperlukan: Unggah Ulang KTM / Surat Aktif Kuliah
+                </h3>
+                <p className="text-xs sm:text-sm text-slate-700 leading-relaxed font-medium">
+                  Berkas KTM/Surat Aktif Kuliah Anda tidak terbaca di sistem kami. Pendaftaran Anda <strong>tetap tercatat</strong> dengan nomor registrasi{' '}
+                  <strong className="font-mono">{application?.registrationNo}</strong>. Silakan unggah ulang berkas, lalu klik <strong>&quot;Kirim Ulang Pendaftaran&quot;</strong> agar berkas Anda diperiksa verifikator.
+                </p>
+              </div>
+            </div>
+            <div className="mt-5 pt-4 border-t border-rose-200/80 flex justify-end">
+              <Link
+                href="/dashboard/berkas"
+                className="w-full sm:w-auto px-6 py-3 bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs sm:text-sm rounded-xl shadow-md transition-all flex items-center justify-center gap-2"
+              >
+                Unggah Ulang & Kirim Ulang <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
           </div>
-        </div>
+        )
       )}
 
       {/* Banner Peringatan Khusus Berkas Hilang / Perlu Diunggah Ulang */}
