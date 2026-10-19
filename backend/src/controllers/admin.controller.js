@@ -145,6 +145,109 @@ async function listApplicants(req, res) {
 }
 
 /**
+ * GET /api/v1/admin/applicants/export
+ * Export all applicants matching criteria without pagination limit
+ */
+async function exportApplicants(req, res) {
+  try {
+    const status = req.query.status || null;
+    const jenjang = req.query.jenjang || null;
+    const search = req.query.search || null;
+    const pool = getPool();
+
+    let whereClause = '1=1';
+    const params = [];
+
+    if (status) {
+      let mappedStatus = status;
+      if (status === 'Lolos') mappedStatus = 'DITERIMA';
+      if (status === 'Menunggu') mappedStatus = 'TERKIRIM';
+      if (status === 'Ditolak') mappedStatus = 'DITOLAK';
+      if (status === 'Verifikasi') mappedStatus = 'VERIFIKASI_BERKAS';
+
+      whereClause += ' AND a.status = ?';
+      params.push(mappedStatus);
+    }
+    if (jenjang) {
+      whereClause += ' AND u.jenjang_target = ?';
+      params.push(jenjang);
+    }
+    if (search) {
+      whereClause += ' AND (u.nama_lengkap LIKE ? OR u.nik LIKE ? OR a.registration_no LIKE ?)';
+      const term = `%${search}%`;
+      params.push(term, term, term);
+    }
+
+    const [applicants] = await pool.execute(
+      `SELECT u.id as userId, u.nama_lengkap, u.email, u.nik, u.jenjang_target,
+              a.id as applicationId, a.registration_no, a.status, a.notes,
+              a.submitted_at, a.verified_at,
+              p.no_hp, p.gender, p.tempat_lahir, p.tanggal_lahir, p.alamat_domisili, p.asal_daerah,
+              p.nim, p.semester, p.ipk, p.prodi_prioritas, p.akreditasi_prodi,
+              p.nama_bank, p.no_rekening, p.nama_rekening,
+              (
+                SELECT e.institusi 
+                FROM education_history e 
+                WHERE e.user_id = u.id 
+                ORDER BY (CASE WHEN e.tingkat = u.jenjang_target THEN 1 WHEN e.tingkat != 'SMA' THEN 2 ELSE 3 END), e.sort_order DESC 
+                LIMIT 1
+              ) as perguruan_tinggi,
+              (
+                SELECT e.jurusan 
+                FROM education_history e 
+                WHERE e.user_id = u.id 
+                ORDER BY (CASE WHEN e.tingkat = u.jenjang_target THEN 1 WHEN e.tingkat != 'SMA' THEN 2 ELSE 3 END), e.sort_order DESC 
+                LIMIT 1
+              ) as jurusan
+       FROM applications a
+       JOIN users u ON u.id = a.user_id
+       LEFT JOIN profiles p ON p.user_id = u.id
+       WHERE ${whereClause}
+       ORDER BY a.submitted_at DESC`,
+      params
+    );
+
+    res.json({
+      success: true,
+      data: {
+        total: applicants.length,
+        applicants: applicants.map(a => ({
+          userId: a.userId,
+          namaLengkap: a.nama_lengkap,
+          email: a.email,
+          nik: a.nik,
+          noHp: a.no_hp || '-',
+          gender: a.gender || '-',
+          tempatLahir: a.tempat_lahir || '-',
+          tanggalLahir: a.tanggal_lahir || '-',
+          alamatDomisili: a.alamat_domisili || '-',
+          asalDaerah: a.asal_daerah || '-',
+          jenjangTarget: a.jenjang_target,
+          applicationId: a.applicationId,
+          registrationNo: a.registration_no,
+          status: a.status,
+          notes: a.notes || '-',
+          submittedAt: a.submitted_at,
+          verifiedAt: a.verified_at,
+          nim: a.nim || '-',
+          semester: a.semester ? String(a.semester) : '-',
+          ipk: a.ipk ? String(a.ipk) : '-',
+          perguruanTinggi: a.perguruan_tinggi || '-',
+          prodi: a.prodi_prioritas || a.jurusan || '-',
+          akreditasiProdi: a.akreditasi_prodi || '-',
+          namaBank: a.nama_bank || '-',
+          noRekening: a.no_rekening || '-',
+          namaRekening: a.nama_rekening || '-'
+        }))
+      }
+    });
+  } catch (err) {
+    log(LOG_LEVELS.ERROR, `Export applicants error: ${err.message}`);
+    res.status(500).json({ success: false, message: 'Gagal mengekspor data pendaftar.' });
+  }
+}
+
+/**
  * GET /api/v1/admin/applicants/:id
  */
 async function getApplicantDetail(req, res) {
@@ -509,6 +612,7 @@ async function broadcastMissingDocsEmail(req, res) {
 module.exports = {
   getDashboard,
   listApplicants,
+  exportApplicants,
   getApplicantDetail,
   verifyApplicant,
   viewDocument,

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, Download, Eye, Edit, Trash2, Loader2, AlertCircle, X, FileText, Printer, ExternalLink } from 'lucide-react';
+import { Search, Filter, Download, Eye, Edit, Trash2, Loader2, AlertCircle, X, FileText, Printer, ExternalLink, FileSpreadsheet, Check } from 'lucide-react';
 import { fetchAPI } from '@/lib/api';
 
 const getDocTitle = (key: string) => {
@@ -117,6 +117,13 @@ export default function PendaftarPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Selection & Export States
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [showExportModal, setShowExportModal] = useState<boolean>(false);
+  const [exportScope, setExportScope] = useState<'all' | 'page' | 'selected'>('all');
+  const [exportFormat, setExportFormat] = useState<'xlsx' | 'csv'>('xlsx');
+  const [isExporting, setIsExporting] = useState<boolean>(false);
+
   // Detail Modal States
   const [selectedApplicant, setSelectedApplicant] = useState<any>(null);
   const [applicantDetail, setApplicantDetail] = useState<any>(null);
@@ -172,38 +179,211 @@ export default function PendaftarPage() {
     loadData();
   };
 
-  const handleExport = () => {
-    const headers = [
-      'No. Registrasi', 'Nama Lengkap', 'Email', 'NIK', 'Jenjang Target', 
-      'Perguruan Tinggi', 'Prodi', 'IPK', 'Status Pendaftaran', 'Tanggal Submit', 
-      'Nama Bank', 'Nomor Rekening', 'Nama Pemilik Rekening'
-    ];
-    const csvContent = [
-      headers.join(','),
-      ...applicants.map((u: any) => [
-        `"${u.registrationNo || ''}"`,
-        `"${u.namaLengkap || ''}"`,
-        `"${u.email || ''}"`,
-        `"${u.nik || ''}"`,
-        `"${u.jenjangTarget || ''}"`,
-        `"${u.perguruanTinggi || ''}"`,
-        `"${u.prodi || ''}"`,
-        `"${u.ipk || ''}"`,
-        `"${u.status || ''}"`,
-        `"${u.submittedAt || ''}"`,
-        `"${u.namaBank || ''}"`,
-        `"${u.noRekening || ''}"`,
-        `"${u.namaRekening || ''}"`
-      ].join(','))
-    ].join('\n');
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev =>
+      prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
+    );
+  };
 
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `data_pendaftar_${jenjangFilter || 'semua'}_${statusFilter || 'semua'}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+  const toggleSelectAll = () => {
+    const currentPageIds = applicants.map(u => u.userId || u.id);
+    const allSelectedOnPage = currentPageIds.length > 0 && currentPageIds.every(id => selectedIds.includes(id));
+    if (allSelectedOnPage) {
+      setSelectedIds(prev => prev.filter(id => !currentPageIds.includes(id)));
+    } else {
+      setSelectedIds(prev => Array.from(new Set([...prev, ...currentPageIds])));
+    }
+  };
+
+  // Mengambil SEMUA data pendaftar (seluruhnya, bukan dibatasi 10 data per sheet/halaman)
+  const fetchAllApplicantsForExport = async () => {
+    const params = new URLSearchParams();
+    if (searchTerm.trim()) params.set('search', searchTerm.trim());
+    if (jenjangFilter) params.set('jenjang', jenjangFilter);
+    if (statusFilter) params.set('status', statusFilter);
+
+    // 1. Coba endpoint ekspor khusus backend (cepat & langsung seluruh data tanpa limitasi paginasi)
+    try {
+      const res = await fetchAPI(`/admin/applicants/export?${params.toString()}`);
+      if (res.success && res.data?.applicants && res.data.applicants.length > 0) {
+        return res.data.applicants;
+      }
+    } catch (e) {
+      console.warn('Endpoint /admin/applicants/export tidak tersedia, menggunakan fallback paginasi:', e);
+    }
+
+    // 2. Fallback aman: ambil berulang per halaman (limit 100) sampai semua halaman terkumpul
+    let allData: any[] = [];
+    let curPage = 1;
+    let totalPages = 1;
+
+    do {
+      params.set('page', String(curPage));
+      params.set('limit', '100');
+      const res = await fetchAPI(`/admin/applicants?${params.toString()}`);
+      if (res.success && res.data?.applicants) {
+        allData = allData.concat(res.data.applicants);
+        totalPages = res.data.pagination?.totalPages || 1;
+      } else {
+        break;
+      }
+      curPage++;
+    } while (curPage <= totalPages);
+
+    return allData.length > 0 ? allData : applicants;
+  };
+
+  const handlePerformExport = async () => {
+    setIsExporting(true);
+    try {
+      let dataToExport: any[] = [];
+
+      if (exportScope === 'page') {
+        dataToExport = applicants;
+      } else if (exportScope === 'selected') {
+        dataToExport = applicants.filter(u => selectedIds.includes(u.userId || u.id));
+        if (dataToExport.length === 0) {
+          alert('Belum ada data pendaftar yang dipilih di tabel.');
+          setIsExporting(false);
+          return;
+        }
+      } else {
+        // 'all' -> Seluruh Data (bukan persheet/per-halaman)
+        dataToExport = await fetchAllApplicantsForExport();
+      }
+
+      if (dataToExport.length === 0) {
+        alert('Tidak ada data pendaftar untuk diekspor.');
+        setIsExporting(false);
+        return;
+      }
+
+      const timestamp = new Date().toISOString().slice(0, 10);
+      const filename = `data_pendaftar_${jenjangFilter || 'semua'}_${statusFilter || 'semua'}_${exportScope === 'all' ? 'seluruhnya' : exportScope}_${timestamp}`;
+
+      if (exportFormat === 'xlsx') {
+        const XLSX = await import('xlsx');
+        const rows = dataToExport.map((u: any, idx: number) => ({
+          'No.': idx + 1,
+          'No. Registrasi': u.registrationNo || '-',
+          'Nama Lengkap': u.namaLengkap || '-',
+          'NIK': String(u.nik || ''),
+          'Jenis Kelamin': u.gender || '-',
+          'No. HP / WA': String(u.noHp || '-'),
+          'Email': u.email || '-',
+          'Asal Daerah': u.asalDaerah || '-',
+          'Jenjang': u.jenjangTarget || '-',
+          'Perguruan Tinggi': u.perguruanTinggi || '-',
+          'Program Studi': u.prodi || '-',
+          'Semester': u.semester || '-',
+          'IPK': u.ipk || '-',
+          'Status': u.status || '-',
+          'Tanggal Submit': u.submittedAt ? new Date(u.submittedAt).toLocaleDateString('id-ID') : '-',
+          'Nama Bank': u.namaBank || '-',
+          'Nomor Rekening': String(u.noRekening || '-'),
+          'Nama Rekening': u.namaRekening || '-',
+          'Catatan': u.notes || '-'
+        }));
+
+        const worksheet = XLSX.utils.json_to_sheet(rows);
+
+        // Atur lebar kolom yang rapi
+        worksheet['!cols'] = [
+          { wch: 6 },  // No.
+          { wch: 22 }, // No. Registrasi
+          { wch: 28 }, // Nama Lengkap
+          { wch: 20 }, // NIK
+          { wch: 14 }, // Jenis Kelamin
+          { wch: 18 }, // No HP
+          { wch: 26 }, // Email
+          { wch: 20 }, // Asal Daerah
+          { wch: 10 }, // Jenjang
+          { wch: 30 }, // Perguruan Tinggi
+          { wch: 26 }, // Program Studi
+          { wch: 10 }, // Semester
+          { wch: 8 },  // IPK
+          { wch: 20 }, // Status
+          { wch: 16 }, // Tanggal Submit
+          { wch: 16 }, // Nama Bank
+          { wch: 20 }, // Nomor Rekening
+          { wch: 26 }, // Nama Rekening
+          { wch: 30 }, // Catatan
+        ];
+
+        // Format cell string untuk NIK dan No. Rekening agar tidak jadi angka eksponensial (scientific notation) di Excel
+        const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1:A1');
+        for (let R = range.s.r + 1; R <= range.e.r; ++R) {
+          const nikCell = XLSX.utils.encode_cell({ r: R, c: 3 });
+          if (worksheet[nikCell]) {
+            worksheet[nikCell].t = 's';
+            worksheet[nikCell].z = '@';
+          }
+          const hpCell = XLSX.utils.encode_cell({ r: R, c: 5 });
+          if (worksheet[hpCell]) {
+            worksheet[hpCell].t = 's';
+            worksheet[hpCell].z = '@';
+          }
+          const rekCell = XLSX.utils.encode_cell({ r: R, c: 16 });
+          if (worksheet[rekCell]) {
+            worksheet[rekCell].t = 's';
+            worksheet[rekCell].z = '@';
+          }
+        }
+
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'Data Pendaftar');
+        XLSX.writeFile(workbook, `${filename}.xlsx`);
+      } else {
+        // Format CSV
+        const headers = [
+          'No.', 'No. Registrasi', 'Nama Lengkap', 'NIK', 'Jenis Kelamin', 'No. HP',
+          'Email', 'Asal Daerah', 'Jenjang Target', 'Perguruan Tinggi', 'Prodi', 
+          'Semester', 'IPK', 'Status Pendaftaran', 'Tanggal Submit', 
+          'Nama Bank', 'Nomor Rekening', 'Nama Pemilik Rekening', 'Catatan'
+        ];
+
+        const rows = dataToExport.map((u: any, idx: number) => [
+          `"${idx + 1}"`,
+          `"${(u.registrationNo || '').replace(/"/g, '""')}"`,
+          `"${(u.namaLengkap || '').replace(/"/g, '""')}"`,
+          `="'${u.nik || ''}"`, // Trik format Excel agar NIK 16 digit tidak terpotong
+          `"${(u.gender || '').replace(/"/g, '""')}"`,
+          `="'${u.noHp || ''}"`,
+          `"${(u.email || '').replace(/"/g, '""')}"`,
+          `"${(u.asalDaerah || '').replace(/"/g, '""')}"`,
+          `"${(u.jenjangTarget || '').replace(/"/g, '""')}"`,
+          `"${(u.perguruanTinggi || '').replace(/"/g, '""')}"`,
+          `"${(u.prodi || '').replace(/"/g, '""')}"`,
+          `"${u.semester || ''}"`,
+          `"${u.ipk || ''}"`,
+          `"${(u.status || '').replace(/"/g, '""')}"`,
+          `"${u.submittedAt ? new Date(u.submittedAt).toLocaleDateString('id-ID') : ''}"`,
+          `"${(u.namaBank || '').replace(/"/g, '""')}"`,
+          `="'${u.noRekening || ''}"`,
+          `"${(u.namaRekening || '').replace(/"/g, '""')}"`,
+          `"${(u.notes || '').replace(/"/g, '""')}"`
+        ]);
+
+        const csvContent = '\uFEFF' + [
+          headers.join(';'),
+          ...rows.map(r => r.join(';'))
+        ].join('\r\n');
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${filename}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+
+      setShowExportModal(false);
+    } catch (err: any) {
+      alert('Gagal mengekspor data: ' + (err.message || 'Terjadi kesalahan sistem'));
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   return (
@@ -214,9 +394,12 @@ export default function PendaftarPage() {
           <h2 className="text-2xl font-bold text-slate-900">Data Pendaftar</h2>
           <p className="text-slate-500">Kelola dan pantau seluruh data pendaftar beasiswa.</p>
         </div>
-        <button onClick={handleExport} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-sm font-semibold transition-colors shadow-sm">
+        <button 
+          onClick={() => setShowExportModal(true)} 
+          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors shadow-sm cursor-pointer"
+        >
           <Download className="w-4 h-4" />
-          Export Data ({applicants.length})
+          Export Data ({pagination?.totalItems || applicants.length})
         </button>
       </div>
 
@@ -257,10 +440,26 @@ export default function PendaftarPage() {
               <option value="DITERIMA">Lolos Seleksi (DITERIMA)</option>
               <option value="DITOLAK">Ditolak (DITOLAK)</option>
             </select>
-            <button className="flex items-center gap-2 px-4 py-2 bg-blue-50 border border-blue-200 text-blue-700 rounded-xl text-sm font-semibold hover:bg-blue-100 transition-colors">
+            <button 
+              type="button"
+              onClick={() => { setPage(1); loadData(); }}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-50 border border-blue-200 text-blue-700 rounded-xl text-sm font-semibold hover:bg-blue-100 transition-colors cursor-pointer"
+            >
               <Filter className="w-4 h-4" />
               Terapkan
             </button>
+            {selectedIds.length > 0 && (
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-100 text-blue-800 rounded-xl text-xs font-bold border border-blue-200">
+                <span>{selectedIds.length} dipilih</span>
+                <button
+                  type="button"
+                  onClick={() => setSelectedIds([])}
+                  className="text-blue-600 hover:text-blue-900 ml-1 underline cursor-pointer"
+                >
+                  Reset
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
@@ -269,6 +468,15 @@ export default function PendaftarPage() {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-50 text-slate-500 text-sm border-b border-slate-200">
+                <th className="p-4 w-10 text-center">
+                  <input 
+                    type="checkbox" 
+                    checked={applicants.length > 0 && applicants.every(u => selectedIds.includes(u.userId || u.id))}
+                    onChange={toggleSelectAll}
+                    title="Pilih semua di halaman ini"
+                    className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer"
+                  />
+                </th>
                 <th className="p-4 font-semibold whitespace-nowrap">No. Registrasi</th>
                 <th className="p-4 font-semibold whitespace-nowrap">Nama & Prodi</th>
                 <th className="p-4 font-semibold whitespace-nowrap">Universitas</th>
@@ -282,20 +490,28 @@ export default function PendaftarPage() {
             <tbody className="text-sm">
               {loading ? (
                 <tr>
-                  <td colSpan={8} className="p-8 text-center text-slate-500">
+                  <td colSpan={9} className="p-8 text-center text-slate-500">
                     <Loader2 className="w-6 h-6 animate-spin mx-auto text-blue-900 mb-2" />
                     Memuat data pendaftar...
                   </td>
                 </tr>
               ) : applicants.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="p-8 text-center text-slate-500">
+                  <td colSpan={9} className="p-8 text-center text-slate-500">
                     Tidak ada pendaftar yang sesuai dengan kriteria filter.
                   </td>
                 </tr>
               ) : (
                 applicants.map((user, idx) => (
-                  <tr key={idx} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+                  <tr key={idx} className={`border-b border-slate-100 hover:bg-slate-50 transition-colors ${selectedIds.includes(user.userId || user.id) ? 'bg-blue-50/50' : ''}`}>
+                    <td className="p-4 text-center">
+                      <input 
+                        type="checkbox" 
+                        checked={selectedIds.includes(user.userId || user.id)}
+                        onChange={() => toggleSelect(user.userId || user.id)}
+                        className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer"
+                      />
+                    </td>
                     <td className="p-4 text-slate-600 font-mono text-xs">{user.registrationNo}</td>
                     <td className="p-4">
                       <p className="font-bold text-slate-900">{user.namaLengkap}</p>
@@ -325,7 +541,7 @@ export default function PendaftarPage() {
                       <div className="flex items-center justify-center gap-2">
                         <button 
                           onClick={() => handleOpenDetail(user)}
-                          className="p-1.5 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors" 
+                          className="p-1.5 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors cursor-pointer" 
                           title="Lihat Detail"
                         >
                           <Eye className="w-4 h-4" />
@@ -346,20 +562,225 @@ export default function PendaftarPage() {
             <button
               disabled={page <= 1}
               onClick={() => setPage(p => Math.max(1, p - 1))}
-              className="px-3 py-1 border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-50"
+              className="px-3 py-1 border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-50 cursor-pointer"
             >
               Sebelumnya
             </button>
             <button
               disabled={page >= (pagination?.totalPages || 1)}
               onClick={() => setPage(p => p + 1)}
-              className="px-3 py-1 border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-50"
+              className="px-3 py-1 border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-50 cursor-pointer"
             >
               Selanjutnya
             </button>
           </div>
         </div>
       </div>
+
+      {/* Modal Pilihan Export Data */}
+      {showExportModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col border border-slate-100">
+            {/* Header Modal */}
+            <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-gradient-to-r from-blue-50 to-indigo-50">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-sm">
+                  <Download className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-slate-900">Export Data Pendaftar</h3>
+                  <p className="text-xs text-slate-500">Unduh data pendaftar beasiswa ke file spreadsheet</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setShowExportModal(false)}
+                disabled={isExporting}
+                className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-white rounded-lg transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Body Modal */}
+            <div className="p-6 space-y-5">
+              {/* Opsi Jangkauan Data */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2.5">
+                  1. Pilih Jangkauan Data
+                </label>
+                <div className="space-y-2.5">
+                  {/* Opsi 1: Seluruh Data */}
+                  <label className={`flex items-start gap-3 p-3.5 rounded-xl border cursor-pointer transition-all ${
+                    exportScope === 'all' 
+                      ? 'border-blue-500 bg-blue-50/60 ring-2 ring-blue-500/20' 
+                      : 'border-slate-200 hover:bg-slate-50'
+                  }`}>
+                    <input 
+                      type="radio" 
+                      name="exportScope" 
+                      value="all" 
+                      checked={exportScope === 'all'} 
+                      onChange={() => setExportScope('all')}
+                      className="mt-0.5 text-blue-600 focus:ring-blue-500" 
+                    />
+                    <div className="flex-1 text-sm">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-slate-900">
+                          Seluruh Data ({pagination?.totalItems || applicants.length} Pendaftar)
+                        </span>
+                        <span className="text-[11px] bg-blue-100 text-blue-700 font-semibold px-2 py-0.5 rounded-full">
+                          Direkomendasikan
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        Mengunduh <strong>SEMUA</strong> pendaftar sekaligus dalam satu file (bukan per sheet / per halaman).
+                        {jenjangFilter || statusFilter || searchTerm ? ' Mengikuti filter aktif saat ini.' : ''}
+                      </p>
+                    </div>
+                  </label>
+
+                  {/* Opsi 2: Halaman Ini Saja */}
+                  <label className={`flex items-start gap-3 p-3.5 rounded-xl border cursor-pointer transition-all ${
+                    exportScope === 'page' 
+                      ? 'border-blue-500 bg-blue-50/60 ring-2 ring-blue-500/20' 
+                      : 'border-slate-200 hover:bg-slate-50'
+                  }`}>
+                    <input 
+                      type="radio" 
+                      name="exportScope" 
+                      value="page" 
+                      checked={exportScope === 'page'} 
+                      onChange={() => setExportScope('page')}
+                      className="mt-0.5 text-blue-600 focus:ring-blue-500" 
+                    />
+                    <div className="flex-1 text-sm">
+                      <span className="font-semibold text-slate-900">
+                        Halaman Ini Saja ({applicants.length} Pendaftar)
+                      </span>
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        Hanya mengunduh data pendaftar yang sedang tampil di halaman tabel saat ini (Halaman {pagination?.currentPage || 1}).
+                      </p>
+                    </div>
+                  </label>
+
+                  {/* Opsi 3: Data yang Dipilih */}
+                  <label className={`flex items-start gap-3 p-3.5 rounded-xl border transition-all ${
+                    selectedIds.length === 0 ? 'opacity-50 cursor-not-allowed border-slate-200 bg-slate-50' :
+                    exportScope === 'selected' 
+                      ? 'border-blue-500 bg-blue-50/60 ring-2 ring-blue-500/20 cursor-pointer' 
+                      : 'border-slate-200 hover:bg-slate-50 cursor-pointer'
+                  }`}>
+                    <input 
+                      type="radio" 
+                      name="exportScope" 
+                      value="selected" 
+                      disabled={selectedIds.length === 0}
+                      checked={exportScope === 'selected'} 
+                      onChange={() => setExportScope('selected')}
+                      className="mt-0.5 text-blue-600 focus:ring-blue-500" 
+                    />
+                    <div className="flex-1 text-sm">
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold text-slate-900">
+                          Data yang Dipilih ({selectedIds.length} Pendaftar)
+                        </span>
+                        {selectedIds.length === 0 && (
+                          <span className="text-[10px] text-slate-400 italic">Centang baris tabel dulu</span>
+                        )}
+                      </div>
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        Hanya mengekspor baris pendaftar yang telah dicentang di tabel.
+                      </p>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              {/* Opsi Format File */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2.5">
+                  2. Pilih Format File
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setExportFormat('xlsx')}
+                    className={`flex items-center gap-3 p-3 rounded-xl border text-left transition-all cursor-pointer ${
+                      exportFormat === 'xlsx'
+                        ? 'border-emerald-500 bg-emerald-50/60 ring-2 ring-emerald-500/20 text-emerald-950 font-bold'
+                        : 'border-slate-200 hover:bg-slate-50 text-slate-700'
+                    }`}
+                  >
+                    <div className="w-9 h-9 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-xs">
+                      XLSX
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold">Microsoft Excel</p>
+                      <p className="text-[11px] text-slate-500 font-normal">.xlsx (Format Resmi)</p>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setExportFormat('csv')}
+                    className={`flex items-center gap-3 p-3 rounded-xl border text-left transition-all cursor-pointer ${
+                      exportFormat === 'csv'
+                        ? 'border-blue-500 bg-blue-50/60 ring-2 ring-blue-500/20 text-blue-950 font-bold'
+                        : 'border-slate-200 hover:bg-slate-50 text-slate-700'
+                    }`}
+                  >
+                    <div className="w-9 h-9 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-xs">
+                      CSV
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold">File CSV</p>
+                      <p className="text-[11px] text-slate-500 font-normal">.csv (UTF-8 Excel)</p>
+                    </div>
+                  </button>
+                </div>
+              </div>
+
+              {/* Info Tambahan */}
+              <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-xs text-amber-900 flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                <span>
+                  Nomor NIK (16 digit) dan Nomor Rekening otomatis diformat sebagai teks agar tidak rusak menjadi format ilmiah (scientific <code>7.40E+15</code>) di Microsoft Excel.
+                </span>
+              </div>
+            </div>
+
+            {/* Footer Modal */}
+            <div className="p-4 border-t border-slate-100 bg-slate-50 flex items-center justify-end gap-3">
+              <button
+                type="button"
+                disabled={isExporting}
+                onClick={() => setShowExportModal(false)}
+                className="px-4 py-2 border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                disabled={isExporting}
+                onClick={handlePerformExport}
+                className="flex items-center gap-2 px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold transition-colors shadow-sm disabled:opacity-50 cursor-pointer"
+              >
+                {isExporting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Menyiapkan Data...
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-4 h-4" />
+                    Unduh File {exportFormat.toUpperCase()}
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal Detail Berkas Pendaftar */}
       {selectedApplicant && (

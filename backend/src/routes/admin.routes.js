@@ -15,6 +15,7 @@ const { verifyStatusValidation, paginationValidation } = require('../middleware/
 const {
   getDashboard,
   listApplicants,
+  exportApplicants,
   getApplicantDetail,
   verifyApplicant,
   viewDocument,
@@ -33,6 +34,7 @@ router.get('/dashboard', getDashboard);
 router.get('/users', listUsers);
 
 // Applicant management
+router.get('/applicants/export', exportApplicants);
 router.get('/applicants', paginationValidation, listApplicants);
 router.get('/applicants/:id', getApplicantDetail);
 router.get('/applicants/:id/documents/:docId/view', viewDocument);

@@ -54,28 +54,64 @@ export default function AdminPenggunaPage() {
     setPage(1);
   };
 
-  const handleExportCSV = () => {
-    const headers = ['ID', 'Nama Lengkap', 'NIK', 'Email', 'Role', 'Jenjang Target', 'Status Pengajuan', 'No. Registrasi', 'Tanggal Daftar'];
-    const rows = users.map((u: any) => [
-      `"${u.id || ''}"`,
-      `"${(u.namaLengkap || '').replace(/"/g, '""')}"`,
-      `"${u.nik || ''}"`,
-      `"${u.email || ''}"`,
-      `"${u.role || ''}"`,
-      `"${u.jenjangTarget || ''}"`,
-      `"${u.application ? u.application.status : 'Belum Mengajukan'}"`,
-      `"${u.application ? u.application.registrationNo : '-'}"`,
-      `"${u.createdAt ? new Date(u.createdAt).toLocaleDateString('id-ID') : ''}"`
-    ]);
+  const [isExporting, setIsExporting] = useState<boolean>(false);
 
-    const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `daftar_akun_pengguna_${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+  const handleExportCSV = async () => {
+    setIsExporting(true);
+    try {
+      let allUsers = users;
+      if (pagination && pagination.totalPages > 1) {
+        const params = new URLSearchParams();
+        params.set('limit', '100');
+        if (searchTerm.trim()) params.set('search', searchTerm.trim());
+        if (jenjangFilter) params.set('jenjang', jenjangFilter);
+        if (hasAppliedFilter) params.set('has_applied', hasAppliedFilter);
+
+        let curPage = 1;
+        let fetched: any[] = [];
+        do {
+          params.set('page', String(curPage));
+          const res = await fetchAPI(`/admin/users?${params.toString()}`);
+          if (res.success && res.data?.users) {
+            fetched = fetched.concat(res.data.users);
+          } else {
+            break;
+          }
+          curPage++;
+        } while (curPage <= pagination.totalPages);
+
+        if (fetched.length > 0) {
+          allUsers = fetched;
+        }
+      }
+
+      const headers = ['No.', 'ID', 'Nama Lengkap', 'NIK', 'Email', 'Role', 'Jenjang Target', 'Status Pengajuan', 'No. Registrasi', 'Tanggal Daftar'];
+      const rows = allUsers.map((u: any, idx: number) => [
+        `"${idx + 1}"`,
+        `"${u.id || ''}"`,
+        `"${(u.namaLengkap || '').replace(/"/g, '""')}"`,
+        `="'${u.nik || ''}"`, // Trik agar 16 digit NIK tidak diubah jadi scientific notation
+        `"${u.email || ''}"`,
+        `"${u.role || ''}"`,
+        `"${u.jenjangTarget || ''}"`,
+        `"${u.application ? u.application.status : 'Belum Mengajukan'}"`,
+        `"${u.application ? u.application.registrationNo : '-'}"`,
+        `"${u.createdAt ? new Date(u.createdAt).toLocaleDateString('id-ID') : ''}"`
+      ]);
+
+      const csvContent = '\uFEFF' + [headers.join(';'), ...rows.map(r => r.join(';'))].join('\r\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `daftar_akun_pengguna_${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err: any) {
+      alert('Gagal mengekspor data: ' + (err.message || 'Terjadi kesalahan sistem'));
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   return (
@@ -93,11 +129,11 @@ export default function AdminPenggunaPage() {
         </div>
         <button
           onClick={handleExportCSV}
-          disabled={users.length === 0}
-          className="flex items-center gap-2 bg-[#0B3A6A] hover:bg-[#082a4d] disabled:opacity-50 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors shadow-sm"
+          disabled={users.length === 0 || isExporting}
+          className="flex items-center gap-2 bg-[#0B3A6A] hover:bg-[#082a4d] disabled:opacity-50 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors shadow-sm cursor-pointer"
         >
-          <Download className="w-4 h-4" />
-          Ekspor CSV ({pagination?.total || users.length})
+          {isExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+          {isExporting ? 'Mengekspor...' : `Ekspor CSV (${pagination?.total || users.length})`}
         </button>
       </div>
 
