@@ -37,7 +37,7 @@ const env = {
   // JWT
   JWT_ACCESS_SECRET: getOrGenerateSecret('JWT_ACCESS_SECRET', process.env.JWT_ACCESS_SECRET),
   JWT_REFRESH_SECRET: getOrGenerateSecret('JWT_REFRESH_SECRET', process.env.JWT_REFRESH_SECRET),
-  JWT_ACCESS_EXPIRY: process.env.JWT_ACCESS_EXPIRY || '15m',
+  JWT_ACCESS_EXPIRY: process.env.JWT_ACCESS_EXPIRY || '8h',
   JWT_REFRESH_EXPIRY: process.env.JWT_REFRESH_EXPIRY || '7d',
 
   // CORS
@@ -48,10 +48,10 @@ const env = {
   // Bcrypt
   BCRYPT_SALT_ROUNDS: parseInt(process.env.BCRYPT_SALT_ROUNDS, 10) || 12,
 
-  // Rate Limiting
+  // Rate Limiting (Generous defaults so multiple admins/users on shared network don't choke)
   RATE_LIMIT_WINDOW_MS: parseInt(process.env.RATE_LIMIT_WINDOW_MS, 10) || 900000,
-  RATE_LIMIT_MAX: parseInt(process.env.RATE_LIMIT_MAX, 10) || 100,
-  AUTH_RATE_LIMIT_MAX: parseInt(process.env.AUTH_RATE_LIMIT_MAX, 10) || 5,
+  RATE_LIMIT_MAX: parseInt(process.env.RATE_LIMIT_MAX, 10) || 5000,
+  AUTH_RATE_LIMIT_MAX: parseInt(process.env.AUTH_RATE_LIMIT_MAX, 10) || 60,
 
   // File Upload — Guarantee at least 10MB even if server .env still has old 2097152 value
   MAX_FILE_SIZE: Math.max(parseInt(process.env.MAX_FILE_SIZE, 10) || 0, 10 * 1024 * 1024), // 10MB minimum

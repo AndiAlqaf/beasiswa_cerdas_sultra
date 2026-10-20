@@ -12,6 +12,7 @@ const router = express.Router();
 const { authenticate, authorize } = require('../middleware/auth');
 const { ROLES } = require('../config/security');
 const { verifyStatusValidation, paginationValidation } = require('../middleware/validator');
+const { adminLimiter } = require('../middleware/rateLimiter');
 const {
   getDashboard,
   listApplicants,
@@ -23,7 +24,8 @@ const {
   broadcastMissingDocsEmail,
 } = require('../controllers/admin.controller');
 
-// All routes require authentication as admin
+// All routes require authentication as admin and use adminLimiter (generous limits)
+router.use(adminLimiter);
 router.use(authenticate);
 router.use(authorize(ROLES.ADMIN));
 

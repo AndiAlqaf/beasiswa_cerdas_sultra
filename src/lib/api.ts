@@ -89,6 +89,37 @@ async function safeFetch(url: string, init: RequestInit): Promise<Response> {
   }
 }
 
+let activeRefreshPromise: Promise<string | null> | null = null;
+
+async function doRefreshToken(): Promise<string | null> {
+  const refreshToken = getRefreshToken();
+  if (!refreshToken) {
+    clearTokens();
+    return null;
+  }
+
+  try {
+    const refreshRes = await fetch('/api/v1/auth/refresh', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refreshToken }),
+    });
+
+    if (refreshRes.ok) {
+      const refreshData = await refreshRes.json();
+      if (refreshData.success && refreshData.data?.accessToken) {
+        setTokens(refreshData.data.accessToken, refreshData.data.refreshToken || refreshToken);
+        return refreshData.data.accessToken;
+      }
+    }
+    clearTokens();
+    return null;
+  } catch {
+    clearTokens();
+    return null;
+  }
+}
+
 /**
  * Universal Fetch API wrapper with automatic authentication & token refresh retry
  */
@@ -117,39 +148,22 @@ export async function fetchAPI(endpoint: string, options: FetchOptions = {}): Pr
     body,
   });
 
-  // Handle 401 Unauthorized — Attempt Token Refresh Once
+  // Handle 401 Unauthorized — Attempt Token Refresh Once with Shared Promise Mutex
   if (res.status === 401 && !skipAuth) {
-    const refreshToken = getRefreshToken();
-    if (refreshToken) {
-      try {
-        const refreshRes = await fetch('/api/v1/auth/refresh', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ refreshToken }),
-        });
+    if (!activeRefreshPromise) {
+      activeRefreshPromise = doRefreshToken().finally(() => {
+        activeRefreshPromise = null;
+      });
+    }
 
-        if (refreshRes.ok) {
-          const refreshData = await refreshRes.json();
-          if (refreshData.success && refreshData.data?.accessToken) {
-            setTokens(refreshData.data.accessToken, refreshData.data.refreshToken || refreshToken);
-            // Retry original request with new token
-            headers['Authorization'] = `Bearer ${refreshData.data.accessToken}`;
-            res = await safeFetch(url, {
-              ...customOptions,
-              headers,
-              body,
-            });
-          } else {
-            clearTokens();
-          }
-        } else {
-          clearTokens();
-        }
-      } catch (refreshErr) {
-        clearTokens();
-      }
-    } else {
-      clearTokens();
+    const newAccessToken = await activeRefreshPromise;
+    if (newAccessToken) {
+      headers['Authorization'] = `Bearer ${newAccessToken}`;
+      res = await safeFetch(url, {
+        ...customOptions,
+        headers,
+        body,
+      });
     }
   }
 

@@ -150,8 +150,8 @@ async function login(req, res) {
     // Login successful — reset failed attempts
     await pool.execute('UPDATE users SET failed_login_attempts = 0, locked_until = NULL WHERE id = ?', [user.id]);
 
-    // Revoke all existing refresh tokens (single session)
-    await pool.execute('UPDATE refresh_tokens SET revoked = 1 WHERE user_id = ?', [user.id]);
+    // Clean up expired tokens for this user (supports multi-session for multi-device/admin workflow)
+    await pool.execute('DELETE FROM refresh_tokens WHERE user_id = ? AND expires_at < NOW()', [user.id]);
 
     // Generate new tokens
     const accessToken = generateAccessToken({ id: user.id, email: user.email, role: user.role });
