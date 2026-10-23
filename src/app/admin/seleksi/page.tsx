@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { CheckCircle2, XCircle, Clock, FileText, ExternalLink, Search, X, Loader2, AlertCircle, Printer, RefreshCw, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
+import { CheckCircle2, XCircle, Clock, FileText, ExternalLink, Search, X, Loader2, AlertCircle, Printer, RefreshCw, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ZoomIn, ZoomOut, RotateCw, Eye, ChevronDown, ChevronUp } from 'lucide-react';
 import { fetchAPI } from '@/lib/api';
 
 const getDocTitle = (key: string) => {
@@ -104,6 +104,15 @@ export default function SeleksiPage() {
     itemsPerPage: number;
   } | null>(null);
 
+  // Split Preview & Document Viewer States
+  const [activeDocId, setActiveDocId] = useState<string | null>(null);
+  const [previewUrls, setPreviewUrls] = useState<Record<string, string>>({});
+  const [loadingDocPreview, setLoadingDocPreview] = useState<boolean>(false);
+  const [previewDocError, setPreviewDocError] = useState<string | null>(null);
+  const [imgZoom, setImgZoom] = useState<number>(100);
+  const [imgRotation, setImgRotation] = useState<number>(0);
+  const [isFormDetailsOpen, setIsFormDetailsOpen] = useState<boolean>(false);
+
   // Custom Toast/Notification Modal State
   const [toast, setToast] = useState<{
     title?: string;
@@ -161,6 +170,56 @@ export default function SeleksiPage() {
     setShowRejectModal(true);
   };
 
+  const isPdfDoc = (doc: any) => {
+    if (!doc) return false;
+    if (doc.mimeType && doc.mimeType.toLowerCase().includes('pdf')) return true;
+    if (doc.originalName && doc.originalName.toLowerCase().endsWith('.pdf')) return true;
+    return false;
+  };
+
+  const isImageDoc = (doc: any) => {
+    if (!doc) return false;
+    if (doc.mimeType && doc.mimeType.toLowerCase().startsWith('image/')) return true;
+    if (doc.originalName && /\.(jpe?g|png|webp|gif|bmp)$/i.test(doc.originalName)) return true;
+    return false;
+  };
+
+  const loadDocumentPreview = async (userId: string, docId: string) => {
+    if (previewUrls[docId]) {
+      return previewUrls[docId];
+    }
+
+    try {
+      const token = localStorage.getItem('bssc_access_token');
+      const res = await fetch(`/api/v1/admin/applicants/${userId}/documents/${docId}/view`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      if (!res.ok) {
+        throw new Error('Gagal memuat dokumen');
+      }
+      const blob = await res.blob();
+      const objectUrl = window.URL.createObjectURL(blob);
+      setPreviewUrls(prev => ({ ...prev, [docId]: objectUrl }));
+      return objectUrl;
+    } catch (err: any) {
+      console.error(err);
+      return null;
+    }
+  };
+
+  const handleCloseDetail = () => {
+    setSelectedApplicant(null);
+    setApplicantDetail(null);
+    Object.values(previewUrls).forEach(url => {
+      try {
+        window.URL.revokeObjectURL(url);
+      } catch (e) {}
+    });
+    setPreviewUrls({});
+  };
+
   const handleConfirmReject = async () => {
     if (!selectedApplicant) return;
     if (!rejectReason.trim()) {
@@ -180,8 +239,7 @@ export default function SeleksiPage() {
       });
 
       setShowRejectModal(false);
-      setSelectedApplicant(null);
-      setApplicantDetail(null);
+      handleCloseDetail();
       loadApplicants();
       showNotification('Status pendaftar berhasil diubah menjadi DITOLAK.', 'success', 'Status Berhasil Diubah');
     } catch (err: any) {
@@ -192,6 +250,10 @@ export default function SeleksiPage() {
   };
 
   const handleViewDocument = async (userId: string, docId: string) => {
+    if (previewUrls[docId]) {
+      window.open(previewUrls[docId], '_blank');
+      return;
+    }
     try {
       const token = localStorage.getItem('bssc_access_token');
       const res = await fetch(`/api/v1/admin/applicants/${userId}/documents/${docId}/view`, {
@@ -205,8 +267,8 @@ export default function SeleksiPage() {
       }
       const blob = await res.blob();
       const url = window.URL.createObjectURL(blob);
+      setPreviewUrls(prev => ({ ...prev, [docId]: url }));
       window.open(url, '_blank');
-      setTimeout(() => window.URL.revokeObjectURL(url), 60000);
     } catch (err: any) {
       showNotification(err.message || 'Gagal membuka dokumen.', 'error', 'Gagal Membuka Dokumen');
     }
@@ -243,10 +305,17 @@ export default function SeleksiPage() {
     setSelectedApplicant(applicant);
     setLoadingDetail(true);
     setApplicantDetail(null);
+    setPreviewUrls({});
     try {
-      const res = await fetchAPI(`/admin/applicants/${applicant.userId || applicant.id}`);
+      const targetUserId = applicant.userId || applicant.id;
+      const res = await fetchAPI(`/admin/applicants/${targetUserId}`);
       if (res.success && res.data) {
         setApplicantDetail(res.data);
+        const docs = res.data.documents || [];
+        const uId = res.data.user?.id || targetUserId;
+        docs.forEach((doc: any) => {
+          loadDocumentPreview(uId, doc.id);
+        });
       }
     } catch (err: any) {
       showNotification(err.message || 'Gagal memuat detail berkas pendaftar.', 'error', 'Gagal Memuat Detail');
@@ -254,6 +323,21 @@ export default function SeleksiPage() {
       setLoadingDetail(false);
     }
   };
+
+  // Keyboard navigation (Escape to close)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!selectedApplicant || !applicantDetail) return;
+      if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement)?.tagName)) return;
+
+      if (e.key === 'Escape' && !showRejectModal) {
+        handleCloseDetail();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedApplicant, applicantDetail, showRejectModal, previewUrls]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -483,200 +567,331 @@ export default function SeleksiPage() {
         </div>
       </div>
 
-      {/* Modal Detail Berkas Pendaftar */}
+      {/* Modal Detail Berkas Pendaftar - Mode Galeri Scroll */}
       {selectedApplicant && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-3xl overflow-hidden flex flex-col max-h-[92vh]">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-900/60 backdrop-blur-sm">
+          <div className="bg-slate-100 rounded-2xl shadow-2xl w-full max-w-5xl overflow-hidden flex flex-col h-[94vh] border border-slate-200 animate-in fade-in zoom-in-95 duration-150">
             {/* Modal Header */}
-            <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-              <div>
-                <h3 className="text-xl font-bold text-slate-900">Detail & Verifikasi Berkas Pendaftar</h3>
-                <p className="text-sm text-slate-500 mt-1">No. Registrasi: <span className="font-mono font-bold text-slate-800">{selectedApplicant.registrationNo}</span></p>
+            <div className="px-5 py-3.5 border-b border-slate-200 flex justify-between items-center bg-white shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-blue-100 text-blue-900 rounded-xl">
+                  <FileText className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
+                    Detail & Verifikasi Berkas Pendaftar
+                    {applicantDetail?.user?.namaLengkap && (
+                      <span className="text-sm font-semibold text-slate-500 hidden md:inline">
+                        — {applicantDetail.user.namaLengkap}
+                      </span>
+                    )}
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    No. Registrasi: <span className="font-mono font-bold text-slate-800">{selectedApplicant.registrationNo}</span>
+                  </p>
+                </div>
               </div>
               <button 
-                onClick={() => { setSelectedApplicant(null); setApplicantDetail(null); }}
-                className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-200 rounded-lg transition-colors"
+                onClick={handleCloseDetail}
+                className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-200 rounded-xl transition-colors"
+                title="Tutup (Esc)"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Modal Body */}
-            <div className="p-6 overflow-y-auto flex-1 space-y-6">
+            {/* Sticky Anchor Quick-Jump Bar */}
+            {applicantDetail && (() => {
+              const hasSanggahanNote = applicantDetail.application?.notes?.toLowerCase().includes('sanggah') || applicantDetail.application?.status === 'DITOLAK';
+              const hasMultipleDocs = applicantDetail.documents?.some((d: any) => 
+                applicantDetail.documents.filter((x: any) => (x.docType || '').toLowerCase() === (d.docType || '').toLowerCase()).length > 1
+              );
+              const isAppeal = hasSanggahanNote || hasMultipleDocs;
+              
+              let docsToRender = applicantDetail.documents || [];
+              if (!isAppeal) {
+                const latestDocsMap = new Map();
+                applicantDetail.documents?.forEach((d: any) => {
+                  const key = (d.docType || '').toLowerCase();
+                  latestDocsMap.set(key, d);
+                });
+                docsToRender = Array.from(latestDocsMap.values());
+              }
+
+              return (
+                <div className="px-5 py-2.5 bg-slate-200/80 border-b border-slate-200 flex items-center gap-2 overflow-x-auto shrink-0 shadow-2xs">
+                  <span className="text-[11px] font-bold text-slate-600 uppercase tracking-wider whitespace-nowrap flex items-center gap-1 shrink-0">
+                    <Eye className="w-3.5 h-3.5 text-blue-900" /> Lompat ke:
+                  </span>
+                  <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5">
+                    {docsToRender.map((d: any, idx: number) => (
+                      <button
+                        key={d.id || idx}
+                        type="button"
+                        onClick={() => {
+                          const el = document.getElementById(`doc-card-${d.id}`);
+                          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }}
+                        className="px-2.5 py-1 text-xs font-semibold bg-white hover:bg-blue-50 hover:text-blue-900 hover:border-blue-300 border border-slate-200 rounded-lg whitespace-nowrap transition-colors shadow-2xs text-slate-700"
+                      >
+                        #{idx + 1} {getDocTitle(d.docType)}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Modal Body - Gallery Scroll */}
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
               {loadingDetail ? (
-                <div className="p-12 text-center text-slate-500">
-                  <Loader2 className="w-8 h-8 animate-spin mx-auto text-blue-900 mb-2" />
-                  Mengambil data & berkas pendaftar...
+                <div className="p-16 text-center text-slate-500">
+                  <Loader2 className="w-10 h-10 animate-spin mx-auto text-blue-900 mb-3" />
+                  <p className="font-medium text-sm">Mengambil data & berkas pendaftar...</p>
                 </div>
               ) : applicantDetail ? (
-                <>
-                  {/* Applicant Info Header */}
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 bg-blue-50/60 rounded-2xl border border-blue-100">
-                    <div className="flex-1">
-                      <h4 className="font-extrabold text-slate-900 text-lg">{applicantDetail.user?.namaLengkap}</h4>
-                      <p className="text-xs text-slate-600 mt-0.5">NIK: <strong>{applicantDetail.user?.nik}</strong> • Email: <strong>{applicantDetail.user?.email}</strong></p>
-                      <p className="text-xs text-slate-500 mt-1">Jenjang Target: <strong className="text-blue-900">{applicantDetail.user?.jenjangTarget}</strong></p>
-                    </div>
-                    <div className="text-right">
-                      <span className={`px-3 py-1.5 rounded-full text-xs font-extrabold shadow-xs ${
-                        (applicantDetail.application?.status || selectedApplicant.status) === 'DITERIMA' ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' :
-                        (applicantDetail.application?.status || selectedApplicant.status) === 'DITOLAK' ? 'bg-rose-100 text-rose-800 border border-rose-300' :
-                        'bg-amber-100 text-amber-800 border border-amber-300'
-                      }`}>
-                        {applicantDetail.application?.status || selectedApplicant.status}
-                      </span>
-                    </div>
-                  </div>
+                (() => {
+                  const targetUserId = applicantDetail.user?.id || selectedApplicant?.userId || selectedApplicant?.id;
+                  const hasSanggahanNote = applicantDetail.application?.notes?.toLowerCase().includes('sanggah') || applicantDetail.application?.status === 'DITOLAK';
+                  const hasMultipleDocs = applicantDetail.documents?.some((d: any) => 
+                    applicantDetail.documents.filter((x: any) => (x.docType || '').toLowerCase() === (d.docType || '').toLowerCase()).length > 1
+                  );
+                  const isAppeal = hasSanggahanNote || hasMultipleDocs;
+                  
+                  let docsToRender = applicantDetail.documents || [];
+                  if (!isAppeal) {
+                    const latestDocsMap = new Map();
+                    applicantDetail.documents?.forEach((d: any) => {
+                      const key = (d.docType || '').toLowerCase();
+                      latestDocsMap.set(key, d);
+                    });
+                    docsToRender = Array.from(latestDocsMap.values());
+                  }
 
-                  {/* Pengajuan Sanggahan Notice Box (If any) */}
-                  {applicantDetail.application?.notes && applicantDetail.application.notes.includes('[SANGGAHAN') && (
-                    <div className="p-4 bg-amber-50 border-2 border-amber-300 rounded-2xl space-y-2">
-                      <div className="flex items-center gap-2 text-amber-900 font-extrabold text-xs">
-                        <RefreshCw className="w-4 h-4 text-amber-700 animate-spin" />
-                        <span>Catatan Sanggahan & Perbaikan Berkas Mahasiswa</span>
+                  return (
+                    <div className="space-y-6 max-w-4xl mx-auto">
+                      {/* Top Info Banner */}
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 bg-white rounded-2xl border border-slate-200 shadow-2xs">
+                        <div className="flex-1">
+                          <h4 className="font-extrabold text-slate-900 text-lg">{applicantDetail.user?.namaLengkap}</h4>
+                          <p className="text-xs text-slate-600 mt-0.5">NIK: <strong className="font-mono">{applicantDetail.user?.nik}</strong> • Email: <strong>{applicantDetail.user?.email}</strong></p>
+                          <p className="text-xs text-slate-500 mt-1">Jenjang Target: <strong className="text-blue-900 font-bold">{applicantDetail.user?.jenjangTarget}</strong></p>
+                        </div>
+                        <div className="text-right">
+                          <span className={`px-3 py-1.5 rounded-full text-xs font-extrabold shadow-xs ${
+                            (applicantDetail.application?.status || selectedApplicant.status) === 'DITERIMA' ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' :
+                            (applicantDetail.application?.status || selectedApplicant.status) === 'DITOLAK' ? 'bg-rose-100 text-rose-800 border border-rose-300' :
+                            'bg-amber-100 text-amber-800 border border-amber-300'
+                          }`}>
+                            {applicantDetail.application?.status || selectedApplicant.status}
+                          </span>
+                        </div>
                       </div>
-                      <div className="p-3 bg-white rounded-xl border border-amber-200 text-xs text-slate-900 leading-relaxed font-medium whitespace-pre-line">
-                        {applicantDetail.application.notes}
-                      </div>
-                    </div>
-                  )}
 
-                  {/* Highlights Card: IPK & Perguruan Tinggi */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="p-4 bg-amber-50/80 rounded-2xl border border-amber-200 flex items-center justify-between">
-                      <div>
-                        <p className="text-[11px] font-bold text-amber-900 uppercase tracking-wider">IPK Kumulatif Terakhir</p>
-                        <p className="text-xs text-amber-700 mt-0.5">Sesuai Isian Formulir</p>
-                      </div>
-                      <span className="text-2xl font-black bg-amber-500 text-white px-3.5 py-1 rounded-xl shadow-xs">
-                        {applicantDetail.profile?.ipk || '-'}
-                      </span>
-                    </div>
-
-                    <div className="p-4 bg-blue-50/80 rounded-2xl border border-blue-200 flex flex-col justify-between">
-                      <p className="text-[11px] font-bold text-blue-900 uppercase tracking-wider">Perguruan Tinggi & Prodi</p>
-                      <p className="text-xs font-bold text-slate-900 mt-1 truncate">
-                        {getOngoingEducation(applicantDetail).institusi}
-                      </p>
-                      <p className="text-[11px] text-slate-600 truncate">
-                        {getOngoingEducation(applicantDetail).jurusan} (Akreditasi: {applicantDetail.profile?.akreditasiProdi || '-'})
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Complete Form Rincian Accordion / Sections */}
-                  <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3 text-xs text-slate-800">
-                    <h5 className="font-extrabold text-slate-900 text-xs uppercase tracking-wider border-b border-slate-200 pb-2 flex items-center gap-1.5">
-                      <FileText className="w-4 h-4 text-blue-900" /> Rincian Isian Formulir Mahasiswa
-                    </h5>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-[11px]">
-                      <p>• Tempat/Tgl Lahir: <strong>{applicantDetail.profile?.tempatLahir || '-'}, {applicantDetail.profile?.tanggalLahir ? applicantDetail.profile.tanggalLahir.split('T')[0] : '-'}</strong></p>
-                      <p>• Gender / No HP: <strong>{applicantDetail.profile?.gender || '-'} | {applicantDetail.profile?.noHp || '-'}</strong></p>
-                      <p>• NIM / Semester: <strong>{applicantDetail.profile?.nim || '-'} (Semester {applicantDetail.profile?.semester || '-'})</strong></p>
-                      <p>• Target Tahun Lulus: <strong>{applicantDetail.profile?.targetLulus || '-'}</strong></p>
-                      <p>• Status Double Funding: <strong>{applicantDetail.profile?.beasiswaLain || 'Tidak Ada (Bukan Double Funding)'}</strong></p>
-                      <p>• No. KK / Alamat KTP: <strong>{applicantDetail.profile?.noKk || '-'} | {applicantDetail.profile?.alamatKtp || '-'}</strong></p>
-                      <p>• Nama Ortu (Ayah/Ibu): <strong>{applicantDetail.profile?.namaAyah || '-'} / {applicantDetail.profile?.namaIbu || '-'}</strong></p>
-                      <p>• Pekerjaan Ortu: <strong>{applicantDetail.profile?.pekerjaanAyah || '-'} / {applicantDetail.profile?.pekerjaanIbu || '-'}</strong></p>
-                      <p>• Penghasilan / Tanggungan: <strong>{applicantDetail.profile?.penghasilanOrtu || '-'} ({applicantDetail.profile?.jumlahTanggungan || 0} orang)</strong></p>
-                      <p className="col-span-1 sm:col-span-2 text-blue-900 font-bold bg-blue-50 p-2 rounded-lg border border-blue-100 mt-1">
-                        💳 Rekening Bank Penyaluran 50%: <strong>{applicantDetail.profile?.namaBank || '-'}</strong> | No. Rek: <strong className="font-mono">{applicantDetail.profile?.noRekening || '-'}</strong> | a.n: <strong>{applicantDetail.profile?.namaRekening || '-'}</strong>
-                      </p>
-                    </div>
-
-                    {(applicantDetail.profile?.prestasiAkademik || applicantDetail.profile?.prestasiNonAkademik) && (
-                      <div className="pt-2 border-t border-slate-200 space-y-1.5 text-[11px]">
-                        {applicantDetail.profile?.prestasiAkademik && (
-                          <div>
-                            <span className="font-bold text-slate-900">Prestasi Akademik:</span>
-                            {renderAchievementDetails(applicantDetail.profile.prestasiAkademik)}
+                      {/* Pengajuan Sanggahan Notice Box (If any) */}
+                      {applicantDetail.application?.notes && applicantDetail.application.notes.includes('[SANGGAHAN') && (
+                        <div className="p-4 bg-amber-50 border-2 border-amber-300 rounded-2xl space-y-2">
+                          <div className="flex items-center gap-2 text-amber-900 font-extrabold text-xs">
+                            <RefreshCw className="w-4 h-4 text-amber-700 animate-spin" />
+                            <span>Catatan Sanggahan & Perbaikan Berkas Mahasiswa</span>
                           </div>
-                        )}
-                        {applicantDetail.profile?.prestasiNonAkademik && (
-                          <div>
-                            <span className="font-bold text-slate-900">Prestasi Non-Akademik:</span>
-                            {renderAchievementDetails(applicantDetail.profile.prestasiNonAkademik)}
+                          <div className="p-3 bg-white rounded-xl border border-amber-200 text-xs text-slate-900 leading-relaxed font-medium whitespace-pre-line">
+                            {applicantDetail.application.notes}
                           </div>
-                        )}
+                        </div>
+                      )}
+
+                      {/* Highlights Card: IPK & Perguruan Tinggi */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div className="p-4 bg-amber-50/80 rounded-2xl border border-amber-200 flex items-center justify-between">
+                          <div>
+                            <p className="text-[11px] font-bold text-amber-900 uppercase tracking-wider">IPK Kumulatif Terakhir</p>
+                            <p className="text-xs text-amber-700 mt-0.5">Sesuai Isian Formulir</p>
+                          </div>
+                          <span className="text-2xl font-black bg-amber-500 text-white px-3.5 py-1 rounded-xl shadow-xs">
+                            {applicantDetail.profile?.ipk || '-'}
+                          </span>
+                        </div>
+
+                        <div className="p-4 bg-blue-50/80 rounded-2xl border border-blue-200 flex flex-col justify-between">
+                          <p className="text-[11px] font-bold text-blue-900 uppercase tracking-wider">Perguruan Tinggi & Prodi</p>
+                          <p className="text-xs font-bold text-slate-900 mt-1 truncate">
+                            {getOngoingEducation(applicantDetail).institusi}
+                          </p>
+                          <p className="text-[11px] text-slate-600 truncate">
+                            {getOngoingEducation(applicantDetail).jurusan} (Akreditasi: {applicantDetail.profile?.akreditasiProdi || '-'})
+                          </p>
+                        </div>
                       </div>
-                    )}
-                  </div>
 
-                  {/* Documents List */}
-                  <div>
-                    <div className="flex items-center justify-between mb-3">
-                      <h4 className="font-extrabold text-slate-900 flex items-center gap-2 text-sm">
-                        <FileText className="w-4 h-4 text-blue-900" />
-                        Daftar Berkas Unggahan Mahasiswa
-                      </h4>
-                      <span className="text-[11px] text-slate-500 italic">
-                        Bandingkan Berkas Lama vs Berkas Baru
-                      </span>
-                    </div>
+                      {/* Collapsible Form Rincian */}
+                      <div className="bg-white rounded-2xl border border-slate-200 text-xs text-slate-800 overflow-hidden shadow-2xs">
+                        <button
+                          type="button"
+                          onClick={() => setIsFormDetailsOpen(prev => !prev)}
+                          className="w-full p-4 flex items-center justify-between font-bold text-slate-800 hover:bg-slate-50 transition-colors text-left"
+                        >
+                          <span className="flex items-center gap-2 text-xs">
+                            <FileText className="w-4 h-4 text-blue-900" /> Rincian Isian Formulir Mahasiswa Lengkap
+                          </span>
+                          <span className="flex items-center gap-1 text-[11px] text-slate-500 font-normal">
+                            {isFormDetailsOpen ? 'Tutup Rincian' : 'Lihat Rincian Formulir'}
+                            {isFormDetailsOpen ? <ChevronUp className="w-4 h-4 ml-1" /> : <ChevronDown className="w-4 h-4 ml-1" />}
+                          </span>
+                        </button>
 
-                    {applicantDetail.documents && applicantDetail.documents.length > 0 ? (
-                      <div className="space-y-3">
-                        {(() => {
-                          const hasSanggahanNote = applicantDetail.application?.notes?.toLowerCase().includes('sanggah') || applicantDetail.application?.status === 'DITOLAK';
-                          const hasMultipleDocs = applicantDetail.documents.some((d: any) => 
-                            applicantDetail.documents.filter((x: any) => (x.docType || '').toLowerCase() === (d.docType || '').toLowerCase()).length > 1
-                          );
-                          const isAppeal = hasSanggahanNote || hasMultipleDocs;
-                          
-                          // If not appeal/multiple, filter to only show latest document of each docType
-                          let docsToRender = applicantDetail.documents;
-                          if (!isAppeal) {
-                            const latestDocsMap = new Map();
-                            applicantDetail.documents.forEach((d: any) => {
-                              const key = (d.docType || '').toLowerCase();
-                              latestDocsMap.set(key, d); // over-writes with later uploads
-                            });
-                            docsToRender = Array.from(latestDocsMap.values());
-                          }
+                        {isFormDetailsOpen && (
+                          <div className="p-4 pt-0 border-t border-slate-200 space-y-3 text-[11px] bg-slate-50/50">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 mt-3">
+                              <p>• Tempat/Tgl Lahir: <strong>{applicantDetail.profile?.tempatLahir || '-'}, {applicantDetail.profile?.tanggalLahir ? applicantDetail.profile.tanggalLahir.split('T')[0] : '-'}</strong></p>
+                              <p>• Gender / No HP: <strong>{applicantDetail.profile?.gender || '-'} | {applicantDetail.profile?.noHp || '-'}</strong></p>
+                              <p>• NIM / Semester: <strong>{applicantDetail.profile?.nim || '-'} (Semester {applicantDetail.profile?.semester || '-'})</strong></p>
+                              <p>• Target Tahun Lulus: <strong>{applicantDetail.profile?.targetLulus || '-'}</strong></p>
+                              <p>• Status Double Funding: <strong>{applicantDetail.profile?.beasiswaLain || 'Tidak Ada (Bukan Double Funding)'}</strong></p>
+                              <p>• No. KK / Alamat KTP: <strong>{applicantDetail.profile?.noKk || '-'} | {applicantDetail.profile?.alamatKtp || '-'}</strong></p>
+                              <p>• Nama Ortu: <strong>{applicantDetail.profile?.namaAyah || '-'} / {applicantDetail.profile?.namaIbu || '-'}</strong></p>
+                              <p>• Pekerjaan Ortu: <strong>{applicantDetail.profile?.pekerjaanAyah || '-'} / {applicantDetail.profile?.pekerjaanIbu || '-'}</strong></p>
+                              <p>• Penghasilan / Tanggungan: <strong>{applicantDetail.profile?.penghasilanOrtu || '-'} ({applicantDetail.profile?.jumlahTanggungan || 0} org)</strong></p>
+                              <p className="col-span-1 sm:col-span-2 text-blue-900 font-bold bg-blue-50 p-2.5 rounded-xl border border-blue-100">
+                                💳 Rekening Bank Penyaluran 50%: <strong>{applicantDetail.profile?.namaBank || '-'}</strong> | No. Rek: <strong className="font-mono">{applicantDetail.profile?.noRekening || '-'}</strong> | a.n: <strong>{applicantDetail.profile?.namaRekening || '-'}</strong>
+                              </p>
+                            </div>
 
-                          return docsToRender.map((doc: any, docIdx: number) => {
-                            const sameTypeDocs = applicantDetail.documents.filter((d: any) => (d.docType || '').toLowerCase() === (doc.docType || '').toLowerCase());
-                            const sameTypeIndex = sameTypeDocs.findIndex((d: any) => d.id === doc.id);
-                            const isMultiple = sameTypeDocs.length > 1;
-                            const isLatest = sameTypeIndex === sameTypeDocs.length - 1;
-
-                            return (
-                              <div key={docIdx} className={`flex items-center justify-between p-3.5 rounded-xl border transition-colors ${isMultiple && isLatest ? 'bg-amber-50/70 border-amber-300' : 'bg-white border-slate-200 hover:bg-slate-50'}`}>
-                                <div className="flex items-center gap-3">
-                                  <CheckCircle2 className={`w-5 h-5 shrink-0 ${isMultiple && isLatest ? 'text-amber-600' : 'text-emerald-500'}`} />
+                            {(applicantDetail.profile?.prestasiAkademik || applicantDetail.profile?.prestasiNonAkademik) && (
+                              <div className="pt-2 border-t border-slate-200 space-y-1.5 text-[11px]">
+                                {applicantDetail.profile?.prestasiAkademik && (
                                   <div>
-                                    <div className="flex items-center gap-2">
-                                      <p className="font-bold text-slate-800 uppercase text-xs">{getDocTitle(doc.docType)}</p>
-                                      {isMultiple && (
-                                        <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full border ${isLatest ? 'bg-amber-100 text-amber-900 border-amber-300' : 'bg-slate-100 text-slate-600 border-slate-200'}`}>
-                                          {isLatest ? '🆕 Berkas Sanggahan Baru' : `📁 Berkas Lama (#${sameTypeIndex + 1})`}
-                                        </span>
-                                      )}
+                                    <span className="font-bold text-slate-900">Prestasi Akademik:</span>
+                                    {renderAchievementDetails(applicantDetail.profile.prestasiAkademik)}
+                                  </div>
+                                )}
+                                {applicantDetail.profile?.prestasiNonAkademik && (
+                                  <div>
+                                    <span className="font-bold text-slate-900">Prestasi Non-Akademik:</span>
+                                    {renderAchievementDetails(applicantDetail.profile.prestasiNonAkademik)}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* GALLERY SCROLL DOKUMEN - Semua Dokumen Langsung Tampil Berurutan */}
+                      <div className="space-y-6 pt-2">
+                        <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+                          <div>
+                            <h4 className="font-extrabold text-slate-900 flex items-center gap-2 text-base">
+                              <FileText className="w-5 h-5 text-blue-900" />
+                              Galeri Berkas Mahasiswa ({docsToRender.length} Dokumen)
+                            </h4>
+                            <p className="text-xs text-slate-500 mt-0.5">
+                              Semua berkas ditampilkan langsung berurutan ke bawah. Cukup scroll untuk memeriksa seluruh berkas pendaftar.
+                            </p>
+                          </div>
+                        </div>
+
+                        {docsToRender.length > 0 ? (
+                          <div className="space-y-8">
+                            {docsToRender.map((doc: any, docIdx: number) => {
+                              const sameTypeDocs = applicantDetail.documents.filter((d: any) => (d.docType || '').toLowerCase() === (doc.docType || '').toLowerCase());
+                              const sameTypeIndex = sameTypeDocs.findIndex((d: any) => d.id === doc.id);
+                              const isMultiple = sameTypeDocs.length > 1;
+                              const isLatest = sameTypeIndex === sameTypeDocs.length - 1;
+                              const docUrl = previewUrls[doc.id];
+
+                              return (
+                                <div
+                                  key={doc.id || docIdx}
+                                  id={`doc-card-${doc.id}`}
+                                  className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden transition-shadow hover:shadow-md"
+                                >
+                                  {/* Card Header Dokumen */}
+                                  <div className="p-4 bg-slate-50/90 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3">
+                                    <div className="flex items-center gap-3">
+                                      <span className="w-7 h-7 rounded-xl bg-blue-900 text-white font-black text-xs flex items-center justify-center shrink-0 shadow-2xs">
+                                        {docIdx + 1}
+                                      </span>
+                                      <div>
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                          <h5 className="font-extrabold uppercase text-slate-900 text-sm">
+                                            {getDocTitle(doc.docType)}
+                                          </h5>
+                                          {isMultiple && (
+                                            <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full border ${isLatest ? 'bg-amber-100 text-amber-900 border-amber-300' : 'bg-slate-100 text-slate-600 border-slate-200'}`}>
+                                              {isLatest ? '🆕 Berkas Sanggahan Baru' : `📁 Berkas Lama (#${sameTypeIndex + 1})`}
+                                            </span>
+                                          )}
+                                        </div>
+                                        <p className="text-xs text-slate-500 mt-0.5 font-mono">
+                                          {doc.originalName} ({Math.round(doc.fileSize / 1024)} KB) • {doc.uploadedAt ? new Date(doc.uploadedAt).toLocaleString('id-ID') : 'Terunggah'}
+                                        </p>
+                                      </div>
                                     </div>
-                                    <p className="text-[11px] text-slate-500 mt-0.5">{doc.originalName} ({Math.round(doc.fileSize / 1024)} KB) • {doc.uploadedAt ? new Date(doc.uploadedAt).toLocaleString('id-ID') : 'Terverifikasi'}</p>
+
+                                    <div className="flex items-center gap-2">
+                                      <button
+                                        type="button"
+                                        onClick={() => handleViewDocument(targetUserId, doc.id)}
+                                        className="px-3 py-1.5 text-xs font-bold text-blue-700 hover:text-blue-900 hover:bg-blue-50 border border-blue-200 rounded-xl transition-colors inline-flex items-center gap-1.5 shadow-2xs"
+                                        title="Buka Dokumen di Tab Penuh"
+                                      >
+                                        <ExternalLink className="w-3.5 h-3.5" /> Buka Tab Baru
+                                      </button>
+                                    </div>
+                                  </div>
+
+                                  {/* Card Body - Pratinjau Langsung */}
+                                  <div className="p-3 sm:p-4 bg-slate-900/5 min-h-[350px] flex items-center justify-center">
+                                    {!docUrl ? (
+                                      <div className="py-16 text-center text-slate-500 space-y-2">
+                                        <Loader2 className="w-8 h-8 animate-spin mx-auto text-blue-900" />
+                                        <p className="text-xs font-semibold">Memuat pratinjau {getDocTitle(doc.docType)}...</p>
+                                      </div>
+                                    ) : isPdfDoc(doc) ? (
+                                      <iframe
+                                        src={docUrl}
+                                        className="w-full h-[650px] sm:h-[750px] border border-slate-300 rounded-xl bg-white shadow-inner"
+                                        title={doc.originalName}
+                                      />
+                                    ) : isImageDoc(doc) ? (
+                                      <div className="w-full py-4 flex items-center justify-center">
+                                        <img
+                                          src={docUrl}
+                                          alt={doc.originalName}
+                                          className="max-w-full max-h-[750px] object-contain rounded-xl shadow-md border border-slate-200 bg-white"
+                                        />
+                                      </div>
+                                    ) : (
+                                      <div className="p-8 text-center max-w-sm space-y-3">
+                                        <FileText className="w-12 h-12 text-slate-400 mx-auto" />
+                                        <div>
+                                          <h6 className="font-bold text-slate-800 text-sm">{doc.originalName}</h6>
+                                          <p className="text-xs text-slate-500 mt-1">Pratinjau langsung tidak didukung untuk format ini di browser.</p>
+                                        </div>
+                                        <button
+                                          type="button"
+                                          onClick={() => handleViewDocument(targetUserId, doc.id)}
+                                          className="px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold hover:bg-blue-700 transition-colors inline-flex items-center gap-1.5"
+                                        >
+                                          <ExternalLink className="w-3.5 h-3.5" /> Buka / Unduh File
+                                        </button>
+                                      </div>
+                                    )}
                                   </div>
                                 </div>
-                                <div className="flex items-center gap-2">
-                                  <button 
-                                    onClick={() => handleViewDocument(applicantDetail.user?.id || selectedApplicant?.userId, doc.id)}
-                                    className="px-3 py-1.5 text-xs font-bold bg-blue-100 text-blue-800 hover:bg-blue-200 rounded-lg transition-colors flex items-center gap-1 border border-blue-200"
-                                  >
-                                    <ExternalLink className="w-3.5 h-3.5" /> Lihat Dokumen
-                                  </button>
-                                </div>
-                              </div>
-                            );
-                          });
-                        })()}
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <p className="text-xs text-slate-400 italic p-8 bg-white rounded-2xl border border-dashed border-slate-200 text-center">
+                            Belum ada berkas fisik yang diunggah pendaftar ini.
+                          </p>
+                        )}
                       </div>
-                    ) : (
-                      <p className="text-xs text-slate-400 italic p-4 bg-slate-50 rounded-xl border border-dashed border-slate-200 text-center">
-                        Belum ada dokumen fisik yang diunggah pendaftar ini.
-                      </p>
-                    )}
-                  </div>
-                </>
+                    </div>
+                  );
+                })()
               ) : null}
             </div>
 
@@ -686,16 +901,16 @@ export default function SeleksiPage() {
               const isStatusLocked = currentStatus === 'DITERIMA' || currentStatus === 'DITOLAK' || currentStatus === 'PERLU_UNGGAH_ULANG';
 
               return (
-                <div className="p-5 border-t border-slate-100 bg-slate-50 flex items-center justify-end gap-3">
+                <div className="p-3.5 sm:p-4 border-t border-slate-200 bg-white flex items-center justify-end gap-2.5 shrink-0 shadow-xs">
                   <button 
                     onClick={() => window.print()}
-                    className="px-5 py-2.5 bg-slate-800 text-white font-normal rounded-xl hover:bg-slate-900 transition-colors flex items-center gap-2 mr-auto text-xs"
+                    className="px-4 py-2 bg-slate-800 text-white font-normal rounded-xl hover:bg-slate-900 transition-colors flex items-center gap-2 mr-auto text-xs shadow-2xs"
                   >
                     <Printer className="w-4 h-4" /> Cetak Formulir
                   </button>
                   <button 
-                    onClick={() => { setSelectedApplicant(null); setApplicantDetail(null); }}
-                    className="px-5 py-2.5 bg-slate-200 text-slate-700 font-bold rounded-xl hover:bg-slate-300 transition-colors text-xs"
+                    onClick={handleCloseDetail}
+                    className="px-4 py-2 bg-slate-200 text-slate-700 font-bold rounded-xl hover:bg-slate-300 transition-colors text-xs"
                   >
                     Tutup
                   </button>
@@ -703,7 +918,7 @@ export default function SeleksiPage() {
                     type="button"
                     disabled={isStatusLocked}
                     onClick={handleOpenRejectModal}
-                    className="px-5 py-2.5 bg-rose-100 text-rose-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed font-extrabold rounded-xl hover:bg-rose-200 transition-colors flex items-center gap-2 shadow-sm text-xs"
+                    className="px-4 py-2 bg-rose-100 text-rose-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed font-extrabold rounded-xl hover:bg-rose-200 transition-colors flex items-center gap-1.5 shadow-2xs text-xs"
                   >
                     <XCircle className="w-4 h-4" /> Tolak
                   </button>
@@ -717,15 +932,14 @@ export default function SeleksiPage() {
                           method: 'PATCH',
                           body: JSON.stringify({ status: 'DITERIMA', notes: 'Berkas lengkap dan dinyatakan lolos verifikasi.' }),
                         });
-                        setSelectedApplicant(null);
-                        setApplicantDetail(null);
+                        handleCloseDetail();
                         loadApplicants();
                         showNotification('Status pendaftar berhasil diubah menjadi DITERIMA!', 'success', 'Status Berhasil Diubah');
                       } catch (err: any) {
                         showNotification(err.message || 'Gagal mengubah status.', 'error', 'Gagal Update Status');
                       }
                     }}
-                    className="px-5 py-2.5 bg-emerald-600 text-white disabled:bg-slate-300 disabled:cursor-not-allowed font-extrabold rounded-xl hover:bg-emerald-700 transition-colors flex items-center gap-2 shadow-sm text-xs"
+                    className="px-4 py-2 bg-emerald-600 text-white disabled:bg-slate-300 disabled:cursor-not-allowed font-extrabold rounded-xl hover:bg-emerald-700 transition-colors flex items-center gap-1.5 shadow-2xs text-xs"
                   >
                     <CheckCircle2 className="w-4 h-4" /> Loloskan
                   </button>
