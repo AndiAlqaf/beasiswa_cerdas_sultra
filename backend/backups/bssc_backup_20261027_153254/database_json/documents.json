@@ -1,0 +1,134 @@
+[
+  {
+    "id": "59a83be6-e31f-4165-995e-3ea26eb54388",
+    "user_id": "be82c5f6-14d9-4a9a-a8c0-fb0ca7f4f0cf",
+    "doc_type": "esai",
+    "original_name": "Intechrest Logo.png",
+    "stored_name": "61823853-e254-49ed-922e-094e267698db.png",
+    "mime_type": "image/png",
+    "file_size": 19936,
+    "file_path": "uploads\\esai\\61823853-e254-49ed-922e-094e267698db.png",
+    "uploaded_at": "2026-10-18T21:09:10.000Z"
+  },
+  {
+    "id": "6870d2f5-20d1-41e0-95c0-dedc9a1a6c1c",
+    "user_id": "73548a22-f581-4f86-97db-4430a23c5278",
+    "doc_type": "ktm",
+    "original_name": "PROJECT DEFINITION RAFFI.pdf",
+    "stored_name": "c0cbdcd0-7144-4022-944b-9811f06ac389.pdf",
+    "mime_type": "application/pdf",
+    "file_size": 146642,
+    "file_path": "uploads\\ktm\\c0cbdcd0-7144-4022-944b-9811f06ac389.pdf",
+    "uploaded_at": "2026-09-30T15:41:55.000Z"
+  },
+  {
+    "id": "6a152618-8d2a-4631-92f7-8309e3fb1e09",
+    "user_id": "be82c5f6-14d9-4a9a-a8c0-fb0ca7f4f0cf",
+    "doc_type": "transkrip",
+    "original_name": "INTECHREST KE PT BOSOWA.pdf",
+    "stored_name": "a529a683-ff9d-4192-bd9a-9a55f1746a6b.pdf",
+    "mime_type": "application/pdf",
+    "file_size": 750563,
+    "file_path": "uploads\\transkrip\\a529a683-ff9d-4192-bd9a-9a55f1746a6b.pdf",
+    "uploaded_at": "2026-10-18T21:08:54.000Z"
+  },
+  {
+    "id": "73faa8d7-4b24-4c0e-a8f4-a5029647e790",
+    "user_id": "be82c5f6-14d9-4a9a-a8c0-fb0ca7f4f0cf",
+    "doc_type": "surat_permohonan",
+    "original_name": "download (1).jpg",
+    "stored_name": "fa5056d1-c1f6-4072-aa73-272910cd74ce.jpg",
+    "mime_type": "image/jpeg",
+    "file_size": 114690,
+    "file_path": "uploads\\surat_permohonan\\fa5056d1-c1f6-4072-aa73-272910cd74ce.jpg",
+    "uploaded_at": "2026-10-18T21:08:46.000Z"
+  },
+  {
+    "id": "984e5c44-a624-41a6-8d75-2842742c7932",
+    "user_id": "be82c5f6-14d9-4a9a-a8c0-fb0ca7f4f0cf",
+    "doc_type": "ktp",
+    "original_name": "download.jpg",
+    "stored_name": "49c2af0f-4f32-450a-884b-e1193d1e1786.jpg",
+    "mime_type": "image/jpeg",
+    "file_size": 130028,
+    "file_path": "uploads\\ktp\\49c2af0f-4f32-450a-884b-e1193d1e1786.jpg",
+    "uploaded_at": "2026-10-18T21:08:50.000Z"
+  },
+  {
+    "id": "9dc886a3-b660-417e-b78d-8f57cd9cbc65",
+    "user_id": "73548a22-f581-4f86-97db-4430a23c5278",
+    "doc_type": "selfie",
+    "original_name": "selfie.webp",
+    "stored_name": "2995ecd6-536c-4c61-8bb7-0e9e52ee7fe0.webp",
+    "mime_type": "image/webp",
+    "file_size": 8746,
+    "file_path": "uploads\\selfies\\2995ecd6-536c-4c61-8bb7-0e9e52ee7fe0.webp",
+    "uploaded_at": "2026-09-30T15:41:55.000Z"
+  },
+  {
+    "id": "af540cb3-55ff-487c-919f-971c1f31312f",
+    "user_id": "be82c5f6-14d9-4a9a-a8c0-fb0ca7f4f0cf",
+    "doc_type": "ktm",
+    "original_name": "LAMPIRAN_1_LOG_BOOK_ALQAF.pdf",
+    "stored_name": "f8e50858-7e38-440d-9048-8667a082b8b3.pdf",
+    "mime_type": "application/pdf",
+    "file_size": 139721,
+    "file_path": "uploads\\ktm\\f8e50858-7e38-440d-9048-8667a082b8b3.pdf",
+    "uploaded_at": "2026-10-18T21:09:02.000Z"
+  },
+  {
+    "id": "c6b3c055-0732-43b5-9363-d54851e4bdf4",
+    "user_id": "be82c5f6-14d9-4a9a-a8c0-fb0ca7f4f0cf",
+    "doc_type": "dtks",
+    "original_name": "INTECHREST KE PT BOSOWA.pdf",
+    "stored_name": "2f9a0065-327e-4d10-9399-9c0ad66f6366.pdf",
+    "mime_type": "application/pdf",
+    "file_size": 750563,
+    "file_path": "uploads\\dtks\\2f9a0065-327e-4d10-9399-9c0ad66f6366.pdf",
+    "uploaded_at": "2026-10-18T21:09:05.000Z"
+  },
+  {
+    "id": "cc17a76b-cea6-42ab-b153-1555f4af4fac",
+    "user_id": "be82c5f6-14d9-4a9a-a8c0-fb0ca7f4f0cf",
+    "doc_type": "ktp",
+    "original_name": "download.jpg",
+    "stored_name": "da90b77f-8c7a-4d28-aab2-920140a0efd0.jpg",
+    "mime_type": "image/jpeg",
+    "file_size": 130028,
+    "file_path": "uploads\\ktp\\da90b77f-8c7a-4d28-aab2-920140a0efd0.jpg",
+    "uploaded_at": "2026-10-18T21:10:22.000Z"
+  },
+  {
+    "id": "d621aff3-52f3-4acb-aa84-e897a93cb697",
+    "user_id": "be82c5f6-14d9-4a9a-a8c0-fb0ca7f4f0cf",
+    "doc_type": "surat_pernyataan",
+    "original_name": "LAMPIRAN LOGBOOK AGUSTUS.pdf",
+    "stored_name": "511e1ed5-3af1-437b-b6aa-cef22be616a0.pdf",
+    "mime_type": "application/pdf",
+    "file_size": 142987,
+    "file_path": "uploads\\surat_pernyataan\\511e1ed5-3af1-437b-b6aa-cef22be616a0.pdf",
+    "uploaded_at": "2026-10-18T21:08:58.000Z"
+  },
+  {
+    "id": "f12c139f-408d-4c04-8d0c-02c4003ebc6d",
+    "user_id": "be82c5f6-14d9-4a9a-a8c0-fb0ca7f4f0cf",
+    "doc_type": "dtks",
+    "original_name": "download (1).jpg",
+    "stored_name": "2fd9e515-e599-4eb3-a44b-cbb9f0aeab42.jpg",
+    "mime_type": "image/jpeg",
+    "file_size": 114690,
+    "file_path": "uploads\\dtks\\2fd9e515-e599-4eb3-a44b-cbb9f0aeab42.jpg",
+    "uploaded_at": "2026-10-18T21:10:29.000Z"
+  },
+  {
+    "id": "f9a25359-9d5a-4f5f-9ffc-741b1e4b6d4b",
+    "user_id": "be82c5f6-14d9-4a9a-a8c0-fb0ca7f4f0cf",
+    "doc_type": "selfie",
+    "original_name": "selfie.webp",
+    "stored_name": "47535992-7190-4c6e-90eb-c1ea931dc2ca.webp",
+    "mime_type": "image/webp",
+    "file_size": 9548,
+    "file_path": "uploads\\selfies\\47535992-7190-4c6e-90eb-c1ea931dc2ca.webp",
+    "uploaded_at": "2026-10-18T21:07:54.000Z"
+  }
+]

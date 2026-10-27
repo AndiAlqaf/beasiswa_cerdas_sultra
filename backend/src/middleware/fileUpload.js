@@ -14,10 +14,12 @@ const env = require('../config/env');
 const { ALLOWED_MIME_TYPES, FILE_SIGNATURES, MAX_FILE_SIZES } = require('../config/security');
 const { sanitizeFilename } = require('../utils/sanitizer');
 const { log, LOG_LEVELS } = require('../utils/logger');
+const { normalizeDocType } = require('../config/documentTypes');
 
-// Ensure upload directories exist
+// Ensure all upload directories exist (canonical + legacy aliases)
 const UPLOAD_DIRS = [
-  'selfies', 'ktm', 'pendukung',
+  'selfies', 'ktm', 'pendukung', 'ijazah', 'dtks', 'ktp', 'transkrip',
+  'surat_permohonan', 'surat_pernyataan', 'pernyataan', 'esai',
   'fileSuratPermohonan', 'filePasfoto', 'fileKtp', 'fileSuratAktif',
   'fileTranskrip', 'fileDtks', 'fileSuratPernyataan', 'fileMotivationOrEsai'
 ];
@@ -53,11 +55,12 @@ function getExtFromMime(mimeType) {
 
 /**
  * Create multer storage config for a specific document type
- * @param {string} docType - 'selfie' | 'ktm' | 'pendukung'
+ * @param {string} docType - 'selfie' | 'ktm' | 'dtks' | 'ijazah' | etc.
  * @returns {multer.StorageEngine}
  */
 function createStorage(docType) {
-  const subDir = docType === 'selfie' ? 'selfies' : docType;
+  const canonical = normalizeDocType(docType) || docType;
+  const subDir = canonical === 'selfie' ? 'selfies' : canonical;
   const targetDir = path.join(env.UPLOAD_DIR, subDir);
   if (!fs.existsSync(targetDir)) {
     fs.mkdirSync(targetDir, { recursive: true });

@@ -37,9 +37,13 @@ export default function PublicPengumumanPage() {
 
   const timeline = getDynamicTimeline(scheduleConfig);
   const pengumumanStep = timeline.find((s) => s.id === 'pengumuman');
-
   const isAnnouncementPeriodOpen = pengumumanStep
     ? pengumumanStep.status === 'active' || pengumumanStep.status === 'completed'
+    : false;
+
+  const penetapanStep = timeline.find((s) => s.id === 'penetapan');
+  const isPenetapanPeriodOpen = penetapanStep
+    ? penetapanStep.status === 'active' || penetapanStep.status === 'completed'
     : false;
 
   const loadRecipients = async () => {
@@ -155,28 +159,34 @@ export default function PublicPengumumanPage() {
             <div className="bg-emerald-50/80 rounded-2xl border border-emerald-200 p-6 shadow-xs space-y-4">
               <div className="flex items-center gap-2 text-xs text-emerald-800 font-medium">
                 <Calendar className="w-3.5 h-3.5" />
-                <span>{timeline[2]?.date || '16 Oktober 2026'}</span>
+                <span>{isPenetapanPeriodOpen ? (penetapanStep?.date || '16 - 17 November 2026') : (pengumumanStep?.date || '2 - 4 November 2026')}</span>
                 <span className="px-2 py-0.5 rounded-md bg-emerald-200 text-emerald-800 text-[10px] font-extrabold uppercase tracking-wider ml-1">
-                  HASIL SELEKSI
+                  {isPenetapanPeriodOpen ? 'PENETAPAN RESMI (TAHAP 06)' : 'VERIFIKASI BERKAS (TAHAP 03)'}
                 </span>
               </div>
               <div>
                 <h2 className="text-base sm:text-lg font-bold text-slate-900 leading-snug">
-                  Pengumuman Resmi Nama-Nama Penerima Beasiswa Sultra Cerdas 2026
+                  {isPenetapanPeriodOpen
+                    ? 'Penetapan Resmi Penerima Beasiswa Sultra Cerdas 2026 (SK Gubernur)'
+                    : 'Pengumuman Hasil Seleksi'}
                 </h2>
                 <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-normal mt-1">
-                  Hasil seleksi resmi telah ditetapkan oleh Pemprov Sulawesi Tenggara. Anda dapat mencari nama mahasiswa penerima dan melihat SK resmi di bawah ini.
+                  {isPenetapanPeriodOpen
+                    ? 'Hasil penetapan resmi penerima beasiswa berdasarkan SK Gubernur Sulawesi Tenggara.'
+                    : 'Daftar nama mahasiswa yang berkas pendaftarannya telah dinyatakan terverifikasi.'}
                 </p>
               </div>
 
-              <div className="pt-1 flex flex-wrap gap-3">
-                <button
-                  onClick={() => setShowSkModal(true)}
-                  className="px-4 py-2 bg-emerald-800 hover:bg-emerald-900 text-white font-bold text-xs rounded-xl transition-colors inline-flex items-center gap-2 shadow-xs"
-                >
-                  <Printer className="w-4 h-4 text-amber-300" /> Cetak Format SK Resmi (PDF)
-                </button>
-              </div>
+              {isPenetapanPeriodOpen && (
+                <div className="pt-1 flex flex-wrap gap-3">
+                  <button
+                    onClick={() => setShowSkModal(true)}
+                    className="px-4 py-2 bg-emerald-800 hover:bg-emerald-900 text-white font-bold text-xs rounded-xl transition-colors inline-flex items-center gap-2 shadow-xs"
+                  >
+                    <Printer className="w-4 h-4 text-amber-300" /> Cetak Format SK Resmi (PDF)
+                  </button>
+                </div>
+              )}
 
               {/* Filter & Table */}
               <div className="pt-4 border-t border-emerald-200/60 space-y-4">
@@ -209,7 +219,7 @@ export default function PublicPengumumanPage() {
                     <p className="text-xs text-slate-500 font-normal">Memuat data penerima...</p>
                   </div>
                 ) : recipients.length === 0 ? (
-                  <p className="text-xs text-slate-500 italic py-4 text-center">Tidak ada data penerima yang cocok.</p>
+                  <p className="text-xs text-slate-500 italic py-4 text-center">Tidak ada data pendaftar yang cocok.</p>
                 ) : (
                   <div className="overflow-x-auto border border-emerald-200 rounded-xl bg-white">
                     <table className="w-full text-left text-xs">
@@ -219,7 +229,7 @@ export default function PublicPengumumanPage() {
                           <th className="py-2.5 px-3">No. Registrasi</th>
                           <th className="py-2.5 px-3">Nama Mahasiswa</th>
                           <th className="py-2.5 px-3">Jenjang</th>
-                          <th className="py-2.5 px-3 text-center">Status</th>
+                          <th className="py-2.5 px-3 text-center">{isPenetapanPeriodOpen ? 'Status Penetapan' : 'Status Berkas'}</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-emerald-100 text-slate-800">
@@ -229,7 +239,9 @@ export default function PublicPengumumanPage() {
                             <td className="py-2.5 px-3 font-mono font-bold text-emerald-900">{rec.registrationNo}</td>
                             <td className="py-2.5 px-3 font-bold text-slate-900">{rec.namaLengkap}</td>
                             <td className="py-2.5 px-3">{rec.jenjangTarget}</td>
-                            <td className="py-2.5 px-3 text-center font-bold text-emerald-700">DITERIMA</td>
+                            <td className="py-2.5 px-3 text-center font-bold text-emerald-700">
+                              {isPenetapanPeriodOpen ? 'RESMI DITETAPKAN' : 'BERKAS TERVERIFIKASI'}
+                            </td>
                           </tr>
                         ))}
                       </tbody>

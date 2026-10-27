@@ -1,0 +1,15 @@
+[
+  {
+    "id": "71e5d79d-48ac-45dc-9236-eed8c7d222ff",
+    "user_id": "be82c5f6-14d9-4a9a-a8c0-fb0ca7f4f0cf",
+    "registration_no": "BSSC-2026-S1-0001",
+    "status": "DITERIMA",
+    "notes": "- Transkrip Nilai buram, terpotong, atau tidak terbaca dengan jelas.\n- Surat Keterangan Aktif Kuliah / KTM tidak valid atau belum disahkan pejabat berwenang.",
+    "submitted_at": "2026-10-18T21:09:16.000Z",
+    "verified_at": "2026-10-18T21:11:31.000Z",
+    "verified_by": "f24aa3d6-027f-43af-ac2b-69cdfbe61394",
+    "announcement_email_sent_at": null,
+    "appeal_email_sent_at": null,
+    "is_lulus_sanggah": 0
+  }
+]

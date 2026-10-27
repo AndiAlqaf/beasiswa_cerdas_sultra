@@ -1,0 +1,32 @@
+[
+  {
+    "id": "16d90671-921e-4882-880a-df135b0284e7",
+    "user_id": "73548a22-f581-4f86-97db-4430a23c5278",
+    "tingkat": "SMA",
+    "institusi": "testi",
+    "jurusan": "testi",
+    "tahun_mulai": "2022",
+    "tahun_lulus": "2023",
+    "sort_order": 0
+  },
+  {
+    "id": "23284cf7-da27-4c4a-b4c4-0cdc4b486058",
+    "user_id": "be82c5f6-14d9-4a9a-a8c0-fb0ca7f4f0cf",
+    "tingkat": "SMA",
+    "institusi": "testing",
+    "jurusan": "testing",
+    "tahun_mulai": "2020",
+    "tahun_lulus": "2021",
+    "sort_order": 0
+  },
+  {
+    "id": "b7a0000c-9335-4530-a40b-4574db6cf531",
+    "user_id": "be82c5f6-14d9-4a9a-a8c0-fb0ca7f4f0cf",
+    "tingkat": "S1",
+    "institusi": "testing",
+    "jurusan": "Pendidikan Teknik Mesin",
+    "tahun_mulai": null,
+    "tahun_lulus": null,
+    "sort_order": 1
+  }
+]

@@ -179,10 +179,32 @@ async function triggerAppealBlast(req, res) {
   }
 }
 
+/**
+ * POST /api/v1/public/trigger-penetapan-blast
+ * Memungkinkan trigger pengiriman email notifikasi penetapan resmi penerima beasiswa (SK Gubernur)
+ */
+async function triggerPenetapanBlast(req, res) {
+  try {
+    const { jalankanBlastPenetapanPenerima } = require('../utils/emailScheduler');
+    const result = await jalankanBlastPenetapanPenerima();
+    return res.json({
+      success: true,
+      message: 'Blast email penetapan resmi penerima beasiswa berhasil dipicu!',
+      data: result,
+    });
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      message: 'Gagal mengirim email penetapan: ' + err.message,
+    });
+  }
+}
+
 module.exports = {
   healthCheck,
   checkStatus,
   getAcceptedRecipients,
   triggerAnnouncementBlast,
   triggerAppealBlast,
+  triggerPenetapanBlast,
 };

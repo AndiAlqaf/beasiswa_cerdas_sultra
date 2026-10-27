@@ -188,6 +188,11 @@ export default function DashboardPage() {
     ? pengumumanSanggahStep.status === 'active' || pengumumanSanggahStep.status === 'completed'
     : false;
 
+  const penetapanStep = timeline.find((s) => s.id === 'penetapan');
+  const isPenetapanPeriodOpen = penetapanStep
+    ? penetapanStep.status === 'active' || penetapanStep.status === 'completed'
+    : false;
+
   const isSanggahan = application?.notes?.includes('[SANGGAHAN MAHASISWA]');
 
   let effectiveStatus = application?.status;
@@ -223,8 +228,10 @@ export default function DashboardPage() {
       surat_pernyataan: 'Surat Pernyataan Bebas Beasiswa',
       ktp: 'Kartu Tanda Penduduk (KTP)',
       filektp: 'Kartu Tanda Penduduk (KTP)',
-      dtks: 'Bukti DTKS / Suket Tidak Mampu / Ijazah',
-      filedtks: 'Bukti DTKS / Suket Tidak Mampu / Ijazah',
+      dtks: 'Bukti Tangkapan Layar DTKS / DTSEN',
+      filedtks: 'Bukti Tangkapan Layar DTKS / DTSEN',
+      ijazah: 'Ijazah & Transkrip Jenjang Sebelumnya',
+      fileijazah: 'Ijazah & Transkrip Jenjang Sebelumnya',
       pendukung: 'Berkas Sertifikat / Prestasi',
       surat_permohonan: 'Surat Permohonan',
       suratpermohonan: 'Surat Permohonan',
@@ -239,13 +246,23 @@ export default function DashboardPage() {
   const getStatusBadge = (status?: string) => {
     switch (status) {
       case 'DITERIMA':
+        if (isPenetapanPeriodOpen) {
+          return {
+            title: 'Penetapan Penerima Beasiswa',
+            desc: 'Selamat! Anda telah resmi ditetapkan sebagai penerima Beasiswa Stimulan Sultra Cerdas 2026. Silakan lengkapi data rekening bank Anda di bawah ini.',
+            badgeBg: 'bg-emerald-100 text-emerald-800',
+            icon: Award,
+            iconBg: 'bg-emerald-50 text-emerald-600',
+            badgeText: 'Penerima Beasiswa',
+          };
+        }
         return {
-          title: 'Diterima Beasiswa',
-          desc: 'Selamat! Anda dinyatakan lolos dan ditetapkan sebagai penerima Beasiswa Sultra Cerdas.',
+          title: 'Berkas Terverifikasi',
+          desc: 'Berkas pendaftaran Anda telah selesai diverifikasi oleh tim penilai.',
           badgeBg: 'bg-emerald-100 text-emerald-800',
-          icon: Award,
+          icon: CheckCircle2,
           iconBg: 'bg-emerald-50 text-emerald-600',
-          badgeText: 'Lolos Seleksi',
+          badgeText: 'Terverifikasi',
         };
       case 'DITOLAK':
         return {
@@ -562,8 +579,8 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* PENYALURAN BEASISWA & REKENING BANK CARD (Tahap 1 - 50%: Hanya Muncul Bagi Penerima yang Lolos / DITERIMA) */}
-      {(effectiveStatus === 'DITERIMA' || effectiveStatus === 'PENCAIRAN_TERMIN_1' || effectiveStatus === 'PENCAIRAN_TERMIN_2') && (
+      {/* PENYALURAN BEASISWA & REKENING BANK CARD (Tahap 1 - 50%: HANYA Muncul di Masa Penetapan Resmi Bagi Penerima yang Lolos / DITERIMA) */}
+      {(effectiveStatus === 'DITERIMA' || effectiveStatus === 'PENCAIRAN_TERMIN_1' || effectiveStatus === 'PENCAIRAN_TERMIN_2') && isPenetapanPeriodOpen && (
         <div className="bg-white rounded-3xl border border-blue-200 p-6 sm:p-8 shadow-sm space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-5">
             <div className="flex items-center gap-3">
@@ -572,13 +589,13 @@ export default function DashboardPage() {
               </div>
               <div>
                 <span className="text-[10px] font-extrabold uppercase tracking-wider bg-blue-100 text-blue-900 px-3 py-1 rounded-full border border-blue-200">
-                  Penyaluran Beasiswa 50% Tahap 1
+                  Penyaluran Tahap 1 (50%)
                 </span>
-                <h3 className="text-xl font-black text-slate-900 mt-1">Rekening Bank Penerima Beasiswa</h3>
+                <h3 className="text-xl font-black text-slate-900 mt-1">Data Rekening Bank Penerima Beasiswa</h3>
               </div>
             </div>
             <div className="text-xs text-slate-600 bg-blue-50/70 px-4 py-2.5 rounded-2xl border border-blue-100 max-w-sm leading-relaxed">
-              💳 <strong>Informasi Penyaluran:</strong> Selamat! Anda telah dinyatakan Lolos. Silakan lengkapi rekening bank atas nama Anda untuk pencairan dana 50% tahap pertama.
+              💳 <strong>Penyaluran Beasiswa:</strong> Selamat, Anda telah resmi ditetapkan dalam SK Gubernur. Silakan lengkapi data rekening bank atas nama pendaftar sendiri untuk proses penyaluran Beasiswa Stimulan Sultra Cerdas 50% Termin 1.
             </div>
           </div>
 

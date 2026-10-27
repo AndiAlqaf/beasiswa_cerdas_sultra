@@ -18,22 +18,23 @@ interface DocumentInfo {
 
 const isDocTypeMatch = (doc: DocumentInfo, targetKey: string) => {
   if (!doc || !targetKey) return false;
-  const dbType = (doc.docType || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  const dbType = ((doc as any).canonicalType || doc.docType || (doc as any).doc_type || '').toLowerCase().replace(/[^a-z0-9]/g, '');
   const tgt = targetKey.toLowerCase().replace(/[^a-z0-9]/g, '');
 
   // 1. Direct match
   if (dbType === tgt) return true;
 
   // 2. Controlled alias mapping based on docType ONLY (never match on user's arbitrary originalName)
-  if (tgt === 'pernyataan' && (dbType === 'suratpernyataan' || dbType === 'filesuratpernyataan' || dbType === 'pernyataan')) return true;
-  if (tgt === 'suratpermohonan' && (dbType === 'filesuratpermohonan' || dbType === 'suratpermohonan')) return true;
-  if (tgt === 'esai' && (dbType === 'filemotivationoresai' || dbType === 'motivationletter' || dbType === 'esai')) return true;
-  if (tgt === 'selfie' && (dbType === 'pasfoto' || dbType === 'filepasfoto' || dbType === 'selfie')) return true;
-  if (tgt === 'ktm' && (dbType === 'surataktif' || dbType === 'filesurataktif' || dbType === 'ktm')) return true;
+  if ((tgt === 'pernyataan' || tgt === 'suratpernyataan') && (dbType === 'suratpernyataan' || dbType === 'filesuratpernyataan' || dbType === 'pernyataan')) return true;
+  if ((tgt === 'suratpermohonan' || tgt === 'permohonan') && (dbType === 'filesuratpermohonan' || dbType === 'suratpermohonan' || dbType === 'permohonan')) return true;
+  if (tgt === 'esai' && (dbType === 'filemotivationoresai' || dbType === 'motivationletter' || dbType === 'esai' || dbType === 'essay' || dbType === 'fileesai')) return true;
+  if (tgt === 'selfie' && (dbType === 'pasfoto' || dbType === 'filepasfoto' || dbType === 'selfie' || dbType === 'fileselfie')) return true;
+  if (tgt === 'ktm' && (dbType === 'surataktif' || dbType === 'filesurataktif' || dbType === 'ktm' || dbType === 'filektm' || dbType === 'kartumahasiswa')) return true;
   if (tgt === 'ktp' && (dbType === 'filektp' || dbType === 'ktp')) return true;
-  if (tgt === 'transkrip' && (dbType === 'filetranskrip' || dbType === 'transkrip')) return true;
-  if (tgt === 'dtks' && (dbType === 'filedtks' || dbType === 'dtks' || dbType === 'kip')) return true;
-  if (tgt === 'pendukung' && dbType === 'pendukung') return true;
+  if (tgt === 'transkrip' && (dbType === 'filetranskrip' || dbType === 'transkrip' || dbType === 'transkripnilai')) return true;
+  if (tgt === 'dtks' && (dbType === 'filedtks' || dbType === 'dtks' || dbType === 'kip' || dbType === 'dtsen' || dbType === 'kemensos')) return true;
+  if (tgt === 'ijazah' && (dbType === 'fileijazah' || dbType === 'ijazah' || dbType === 'ijazahs1' || dbType === 'ijazahs2')) return true;
+  if (tgt === 'pendukung' && (dbType === 'pendukung' || dbType === 'filependukung')) return true;
 
   return false;
 };
@@ -62,11 +63,18 @@ export default function BerkasPage() {
     { key: 'pernyataan', label: 'Surat Pernyataan Tidak Sedang Menerima Beasiswa Lain', desc: 'Surat Pernyataan resmi bermaterai Rp 10.000 tidak sedang menerima beasiswa lain.', required: true, accept: '.pdf,.png,.jpg,.jpeg' },
     { 
       key: 'dtks', 
-      label: jenjang === 'S2' ? 'Ijazah & Transkrip Nilai S1' : jenjang === 'S3' ? 'Ijazah & Transkrip S1 & S2' : 'Bukti DTKS / KIP / Suket Kurang Mampu', 
-      desc: jenjang === 'S2' ? 'Salinan ijazah dan transkrip nilai jenjang Sarjana (S1).' : jenjang === 'S3' ? 'Salinan ijazah dan transkrip jenjang S1 & Magister (S2).' : 'Kartu Indonesia Pintar, Bukti Terdaftar DTKS Kemensos, atau Surat Keterangan Tidak Mampu.', 
-      required: false, 
+      label: 'Bukti Tangkapan Layar DTKS / DTSEN', 
+      desc: 'Tangkapan layar status terdaftar DTKS dan/atau DTSEN (Kemensos).', 
+      required: true, 
       accept: '.pdf,.png,.jpg,.jpeg' 
     },
+    ...((jenjang === 'S2' || jenjang === 'S3') ? [{
+      key: 'ijazah',
+      label: jenjang === 'S2' ? 'Ijazah & Transkrip Nilai S1' : 'Ijazah & Transkrip S1 & S2',
+      desc: jenjang === 'S2' ? 'Salinan ijazah dan transkrip nilai jenjang Sarjana (S1).' : 'Salinan ijazah dan transkrip jenjang S1 & Magister (S2).',
+      required: false,
+      accept: '.pdf,.png,.jpg,.jpeg'
+    }] : []),
     { key: 'ktp', label: 'Kartu Tanda Penduduk (KTP)', desc: 'Scan KTP asli domisili Kabupaten/Kota Sulawesi Tenggara.', required: true, accept: '.pdf,.png,.jpg,.jpeg' },
     { key: 'esai', label: (jenjang === 'S2' || jenjang === 'S3') ? 'Esai Kontribusi Daerah (5 Tahun)' : 'Motivation Letter (S1/D4)', desc: (jenjang === 'S2' || jenjang === 'S3') ? 'Esai rencana nyata kontribusi bagi Sulawesi Tenggara dalam 5 tahun ke depan.' : 'Surat motivasi yang memuat alasan dan motivasi akademik Anda.', required: true, accept: '.pdf,.png,.jpg,.jpeg' },
     { key: 'pendukung', label: 'Berkas Sertifikat & Pendukung Lain', desc: 'Sertifikat keahlian, prestasi, atau dokumen pendukung tambahan.', required: false, accept: '.pdf,.png,.jpg,.jpeg' },

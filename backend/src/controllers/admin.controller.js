@@ -7,6 +7,7 @@
 
 const { getPool } = require('../config/database');
 const { auditLog, getClientIp, log, LOG_LEVELS } = require('../utils/logger');
+const { normalizeDocType } = require('../config/documentTypes');
 
 /**
  * GET /api/v1/admin/dashboard
@@ -329,8 +330,14 @@ async function getApplicantDetail(req, res) {
         } : null,
         education,
         documents: documents.map(d => ({
-          id: d.id, docType: d.doc_type, originalName: d.original_name,
-          mimeType: d.mime_type, fileSize: d.file_size, uploadedAt: d.uploaded_at,
+          id: d.id,
+          docType: d.doc_type,
+          doc_type: d.doc_type,
+          canonicalType: normalizeDocType(d.doc_type),
+          originalName: d.original_name,
+          mimeType: d.mime_type,
+          fileSize: d.file_size,
+          uploadedAt: d.uploaded_at,
         })),
       },
     });
@@ -356,23 +363,10 @@ async function verifyApplicant(req, res) {
     }
 
     const currentStatus = appRows[0].status;
-    if (currentStatus === 'DITERIMA' || currentStatus === 'DITOLAK') {
-      return res.status(400).json({
-        success: false,
-        message: `Status pendaftaran sudah ${currentStatus} (Dikunci). Status tidak dapat diubah lagi kecuali pendaftar mengajukan sanggahan.`
-      });
-    }
-
-    if (currentStatus === 'PERLU_UNGGAH_ULANG') {
-      return res.status(400).json({
-        success: false,
-        message: 'Pendaftar ini belum mengunggah ulang berkas (KTM). Verifikasi baru dapat dilakukan setelah pendaftar mengirim ulang.'
-      });
-    }
 
     await pool.execute(
-      `UPDATE applications SET status = ?, notes = COALESCE(?, notes), verified_at = NOW(), verified_by = ? WHERE user_id = ?`,
-      [status, notes || null, adminUserId, applicantUserId]
+      `UPDATE applications SET status = ?, notes = ?, verified_at = NOW(), verified_by = ? WHERE user_id = ?`,
+      [status, notes !== undefined ? notes : appRows[0].notes, adminUserId, applicantUserId]
     );
 
     auditLog({

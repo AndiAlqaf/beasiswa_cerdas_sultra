@@ -5,20 +5,19 @@ import { CheckCircle2, XCircle, Clock, FileText, ExternalLink, Search, X, Loader
 import { fetchAPI } from '@/lib/api';
 
 const getDocTitle = (key: string) => {
-  const map: Record<string, string> = {
-    fileSuratPermohonan: 'Surat Permohonan',
-    filePasfoto: 'Pasfoto / Selfie',
-    fileKtp: 'KTP',
-    fileSuratAktif: 'Surat Aktif Kuliah / KTM',
-    fileTranskrip: 'Transkrip Nilai Sementara',
-    fileDtks: 'Surat Keterangan (DTKS / Ijazah)',
-    fileSuratPernyataan: 'Surat Pernyataan',
-    fileMotivationOrEsai: 'Motivation Letter / Esai',
-    selfie: 'Selfie Profil',
-    ktm: 'KTM',
-    pendukung: 'Berkas Pendukung',
-  };
-  return map[key] || key;
+  if (!key) return '-';
+  const clean = String(key).trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+  if (['dtks', 'filedtks', 'kip', 'dtsen', 'kemensos', 'suratdtks'].includes(clean)) return 'Bukti DTKS / DTSEN';
+  if (['ijazah', 'fileijazah', 'ijazahs1', 'ijazahs2', 'ijazahsebelumnya'].includes(clean)) return 'Ijazah & Transkrip Jenjang Sebelumnya';
+  if (['ktm', 'filesurataktif', 'surataktif', 'filektm', 'kartumahasiswa', 'suratketeranganaktif'].includes(clean)) return 'Surat Aktif Kuliah / KTM';
+  if (['ktp', 'filektp', 'kartutandapenduduk'].includes(clean)) return 'KTP';
+  if (['transkrip', 'filetranskrip', 'transkripnilai', 'khs'].includes(clean)) return 'Transkrip Nilai';
+  if (['suratpermohonan', 'filesuratpermohonan', 'permohonan'].includes(clean)) return 'Surat Permohonan';
+  if (['suratpernyataan', 'filesuratpernyataan', 'pernyataan'].includes(clean)) return 'Surat Pernyataan';
+  if (['esai', 'filemotivationoresai', 'motivationletter', 'essay', 'fileesai'].includes(clean)) return 'Motivation Letter / Esai';
+  if (['selfie', 'filepasfoto', 'pasfoto', 'fileselfie', 'foto'].includes(clean)) return 'Pasfoto / Selfie';
+  if (['pendukung', 'filependukung', 'prestasi', 'sertifikat'].includes(clean)) return 'Berkas Pendukung / Sertifikat';
+  return key;
 };
 
 const getOngoingEducation = (detail: any) => {
@@ -215,7 +214,7 @@ export default function SeleksiPage() {
     Object.values(previewUrls).forEach(url => {
       try {
         window.URL.revokeObjectURL(url);
-      } catch (e) {}
+      } catch (e) { }
     });
     setPreviewUrls({});
   };
@@ -351,715 +350,721 @@ export default function SeleksiPage() {
   return (
     <div className="relative">
       <div className="space-y-6 print:hidden">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-900">Verifikasi & Seleksi</h2>
-          <p className="text-slate-500">Verifikasi kelengkapan berkas dan tentukan kelulusan pendaftar real.</p>
-        </div>
-        
-        <form onSubmit={handleSearchSubmit} className="flex flex-col sm:flex-row gap-3">
-          <select 
-            value={statusFilter}
-            onChange={(e) => {
-              setStatusFilter(e.target.value);
-              setPage(1);
-            }}
-            className="px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm w-full sm:w-auto"
-          >
-            <option value="">Semua Status</option>
-            <option value="TERKIRIM">Menunggu Verifikasi (TERKIRIM)</option>
-            <option value="PERLU_UNGGAH_ULANG">Perlu Unggah Ulang (KTM hilang)</option>
-            <option value="VERIFIKASI_BERKAS">Proses Verifikasi (VERIFIKASI)</option>
-            <option value="SELEKSI_ADMINISTRASI">Seleksi Administrasi</option>
-            <option value="DITERIMA">Lolos Seleksi (DITERIMA)</option>
-            <option value="DITOLAK">Ditolak (DITOLAK)</option>
-          </select>
-          <select 
-            value={jenjangFilter}
-            onChange={(e) => {
-              setJenjangFilter(e.target.value);
-              setPage(1);
-            }}
-            className="px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm w-full sm:w-auto"
-          >
-            <option value="">Semua Jenjang</option>
-            <option value="S1">S1 / D4</option>
-            <option value="S2">S2</option>
-            <option value="S3">S3</option>
-          </select>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-            <input 
-              type="text" 
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Cari pendaftar..." 
-              className="pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-normal text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm w-full sm:w-64"
-            />
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h2 className="text-2xl font-bold text-slate-900">Verifikasi & Seleksi</h2>
+            <p className="text-slate-500">Verifikasi kelengkapan berkas dan tentukan kelulusan pendaftar real.</p>
           </div>
-        </form>
-      </div>
 
-      {error && (
-        <div className="p-4 bg-rose-50 border border-rose-200 rounded-2xl flex items-center gap-3 text-rose-800 text-sm">
-          <AlertCircle className="w-5 h-5 text-rose-600 shrink-0" />
-          <span>{error}</span>
+          <form onSubmit={handleSearchSubmit} className="flex flex-col sm:flex-row gap-3">
+            <select
+              value={statusFilter}
+              onChange={(e) => {
+                setStatusFilter(e.target.value);
+                setPage(1);
+              }}
+              className="px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm w-full sm:w-auto"
+            >
+              <option value="">Semua Status</option>
+              <option value="TERKIRIM">Menunggu Verifikasi (TERKIRIM)</option>
+              <option value="PERLU_UNGGAH_ULANG">Perlu Unggah Ulang (KTM hilang)</option>
+              <option value="VERIFIKASI_BERKAS">Proses Verifikasi (VERIFIKASI)</option>
+              <option value="SELEKSI_ADMINISTRASI">Seleksi Administrasi</option>
+              <option value="DITERIMA">Lolos Seleksi (DITERIMA)</option>
+              <option value="DITOLAK">Ditolak (DITOLAK)</option>
+            </select>
+            <select
+              value={jenjangFilter}
+              onChange={(e) => {
+                setJenjangFilter(e.target.value);
+                setPage(1);
+              }}
+              className="px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm w-full sm:w-auto"
+            >
+              <option value="">Semua Jenjang</option>
+              <option value="S1">S1 / D4</option>
+              <option value="S2">S2</option>
+              <option value="S3">S3</option>
+            </select>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Cari pendaftar..."
+                className="pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-normal text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm w-full sm:w-64"
+              />
+            </div>
+          </form>
         </div>
-      )}
 
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                <th className="p-4 whitespace-nowrap">No. Registrasi</th>
-                <th className="p-4 whitespace-nowrap">Nama & Email</th>
-                <th className="p-4 whitespace-nowrap">NIK</th>
-                <th className="p-4 whitespace-nowrap">Tanggal Submit</th>
-                <th className="p-4 text-center whitespace-nowrap">Status Verifikasi</th>
-                <th className="p-4 text-center whitespace-nowrap">Aksi</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {loading ? (
-                <tr>
-                  <td colSpan={6} className="p-8 text-center text-slate-500">
-                    <Loader2 className="w-6 h-6 animate-spin mx-auto text-blue-900 mb-2" />
-                    Memuat daftar verifikasi pendaftar...
-                  </td>
+        {error && (
+          <div className="p-4 bg-rose-50 border border-rose-200 rounded-2xl flex items-center gap-3 text-rose-800 text-sm">
+            <AlertCircle className="w-5 h-5 text-rose-600 shrink-0" />
+            <span>{error}</span>
+          </div>
+        )}
+
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                  <th className="p-4 whitespace-nowrap">No. Registrasi</th>
+                  <th className="p-4 whitespace-nowrap">Nama & Email</th>
+                  <th className="p-4 whitespace-nowrap">NIK</th>
+                  <th className="p-4 whitespace-nowrap">Tanggal Submit</th>
+                  <th className="p-4 text-center whitespace-nowrap">Status Verifikasi</th>
+                  <th className="p-4 text-center whitespace-nowrap">Aksi</th>
                 </tr>
-              ) : applicants.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="p-8 text-center text-slate-400">
-                    Belum ada pendaftar yang tersedia untuk verifikasi.
-                  </td>
-                </tr>
-              ) : (
-                applicants.map((applicant, idx) => (
-                  <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
-                    <td className="p-4 align-middle">
-                      <span className="text-xs font-mono font-semibold text-slate-600 bg-slate-100 px-2.5 py-1 rounded-md border border-slate-200">{applicant.registrationNo}</span>
-                      <div className="mt-2">
-                        <span className="text-[10px] font-bold text-[#0B3A6A] bg-blue-100 px-2 py-0.5 rounded-md border border-blue-200">Jenjang {applicant.jenjangTarget}</span>
-                      </div>
-                    </td>
-                    <td className="p-4 align-middle">
-                      <p className="font-bold text-slate-900 whitespace-nowrap">{applicant.namaLengkap}</p>
-                      <p className="text-xs text-slate-500 mt-0.5 whitespace-nowrap">{applicant.email}</p>
-                    </td>
-                    <td className="p-4 align-middle text-xs font-mono text-slate-600">
-                      {applicant.nik}
-                    </td>
-                    <td className="p-4 align-middle text-xs text-slate-500">
-                      {applicant.submittedAt ? new Date(applicant.submittedAt).toLocaleDateString('id-ID') : '-'}
-                    </td>
-                    <td className="p-4 align-middle text-center">
-                      <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
-                        applicant.status === 'DITERIMA' ? 'bg-emerald-100 text-emerald-700' :
-                        applicant.status === 'DITOLAK' ? 'bg-rose-100 text-rose-700' :
-                        applicant.status === 'PERLU_UNGGAH_ULANG' ? 'bg-rose-100 text-rose-700' :
-                        'bg-amber-100 text-amber-700'
-                      }`}>
-                        {applicant.status}
-                      </span>
-                    </td>
-                    <td className="p-4 align-middle text-center">
-                      <button 
-                        onClick={() => handleOpenDetail(applicant)}
-                        className="px-3 py-2 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-lg transition-colors flex items-center gap-1.5 text-xs font-bold border border-blue-200 mx-auto" 
-                        title="Lihat Detail Berkas"
-                      >
-                        <ExternalLink className="w-4 h-4" /> Verifikasi Berkas
-                      </button>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {loading ? (
+                  <tr>
+                    <td colSpan={6} className="p-8 text-center text-slate-500">
+                      <Loader2 className="w-6 h-6 animate-spin mx-auto text-blue-900 mb-2" />
+                      Memuat daftar verifikasi pendaftar...
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Pagination Bar */}
-        <div className="p-4 border-t border-slate-100 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-slate-600 bg-slate-50/50">
-          <div className="flex flex-wrap items-center gap-3">
-            <span>
-              Menampilkan{' '}
-              <strong className="text-slate-900 font-bold">
-                {pagination && pagination.totalItems > 0 
-                  ? (pagination.currentPage - 1) * pagination.itemsPerPage + 1 
-                  : 0}
-              </strong>{' '}
-              -{' '}
-              <strong className="text-slate-900 font-bold">
-                {pagination 
-                  ? Math.min(pagination.currentPage * pagination.itemsPerPage, pagination.totalItems) 
-                  : applicants.length}
-              </strong>{' '}
-              dari{' '}
-              <strong className="text-slate-900 font-bold">
-                {pagination?.totalItems ?? applicants.length}
-              </strong>{' '}
-              pendaftar
-            </span>
-            <div className="flex items-center gap-1.5 ml-2 border-l border-slate-200 pl-3">
-              <span className="text-slate-500 font-medium">Per halaman:</span>
-              <select
-                value={limit}
-                onChange={(e) => {
-                  setLimit(Number(e.target.value));
-                  setPage(1);
-                }}
-                className="px-2.5 py-1 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-2xs"
-              >
-                <option value={10}>10</option>
-                <option value={20}>20</option>
-                <option value={50}>50</option>
-                <option value={100}>100</option>
-              </select>
-            </div>
+                ) : applicants.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="p-8 text-center text-slate-400">
+                      Belum ada pendaftar yang tersedia untuk verifikasi.
+                    </td>
+                  </tr>
+                ) : (
+                  applicants.map((applicant, idx) => (
+                    <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
+                      <td className="p-4 align-middle">
+                        <span className="text-xs font-mono font-semibold text-slate-600 bg-slate-100 px-2.5 py-1 rounded-md border border-slate-200">{applicant.registrationNo}</span>
+                        <div className="mt-2">
+                          <span className="text-[10px] font-bold text-[#0B3A6A] bg-blue-100 px-2 py-0.5 rounded-md border border-blue-200">Jenjang {applicant.jenjangTarget}</span>
+                        </div>
+                      </td>
+                      <td className="p-4 align-middle">
+                        <p className="font-bold text-slate-900 whitespace-nowrap">{applicant.namaLengkap}</p>
+                        <p className="text-xs text-slate-500 mt-0.5 whitespace-nowrap">{applicant.email}</p>
+                      </td>
+                      <td className="p-4 align-middle text-xs font-mono text-slate-600">
+                        {applicant.nik}
+                      </td>
+                      <td className="p-4 align-middle text-xs text-slate-500">
+                        {applicant.submittedAt ? new Date(applicant.submittedAt).toLocaleDateString('id-ID') : '-'}
+                      </td>
+                      <td className="p-4 align-middle text-center">
+                        <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${applicant.status === 'DITERIMA' ? 'bg-emerald-100 text-emerald-700' :
+                            applicant.status === 'DITOLAK' ? 'bg-rose-100 text-rose-700' :
+                              applicant.status === 'PERLU_UNGGAH_ULANG' ? 'bg-rose-100 text-rose-700' :
+                                'bg-amber-100 text-amber-700'
+                          }`}>
+                          {applicant.status}
+                        </span>
+                      </td>
+                      <td className="p-4 align-middle text-center">
+                        <button
+                          onClick={() => handleOpenDetail(applicant)}
+                          className="px-3 py-2 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-lg transition-colors flex items-center gap-1.5 text-xs font-bold border border-blue-200 mx-auto"
+                          title="Lihat Detail Berkas"
+                        >
+                          <ExternalLink className="w-4 h-4" /> Verifikasi Berkas
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
 
-          <div className="flex items-center gap-1.5">
-            <button
-              type="button"
-              disabled={page <= 1 || loading}
-              onClick={() => setPage(1)}
-              className="px-2.5 py-1.5 border border-slate-200 bg-white rounded-lg hover:bg-slate-50 disabled:opacity-40 disabled:hover:bg-white font-medium text-slate-700 transition-colors shadow-2xs flex items-center gap-1"
-              title="Halaman Pertama"
-            >
-              <ChevronsLeft className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Pertama</span>
-            </button>
-            <button
-              type="button"
-              disabled={page <= 1 || loading}
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              className="px-3 py-1.5 border border-slate-200 bg-white rounded-lg hover:bg-slate-50 disabled:opacity-40 disabled:hover:bg-white font-semibold text-slate-700 transition-colors shadow-2xs flex items-center gap-1"
-            >
-              <ChevronLeft className="w-3.5 h-3.5" />
-              <span>Sebelumnya</span>
-            </button>
-
-            <span className="px-3 py-1.5 bg-blue-50 border border-blue-200 text-[#0B3A6A] font-bold rounded-lg text-xs">
-              Hal {pagination?.currentPage || page} / {pagination?.totalPages || 1}
-            </span>
-
-            <button
-              type="button"
-              disabled={page >= (pagination?.totalPages || 1) || loading}
-              onClick={() => setPage((p) => Math.min(pagination?.totalPages || 1, p + 1))}
-              className="px-3 py-1.5 border border-slate-200 bg-white rounded-lg hover:bg-slate-50 disabled:opacity-40 disabled:hover:bg-white font-semibold text-slate-700 transition-colors shadow-2xs flex items-center gap-1"
-            >
-              <span>Selanjutnya</span>
-              <ChevronRight className="w-3.5 h-3.5" />
-            </button>
-            <button
-              type="button"
-              disabled={page >= (pagination?.totalPages || 1) || loading}
-              onClick={() => setPage(pagination?.totalPages || 1)}
-              className="px-2.5 py-1.5 border border-slate-200 bg-white rounded-lg hover:bg-slate-50 disabled:opacity-40 disabled:hover:bg-white font-medium text-slate-700 transition-colors shadow-2xs flex items-center gap-1"
-              title="Halaman Terakhir"
-            >
-              <span className="hidden sm:inline">Terakhir</span>
-              <ChevronsRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Modal Detail Berkas Pendaftar - Mode Galeri Scroll */}
-      {selectedApplicant && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-900/60 backdrop-blur-sm">
-          <div className="bg-slate-100 rounded-2xl shadow-2xl w-full max-w-5xl overflow-hidden flex flex-col h-[94vh] border border-slate-200 animate-in fade-in zoom-in-95 duration-150">
-            {/* Modal Header */}
-            <div className="px-5 py-3.5 border-b border-slate-200 flex justify-between items-center bg-white shrink-0">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-blue-100 text-blue-900 rounded-xl">
-                  <FileText className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
-                    Detail & Verifikasi Berkas Pendaftar
-                    {applicantDetail?.user?.namaLengkap && (
-                      <span className="text-sm font-semibold text-slate-500 hidden md:inline">
-                        — {applicantDetail.user.namaLengkap}
-                      </span>
-                    )}
-                  </h3>
-                  <p className="text-xs text-slate-500">
-                    No. Registrasi: <span className="font-mono font-bold text-slate-800">{selectedApplicant.registrationNo}</span>
-                  </p>
-                </div>
+          {/* Pagination Bar */}
+          <div className="p-4 border-t border-slate-100 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-slate-600 bg-slate-50/50">
+            <div className="flex flex-wrap items-center gap-3">
+              <span>
+                Menampilkan{' '}
+                <strong className="text-slate-900 font-bold">
+                  {pagination && pagination.totalItems > 0
+                    ? (pagination.currentPage - 1) * pagination.itemsPerPage + 1
+                    : 0}
+                </strong>{' '}
+                -{' '}
+                <strong className="text-slate-900 font-bold">
+                  {pagination
+                    ? Math.min(pagination.currentPage * pagination.itemsPerPage, pagination.totalItems)
+                    : applicants.length}
+                </strong>{' '}
+                dari{' '}
+                <strong className="text-slate-900 font-bold">
+                  {pagination?.totalItems ?? applicants.length}
+                </strong>{' '}
+                pendaftar
+              </span>
+              <div className="flex items-center gap-1.5 ml-2 border-l border-slate-200 pl-3">
+                <span className="text-slate-500 font-medium">Per halaman:</span>
+                <select
+                  value={limit}
+                  onChange={(e) => {
+                    setLimit(Number(e.target.value));
+                    setPage(1);
+                  }}
+                  className="px-2.5 py-1 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-2xs"
+                >
+                  <option value={10}>10</option>
+                  <option value={20}>20</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                </select>
               </div>
-              <button 
-                onClick={handleCloseDetail}
-                className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-200 rounded-xl transition-colors"
-                title="Tutup (Esc)"
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                disabled={page <= 1 || loading}
+                onClick={() => setPage(1)}
+                className="px-2.5 py-1.5 border border-slate-200 bg-white rounded-lg hover:bg-slate-50 disabled:opacity-40 disabled:hover:bg-white font-medium text-slate-700 transition-colors shadow-2xs flex items-center gap-1"
+                title="Halaman Pertama"
               >
-                <X className="w-5 h-5" />
+                <ChevronsLeft className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Pertama</span>
+              </button>
+              <button
+                type="button"
+                disabled={page <= 1 || loading}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                className="px-3 py-1.5 border border-slate-200 bg-white rounded-lg hover:bg-slate-50 disabled:opacity-40 disabled:hover:bg-white font-semibold text-slate-700 transition-colors shadow-2xs flex items-center gap-1"
+              >
+                <ChevronLeft className="w-3.5 h-3.5" />
+                <span>Sebelumnya</span>
+              </button>
+
+              <span className="px-3 py-1.5 bg-blue-50 border border-blue-200 text-[#0B3A6A] font-bold rounded-lg text-xs">
+                Hal {pagination?.currentPage || page} / {pagination?.totalPages || 1}
+              </span>
+
+              <button
+                type="button"
+                disabled={page >= (pagination?.totalPages || 1) || loading}
+                onClick={() => setPage((p) => Math.min(pagination?.totalPages || 1, p + 1))}
+                className="px-3 py-1.5 border border-slate-200 bg-white rounded-lg hover:bg-slate-50 disabled:opacity-40 disabled:hover:bg-white font-semibold text-slate-700 transition-colors shadow-2xs flex items-center gap-1"
+              >
+                <span>Selanjutnya</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+              <button
+                type="button"
+                disabled={page >= (pagination?.totalPages || 1) || loading}
+                onClick={() => setPage(pagination?.totalPages || 1)}
+                className="px-2.5 py-1.5 border border-slate-200 bg-white rounded-lg hover:bg-slate-50 disabled:opacity-40 disabled:hover:bg-white font-medium text-slate-700 transition-colors shadow-2xs flex items-center gap-1"
+                title="Halaman Terakhir"
+              >
+                <span className="hidden sm:inline">Terakhir</span>
+                <ChevronsRight className="w-3.5 h-3.5" />
               </button>
             </div>
+          </div>
+        </div>
 
-            {/* Sticky Anchor Quick-Jump Bar */}
-            {applicantDetail && (() => {
-              const hasSanggahanNote = applicantDetail.application?.notes?.toLowerCase().includes('sanggah') || applicantDetail.application?.status === 'DITOLAK';
-              const hasMultipleDocs = applicantDetail.documents?.some((d: any) => 
-                applicantDetail.documents.filter((x: any) => (x.docType || '').toLowerCase() === (d.docType || '').toLowerCase()).length > 1
-              );
-              const isAppeal = hasSanggahanNote || hasMultipleDocs;
-              
-              let docsToRender = applicantDetail.documents || [];
-              if (!isAppeal) {
-                const latestDocsMap = new Map();
-                applicantDetail.documents?.forEach((d: any) => {
-                  const key = (d.docType || '').toLowerCase();
-                  latestDocsMap.set(key, d);
-                });
-                docsToRender = Array.from(latestDocsMap.values());
-              }
-
-              return (
-                <div className="px-5 py-2.5 bg-slate-200/80 border-b border-slate-200 flex items-center gap-2 overflow-x-auto shrink-0 shadow-2xs">
-                  <span className="text-[11px] font-bold text-slate-600 uppercase tracking-wider whitespace-nowrap flex items-center gap-1 shrink-0">
-                    <Eye className="w-3.5 h-3.5 text-blue-900" /> Lompat ke:
-                  </span>
-                  <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5">
-                    {docsToRender.map((d: any, idx: number) => (
-                      <button
-                        key={d.id || idx}
-                        type="button"
-                        onClick={() => {
-                          const el = document.getElementById(`doc-card-${d.id}`);
-                          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                        }}
-                        className="px-2.5 py-1 text-xs font-semibold bg-white hover:bg-blue-50 hover:text-blue-900 hover:border-blue-300 border border-slate-200 rounded-lg whitespace-nowrap transition-colors shadow-2xs text-slate-700"
-                      >
-                        #{idx + 1} {getDocTitle(d.docType)}
-                      </button>
-                    ))}
+        {/* Modal Detail Berkas Pendaftar - Mode Galeri Scroll */}
+        {selectedApplicant && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-900/60 backdrop-blur-sm">
+            <div className="bg-slate-100 rounded-2xl shadow-2xl w-full max-w-5xl overflow-hidden flex flex-col h-[94vh] border border-slate-200 animate-in fade-in zoom-in-95 duration-150">
+              {/* Modal Header */}
+              <div className="px-5 py-3.5 border-b border-slate-200 flex justify-between items-center bg-white shrink-0">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-blue-100 text-blue-900 rounded-xl">
+                    <FileText className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
+                      Detail & Verifikasi Berkas Pendaftar
+                      {applicantDetail?.user?.namaLengkap && (
+                        <span className="text-sm font-semibold text-slate-500 hidden md:inline">
+                          — {applicantDetail.user.namaLengkap}
+                        </span>
+                      )}
+                    </h3>
+                    <p className="text-xs text-slate-500">
+                      No. Registrasi: <span className="font-mono font-bold text-slate-800">{selectedApplicant.registrationNo}</span>
+                    </p>
                   </div>
                 </div>
-              );
-            })()}
+                <button
+                  onClick={handleCloseDetail}
+                  className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-200 rounded-xl transition-colors"
+                  title="Tutup (Esc)"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
 
-            {/* Modal Body - Gallery Scroll */}
-            <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
-              {loadingDetail ? (
-                <div className="p-16 text-center text-slate-500">
-                  <Loader2 className="w-10 h-10 animate-spin mx-auto text-blue-900 mb-3" />
-                  <p className="font-medium text-sm">Mengambil data & berkas pendaftar...</p>
-                </div>
-              ) : applicantDetail ? (
-                (() => {
-                  const targetUserId = applicantDetail.user?.id || selectedApplicant?.userId || selectedApplicant?.id;
-                  const hasSanggahanNote = applicantDetail.application?.notes?.toLowerCase().includes('sanggah') || applicantDetail.application?.status === 'DITOLAK';
-                  const hasMultipleDocs = applicantDetail.documents?.some((d: any) => 
-                    applicantDetail.documents.filter((x: any) => (x.docType || '').toLowerCase() === (d.docType || '').toLowerCase()).length > 1
-                  );
-                  const isAppeal = hasSanggahanNote || hasMultipleDocs;
-                  
-                  let docsToRender = applicantDetail.documents || [];
-                  if (!isAppeal) {
-                    const latestDocsMap = new Map();
-                    applicantDetail.documents?.forEach((d: any) => {
-                      const key = (d.docType || '').toLowerCase();
-                      latestDocsMap.set(key, d);
-                    });
-                    docsToRender = Array.from(latestDocsMap.values());
-                  }
+              {/* Sticky Anchor Quick-Jump Bar */}
+              {applicantDetail && (() => {
+                const hasSanggahanNote = applicantDetail.application?.notes?.toLowerCase().includes('sanggah') || applicantDetail.application?.status === 'DITOLAK';
+                const hasMultipleDocs = applicantDetail.documents?.some((d: any) =>
+                  applicantDetail.documents.filter((x: any) => (x.docType || '').toLowerCase() === (d.docType || '').toLowerCase()).length > 1
+                );
+                const isAppeal = hasSanggahanNote || hasMultipleDocs;
 
-                  return (
-                    <div className="space-y-6 max-w-4xl mx-auto">
-                      {/* Top Info Banner */}
-                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 bg-white rounded-2xl border border-slate-200 shadow-2xs">
-                        <div className="flex-1">
-                          <h4 className="font-extrabold text-slate-900 text-lg">{applicantDetail.user?.namaLengkap}</h4>
-                          <p className="text-xs text-slate-600 mt-0.5">NIK: <strong className="font-mono">{applicantDetail.user?.nik}</strong> • Email: <strong>{applicantDetail.user?.email}</strong></p>
-                          <p className="text-xs text-slate-500 mt-1">Jenjang Target: <strong className="text-blue-900 font-bold">{applicantDetail.user?.jenjangTarget}</strong></p>
-                        </div>
-                        <div className="text-right">
-                          <span className={`px-3 py-1.5 rounded-full text-xs font-extrabold shadow-xs ${
-                            (applicantDetail.application?.status || selectedApplicant.status) === 'DITERIMA' ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' :
-                            (applicantDetail.application?.status || selectedApplicant.status) === 'DITOLAK' ? 'bg-rose-100 text-rose-800 border border-rose-300' :
-                            'bg-amber-100 text-amber-800 border border-amber-300'
-                          }`}>
-                            {applicantDetail.application?.status || selectedApplicant.status}
-                          </span>
-                        </div>
-                      </div>
+                let docsToRender = applicantDetail.documents || [];
+                if (!isAppeal) {
+                  const latestDocsMap = new Map();
+                  applicantDetail.documents?.forEach((d: any) => {
+                    const key = (d.docType || '').toLowerCase();
+                    latestDocsMap.set(key, d);
+                  });
+                  docsToRender = Array.from(latestDocsMap.values());
+                }
 
-                      {/* Pengajuan Sanggahan Notice Box (If any) */}
-                      {applicantDetail.application?.notes && applicantDetail.application.notes.includes('[SANGGAHAN') && (
-                        <div className="p-4 bg-amber-50 border-2 border-amber-300 rounded-2xl space-y-2">
-                          <div className="flex items-center gap-2 text-amber-900 font-extrabold text-xs">
-                            <RefreshCw className="w-4 h-4 text-amber-700 animate-spin" />
-                            <span>Catatan Sanggahan & Perbaikan Berkas Mahasiswa</span>
-                          </div>
-                          <div className="p-3 bg-white rounded-xl border border-amber-200 text-xs text-slate-900 leading-relaxed font-medium whitespace-pre-line">
-                            {applicantDetail.application.notes}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Highlights Card: IPK & Perguruan Tinggi */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div className="p-4 bg-amber-50/80 rounded-2xl border border-amber-200 flex items-center justify-between">
-                          <div>
-                            <p className="text-[11px] font-bold text-amber-900 uppercase tracking-wider">IPK Kumulatif Terakhir</p>
-                            <p className="text-xs text-amber-700 mt-0.5">Sesuai Isian Formulir</p>
-                          </div>
-                          <span className="text-2xl font-black bg-amber-500 text-white px-3.5 py-1 rounded-xl shadow-xs">
-                            {applicantDetail.profile?.ipk || '-'}
-                          </span>
-                        </div>
-
-                        <div className="p-4 bg-blue-50/80 rounded-2xl border border-blue-200 flex flex-col justify-between">
-                          <p className="text-[11px] font-bold text-blue-900 uppercase tracking-wider">Perguruan Tinggi & Prodi</p>
-                          <p className="text-xs font-bold text-slate-900 mt-1 truncate">
-                            {getOngoingEducation(applicantDetail).institusi}
-                          </p>
-                          <p className="text-[11px] text-slate-600 truncate">
-                            {getOngoingEducation(applicantDetail).jurusan} (Akreditasi: {applicantDetail.profile?.akreditasiProdi || '-'})
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Collapsible Form Rincian */}
-                      <div className="bg-white rounded-2xl border border-slate-200 text-xs text-slate-800 overflow-hidden shadow-2xs">
+                return (
+                  <div className="px-5 py-2.5 bg-slate-200/80 border-b border-slate-200 flex items-center gap-2 overflow-x-auto shrink-0 shadow-2xs">
+                    <span className="text-[11px] font-bold text-slate-600 uppercase tracking-wider whitespace-nowrap flex items-center gap-1 shrink-0">
+                      <Eye className="w-3.5 h-3.5 text-blue-900" /> Lompat ke:
+                    </span>
+                    <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5">
+                      {docsToRender.map((d: any, idx: number) => (
                         <button
+                          key={d.id || idx}
                           type="button"
-                          onClick={() => setIsFormDetailsOpen(prev => !prev)}
-                          className="w-full p-4 flex items-center justify-between font-bold text-slate-800 hover:bg-slate-50 transition-colors text-left"
+                          onClick={() => {
+                            const el = document.getElementById(`doc-card-${d.id}`);
+                            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                          }}
+                          className="px-2.5 py-1 text-xs font-semibold bg-white hover:bg-blue-50 hover:text-blue-900 hover:border-blue-300 border border-slate-200 rounded-lg whitespace-nowrap transition-colors shadow-2xs text-slate-700"
                         >
-                          <span className="flex items-center gap-2 text-xs">
-                            <FileText className="w-4 h-4 text-blue-900" /> Rincian Isian Formulir Mahasiswa Lengkap
-                          </span>
-                          <span className="flex items-center gap-1 text-[11px] text-slate-500 font-normal">
-                            {isFormDetailsOpen ? 'Tutup Rincian' : 'Lihat Rincian Formulir'}
-                            {isFormDetailsOpen ? <ChevronUp className="w-4 h-4 ml-1" /> : <ChevronDown className="w-4 h-4 ml-1" />}
-                          </span>
+                          #{idx + 1} {getDocTitle(d.docType)}
                         </button>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
 
-                        {isFormDetailsOpen && (
-                          <div className="p-4 pt-0 border-t border-slate-200 space-y-3 text-[11px] bg-slate-50/50">
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 mt-3">
-                              <p>• Tempat/Tgl Lahir: <strong>{applicantDetail.profile?.tempatLahir || '-'}, {applicantDetail.profile?.tanggalLahir ? applicantDetail.profile.tanggalLahir.split('T')[0] : '-'}</strong></p>
-                              <p>• Gender / No HP: <strong>{applicantDetail.profile?.gender || '-'} | {applicantDetail.profile?.noHp || '-'}</strong></p>
-                              <p>• NIM / Semester: <strong>{applicantDetail.profile?.nim || '-'} (Semester {applicantDetail.profile?.semester || '-'})</strong></p>
-                              <p>• Target Tahun Lulus: <strong>{applicantDetail.profile?.targetLulus || '-'}</strong></p>
-                              <p>• Status Double Funding: <strong>{applicantDetail.profile?.beasiswaLain || 'Tidak Ada (Bukan Double Funding)'}</strong></p>
-                              <p>• No. KK / Alamat KTP: <strong>{applicantDetail.profile?.noKk || '-'} | {applicantDetail.profile?.alamatKtp || '-'}</strong></p>
-                              <p>• Nama Ortu: <strong>{applicantDetail.profile?.namaAyah || '-'} / {applicantDetail.profile?.namaIbu || '-'}</strong></p>
-                              <p>• Pekerjaan Ortu: <strong>{applicantDetail.profile?.pekerjaanAyah || '-'} / {applicantDetail.profile?.pekerjaanIbu || '-'}</strong></p>
-                              <p>• Penghasilan / Tanggungan: <strong>{applicantDetail.profile?.penghasilanOrtu || '-'} ({applicantDetail.profile?.jumlahTanggungan || 0} org)</strong></p>
-                              <p className="col-span-1 sm:col-span-2 text-blue-900 font-bold bg-blue-50 p-2.5 rounded-xl border border-blue-100">
-                                💳 Rekening Bank Penyaluran 50%: <strong>{applicantDetail.profile?.namaBank || '-'}</strong> | No. Rek: <strong className="font-mono">{applicantDetail.profile?.noRekening || '-'}</strong> | a.n: <strong>{applicantDetail.profile?.namaRekening || '-'}</strong>
-                              </p>
+              {/* Modal Body - Gallery Scroll */}
+              <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
+                {loadingDetail ? (
+                  <div className="p-16 text-center text-slate-500">
+                    <Loader2 className="w-10 h-10 animate-spin mx-auto text-blue-900 mb-3" />
+                    <p className="font-medium text-sm">Mengambil data & berkas pendaftar...</p>
+                  </div>
+                ) : applicantDetail ? (
+                  (() => {
+                    const targetUserId = applicantDetail.user?.id || selectedApplicant?.userId || selectedApplicant?.id;
+                    const hasSanggahanNote = applicantDetail.application?.notes?.toLowerCase().includes('sanggah') || applicantDetail.application?.status === 'DITOLAK';
+                    const hasMultipleDocs = applicantDetail.documents?.some((d: any) =>
+                      applicantDetail.documents.filter((x: any) => (x.docType || '').toLowerCase() === (d.docType || '').toLowerCase()).length > 1
+                    );
+                    const isAppeal = hasSanggahanNote || hasMultipleDocs;
+
+                    let docsToRender = applicantDetail.documents || [];
+                    if (!isAppeal) {
+                      const latestDocsMap = new Map();
+                      applicantDetail.documents?.forEach((d: any) => {
+                        const key = (d.docType || '').toLowerCase();
+                        latestDocsMap.set(key, d);
+                      });
+                      docsToRender = Array.from(latestDocsMap.values());
+                    }
+
+                    return (
+                      <div className="space-y-6 max-w-4xl mx-auto">
+                        {/* Top Info Banner */}
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 bg-white rounded-2xl border border-slate-200 shadow-2xs">
+                          <div className="flex-1">
+                            <h4 className="font-extrabold text-slate-900 text-lg">{applicantDetail.user?.namaLengkap}</h4>
+                            <p className="text-xs text-slate-600 mt-0.5">NIK: <strong className="font-mono">{applicantDetail.user?.nik}</strong> • Email: <strong>{applicantDetail.user?.email}</strong></p>
+                            <p className="text-xs text-slate-500 mt-1">Jenjang Target: <strong className="text-blue-900 font-bold">{applicantDetail.user?.jenjangTarget}</strong></p>
+                          </div>
+                          <div className="text-right">
+                            <span className={`px-3 py-1.5 rounded-full text-xs font-extrabold shadow-xs ${(applicantDetail.application?.status || selectedApplicant.status) === 'DITERIMA' ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' :
+                                (applicantDetail.application?.status || selectedApplicant.status) === 'DITOLAK' ? 'bg-rose-100 text-rose-800 border border-rose-300' :
+                                  'bg-amber-100 text-amber-800 border border-amber-300'
+                              }`}>
+                              {applicantDetail.application?.status || selectedApplicant.status}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Pengajuan Sanggahan Notice Box (If any) */}
+                        {applicantDetail.application?.notes && applicantDetail.application.notes.includes('[SANGGAHAN') && (
+                          <div className="p-4 bg-amber-50 border-2 border-amber-300 rounded-2xl space-y-2">
+                            <div className="flex items-center gap-2 text-amber-900 font-extrabold text-xs">
+                              <RefreshCw className="w-4 h-4 text-amber-700 animate-spin" />
+                              <span>Catatan Sanggahan & Perbaikan Berkas Mahasiswa</span>
                             </div>
-
-                            {(applicantDetail.profile?.prestasiAkademik || applicantDetail.profile?.prestasiNonAkademik) && (
-                              <div className="pt-2 border-t border-slate-200 space-y-1.5 text-[11px]">
-                                {applicantDetail.profile?.prestasiAkademik && (
-                                  <div>
-                                    <span className="font-bold text-slate-900">Prestasi Akademik:</span>
-                                    {renderAchievementDetails(applicantDetail.profile.prestasiAkademik)}
-                                  </div>
-                                )}
-                                {applicantDetail.profile?.prestasiNonAkademik && (
-                                  <div>
-                                    <span className="font-bold text-slate-900">Prestasi Non-Akademik:</span>
-                                    {renderAchievementDetails(applicantDetail.profile.prestasiNonAkademik)}
-                                  </div>
-                                )}
-                              </div>
-                            )}
+                            <div className="p-3 bg-white rounded-xl border border-amber-200 text-xs text-slate-900 leading-relaxed font-medium whitespace-pre-line">
+                              {applicantDetail.application.notes}
+                            </div>
                           </div>
                         )}
-                      </div>
 
-                      {/* GALLERY SCROLL DOKUMEN - Semua Dokumen Langsung Tampil Berurutan */}
-                      <div className="space-y-6 pt-2">
-                        <div className="flex items-center justify-between border-b border-slate-200 pb-3">
-                          <div>
-                            <h4 className="font-extrabold text-slate-900 flex items-center gap-2 text-base">
-                              <FileText className="w-5 h-5 text-blue-900" />
-                              Galeri Berkas Mahasiswa ({docsToRender.length} Dokumen)
-                            </h4>
-                            <p className="text-xs text-slate-500 mt-0.5">
-                              Semua berkas ditampilkan langsung berurutan ke bawah. Cukup scroll untuk memeriksa seluruh berkas pendaftar.
+                        {/* Highlights Card: IPK & Perguruan Tinggi */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div className="p-4 bg-amber-50/80 rounded-2xl border border-amber-200 flex items-center justify-between">
+                            <div>
+                              <p className="text-[11px] font-bold text-amber-900 uppercase tracking-wider">IPK Kumulatif Terakhir</p>
+                              <p className="text-xs text-amber-700 mt-0.5">Sesuai Isian Formulir</p>
+                            </div>
+                            <span className="text-2xl font-black bg-amber-500 text-white px-3.5 py-1 rounded-xl shadow-xs">
+                              {applicantDetail.profile?.ipk || '-'}
+                            </span>
+                          </div>
+
+                          <div className="p-4 bg-blue-50/80 rounded-2xl border border-blue-200 flex flex-col justify-between">
+                            <p className="text-[11px] font-bold text-blue-900 uppercase tracking-wider">Perguruan Tinggi & Prodi</p>
+                            <p className="text-xs font-bold text-slate-900 mt-1 truncate">
+                              {getOngoingEducation(applicantDetail).institusi}
+                            </p>
+                            <p className="text-[11px] text-slate-600 truncate">
+                              {getOngoingEducation(applicantDetail).jurusan} (Akreditasi: {applicantDetail.profile?.akreditasiProdi || '-'})
                             </p>
                           </div>
                         </div>
 
-                        {docsToRender.length > 0 ? (
-                          <div className="space-y-8">
-                            {docsToRender.map((doc: any, docIdx: number) => {
-                              const sameTypeDocs = applicantDetail.documents.filter((d: any) => (d.docType || '').toLowerCase() === (doc.docType || '').toLowerCase());
-                              const sameTypeIndex = sameTypeDocs.findIndex((d: any) => d.id === doc.id);
-                              const isMultiple = sameTypeDocs.length > 1;
-                              const isLatest = sameTypeIndex === sameTypeDocs.length - 1;
-                              const docUrl = previewUrls[doc.id];
+                        {/* Collapsible Form Rincian */}
+                        <div className="bg-white rounded-2xl border border-slate-200 text-xs text-slate-800 overflow-hidden shadow-2xs">
+                          <button
+                            type="button"
+                            onClick={() => setIsFormDetailsOpen(prev => !prev)}
+                            className="w-full p-4 flex items-center justify-between font-bold text-slate-800 hover:bg-slate-50 transition-colors text-left"
+                          >
+                            <span className="flex items-center gap-2 text-xs">
+                              <FileText className="w-4 h-4 text-blue-900" /> Rincian Isian Formulir Mahasiswa Lengkap
+                            </span>
+                            <span className="flex items-center gap-1 text-[11px] text-slate-500 font-normal">
+                              {isFormDetailsOpen ? 'Tutup Rincian' : 'Lihat Rincian Formulir'}
+                              {isFormDetailsOpen ? <ChevronUp className="w-4 h-4 ml-1" /> : <ChevronDown className="w-4 h-4 ml-1" />}
+                            </span>
+                          </button>
 
-                              return (
-                                <div
-                                  key={doc.id || docIdx}
-                                  id={`doc-card-${doc.id}`}
-                                  className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden transition-shadow hover:shadow-md"
-                                >
-                                  {/* Card Header Dokumen */}
-                                  <div className="p-4 bg-slate-50/90 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3">
-                                    <div className="flex items-center gap-3">
-                                      <span className="w-7 h-7 rounded-xl bg-blue-900 text-white font-black text-xs flex items-center justify-center shrink-0 shadow-2xs">
-                                        {docIdx + 1}
-                                      </span>
-                                      <div>
-                                        <div className="flex items-center gap-2 flex-wrap">
-                                          <h5 className="font-extrabold uppercase text-slate-900 text-sm">
-                                            {getDocTitle(doc.docType)}
-                                          </h5>
-                                          {isMultiple && (
-                                            <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full border ${isLatest ? 'bg-amber-100 text-amber-900 border-amber-300' : 'bg-slate-100 text-slate-600 border-slate-200'}`}>
-                                              {isLatest ? '🆕 Berkas Sanggahan Baru' : `📁 Berkas Lama (#${sameTypeIndex + 1})`}
-                                            </span>
-                                          )}
-                                        </div>
-                                        <p className="text-xs text-slate-500 mt-0.5 font-mono">
-                                          {doc.originalName} ({Math.round(doc.fileSize / 1024)} KB) • {doc.uploadedAt ? new Date(doc.uploadedAt).toLocaleString('id-ID') : 'Terunggah'}
-                                        </p>
-                                      </div>
+                          {isFormDetailsOpen && (
+                            <div className="p-4 pt-0 border-t border-slate-200 space-y-3 text-[11px] bg-slate-50/50">
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 mt-3">
+                                <p>• Tempat/Tgl Lahir: <strong>{applicantDetail.profile?.tempatLahir || '-'}, {applicantDetail.profile?.tanggalLahir ? applicantDetail.profile.tanggalLahir.split('T')[0] : '-'}</strong></p>
+                                <p>• Gender / No HP: <strong>{applicantDetail.profile?.gender || '-'} | {applicantDetail.profile?.noHp || '-'}</strong></p>
+                                <p>• NIM / Semester: <strong>{applicantDetail.profile?.nim || '-'} (Semester {applicantDetail.profile?.semester || '-'})</strong></p>
+                                <p>• Target Tahun Lulus: <strong>{applicantDetail.profile?.targetLulus || '-'}</strong></p>
+                                <p>• Status Double Funding: <strong>{applicantDetail.profile?.beasiswaLain || 'Tidak Ada (Bukan Double Funding)'}</strong></p>
+                                <p>• No. KK / Alamat KTP: <strong>{applicantDetail.profile?.noKk || '-'} | {applicantDetail.profile?.alamatKtp || '-'}</strong></p>
+                                <p>• Nama Ortu: <strong>{applicantDetail.profile?.namaAyah || '-'} / {applicantDetail.profile?.namaIbu || '-'}</strong></p>
+                                <p>• Pekerjaan Ortu: <strong>{applicantDetail.profile?.pekerjaanAyah || '-'} / {applicantDetail.profile?.pekerjaanIbu || '-'}</strong></p>
+                                <p>• Penghasilan / Tanggungan: <strong>{applicantDetail.profile?.penghasilanOrtu || '-'} ({applicantDetail.profile?.jumlahTanggungan || 0} org)</strong></p>
+                                <p className="col-span-1 sm:col-span-2 text-blue-900 font-bold bg-blue-50 p-2.5 rounded-xl border border-blue-100">
+                                  💳 Rekening Bank Penyaluran 50%: <strong>{applicantDetail.profile?.namaBank || '-'}</strong> | No. Rek: <strong className="font-mono">{applicantDetail.profile?.noRekening || '-'}</strong> | a.n: <strong>{applicantDetail.profile?.namaRekening || '-'}</strong>
+                                </p>
+                              </div>
+
+                              {(applicantDetail.profile?.prestasiAkademik || applicantDetail.profile?.prestasiNonAkademik) && (
+                                <div className="pt-2 border-t border-slate-200 space-y-1.5 text-[11px]">
+                                  {applicantDetail.profile?.prestasiAkademik && (
+                                    <div>
+                                      <span className="font-bold text-slate-900">Prestasi Akademik:</span>
+                                      {renderAchievementDetails(applicantDetail.profile.prestasiAkademik)}
                                     </div>
-
-                                    <div className="flex items-center gap-2">
-                                      <button
-                                        type="button"
-                                        onClick={() => handleViewDocument(targetUserId, doc.id)}
-                                        className="px-3 py-1.5 text-xs font-bold text-blue-700 hover:text-blue-900 hover:bg-blue-50 border border-blue-200 rounded-xl transition-colors inline-flex items-center gap-1.5 shadow-2xs"
-                                        title="Buka Dokumen di Tab Penuh"
-                                      >
-                                        <ExternalLink className="w-3.5 h-3.5" /> Buka Tab Baru
-                                      </button>
+                                  )}
+                                  {applicantDetail.profile?.prestasiNonAkademik && (
+                                    <div>
+                                      <span className="font-bold text-slate-900">Prestasi Non-Akademik:</span>
+                                      {renderAchievementDetails(applicantDetail.profile.prestasiNonAkademik)}
                                     </div>
-                                  </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
 
-                                  {/* Card Body - Pratinjau Langsung */}
-                                  <div className="p-3 sm:p-4 bg-slate-900/5 min-h-[350px] flex items-center justify-center">
-                                    {!docUrl ? (
-                                      <div className="py-16 text-center text-slate-500 space-y-2">
-                                        <Loader2 className="w-8 h-8 animate-spin mx-auto text-blue-900" />
-                                        <p className="text-xs font-semibold">Memuat pratinjau {getDocTitle(doc.docType)}...</p>
-                                      </div>
-                                    ) : isPdfDoc(doc) ? (
-                                      <iframe
-                                        src={docUrl}
-                                        className="w-full h-[650px] sm:h-[750px] border border-slate-300 rounded-xl bg-white shadow-inner"
-                                        title={doc.originalName}
-                                      />
-                                    ) : isImageDoc(doc) ? (
-                                      <div className="w-full py-4 flex items-center justify-center">
-                                        <img
-                                          src={docUrl}
-                                          alt={doc.originalName}
-                                          className="max-w-full max-h-[750px] object-contain rounded-xl shadow-md border border-slate-200 bg-white"
-                                        />
-                                      </div>
-                                    ) : (
-                                      <div className="p-8 text-center max-w-sm space-y-3">
-                                        <FileText className="w-12 h-12 text-slate-400 mx-auto" />
+                        {/* GALLERY SCROLL DOKUMEN - Semua Dokumen Langsung Tampil Berurutan */}
+                        <div className="space-y-6 pt-2">
+                          <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+                            <div>
+                              <h4 className="font-extrabold text-slate-900 flex items-center gap-2 text-base">
+                                <FileText className="w-5 h-5 text-blue-900" />
+                                Galeri Berkas Mahasiswa ({docsToRender.length} Dokumen)
+                              </h4>
+                              <p className="text-xs text-slate-500 mt-0.5">
+                                Semua berkas ditampilkan langsung berurutan ke bawah. Cukup scroll untuk memeriksa seluruh berkas pendaftar.
+                              </p>
+                            </div>
+                          </div>
+
+                          {docsToRender.length > 0 ? (
+                            <div className="space-y-8">
+                              {docsToRender.map((doc: any, docIdx: number) => {
+                                const sameTypeDocs = applicantDetail.documents.filter((d: any) => (d.docType || '').toLowerCase() === (doc.docType || '').toLowerCase());
+                                const sameTypeIndex = sameTypeDocs.findIndex((d: any) => d.id === doc.id);
+                                const isMultiple = sameTypeDocs.length > 1;
+                                const isLatest = sameTypeIndex === sameTypeDocs.length - 1;
+                                const docUrl = previewUrls[doc.id];
+
+                                return (
+                                  <div
+                                    key={doc.id || docIdx}
+                                    id={`doc-card-${doc.id}`}
+                                    className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden transition-shadow hover:shadow-md"
+                                  >
+                                    {/* Card Header Dokumen */}
+                                    <div className="p-4 bg-slate-50/90 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3">
+                                      <div className="flex items-center gap-3">
+                                        <span className="w-7 h-7 rounded-xl bg-blue-900 text-white font-black text-xs flex items-center justify-center shrink-0 shadow-2xs">
+                                          {docIdx + 1}
+                                        </span>
                                         <div>
-                                          <h6 className="font-bold text-slate-800 text-sm">{doc.originalName}</h6>
-                                          <p className="text-xs text-slate-500 mt-1">Pratinjau langsung tidak didukung untuk format ini di browser.</p>
+                                          <div className="flex items-center gap-2 flex-wrap">
+                                            <h5 className="font-extrabold uppercase text-slate-900 text-sm">
+                                              {getDocTitle(doc.docType)}
+                                            </h5>
+                                            {isMultiple && (
+                                              <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full border ${isLatest ? 'bg-amber-100 text-amber-900 border-amber-300' : 'bg-slate-100 text-slate-600 border-slate-200'}`}>
+                                                {isLatest ? '🆕 Berkas Sanggahan Baru' : `📁 Berkas Lama (#${sameTypeIndex + 1})`}
+                                              </span>
+                                            )}
+                                          </div>
+                                          <p className="text-xs text-slate-500 mt-0.5 font-mono">
+                                            {doc.originalName} ({Math.round(doc.fileSize / 1024)} KB) • {doc.uploadedAt ? new Date(doc.uploadedAt).toLocaleString('id-ID') : 'Terunggah'}
+                                          </p>
                                         </div>
+                                      </div>
+
+                                      <div className="flex items-center gap-2">
                                         <button
                                           type="button"
                                           onClick={() => handleViewDocument(targetUserId, doc.id)}
-                                          className="px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold hover:bg-blue-700 transition-colors inline-flex items-center gap-1.5"
+                                          className="px-3 py-1.5 text-xs font-bold text-blue-700 hover:text-blue-900 hover:bg-blue-50 border border-blue-200 rounded-xl transition-colors inline-flex items-center gap-1.5 shadow-2xs"
+                                          title="Buka Dokumen di Tab Penuh"
                                         >
-                                          <ExternalLink className="w-3.5 h-3.5" /> Buka / Unduh File
+                                          <ExternalLink className="w-3.5 h-3.5" /> Buka Tab Baru
                                         </button>
                                       </div>
-                                    )}
+                                    </div>
+
+                                    {/* Card Body - Pratinjau Langsung */}
+                                    <div className="p-3 sm:p-4 bg-slate-900/5 min-h-[350px] flex items-center justify-center">
+                                      {!docUrl ? (
+                                        <div className="py-16 text-center text-slate-500 space-y-2">
+                                          <Loader2 className="w-8 h-8 animate-spin mx-auto text-blue-900" />
+                                          <p className="text-xs font-semibold">Memuat pratinjau {getDocTitle(doc.docType)}...</p>
+                                        </div>
+                                      ) : isPdfDoc(doc) ? (
+                                        <iframe
+                                          src={docUrl}
+                                          className="w-full h-[650px] sm:h-[750px] border border-slate-300 rounded-xl bg-white shadow-inner"
+                                          title={doc.originalName}
+                                        />
+                                      ) : isImageDoc(doc) ? (
+                                        <div className="w-full py-4 flex items-center justify-center">
+                                          <img
+                                            src={docUrl}
+                                            alt={doc.originalName}
+                                            className="max-w-full max-h-[750px] object-contain rounded-xl shadow-md border border-slate-200 bg-white"
+                                          />
+                                        </div>
+                                      ) : (
+                                        <div className="p-8 text-center max-w-sm space-y-3">
+                                          <FileText className="w-12 h-12 text-slate-400 mx-auto" />
+                                          <div>
+                                            <h6 className="font-bold text-slate-800 text-sm">{doc.originalName}</h6>
+                                            <p className="text-xs text-slate-500 mt-1">Pratinjau langsung tidak didukung untuk format ini di browser.</p>
+                                          </div>
+                                          <button
+                                            type="button"
+                                            onClick={() => handleViewDocument(targetUserId, doc.id)}
+                                            className="px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold hover:bg-blue-700 transition-colors inline-flex items-center gap-1.5"
+                                          >
+                                            <ExternalLink className="w-3.5 h-3.5" /> Buka / Unduh File
+                                          </button>
+                                        </div>
+                                      )}
+                                    </div>
                                   </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        ) : (
-                          <p className="text-xs text-slate-400 italic p-8 bg-white rounded-2xl border border-dashed border-slate-200 text-center">
-                            Belum ada berkas fisik yang diunggah pendaftar ini.
-                          </p>
-                        )}
+                                );
+                              })}
+                            </div>
+                          ) : (
+                            <p className="text-xs text-slate-400 italic p-8 bg-white rounded-2xl border border-dashed border-slate-200 text-center">
+                              Belum ada berkas fisik yang diunggah pendaftar ini.
+                            </p>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  );
-                })()
-              ) : null}
-            </div>
-
-            {/* Modal Footer */}
-            {(() => {
-              const currentStatus = applicantDetail?.application?.status || selectedApplicant?.status;
-              const isStatusLocked = currentStatus === 'DITERIMA' || currentStatus === 'DITOLAK' || currentStatus === 'PERLU_UNGGAH_ULANG';
-
-              return (
-                <div className="p-3.5 sm:p-4 border-t border-slate-200 bg-white flex items-center justify-end gap-2.5 shrink-0 shadow-xs">
-                  <button 
-                    onClick={() => window.print()}
-                    className="px-4 py-2 bg-slate-800 text-white font-normal rounded-xl hover:bg-slate-900 transition-colors flex items-center gap-2 mr-auto text-xs shadow-2xs"
-                  >
-                    <Printer className="w-4 h-4" /> Cetak Formulir
-                  </button>
-                  <button 
-                    onClick={handleCloseDetail}
-                    className="px-4 py-2 bg-slate-200 text-slate-700 font-bold rounded-xl hover:bg-slate-300 transition-colors text-xs"
-                  >
-                    Tutup
-                  </button>
-                  <button 
-                    type="button"
-                    disabled={isStatusLocked}
-                    onClick={handleOpenRejectModal}
-                    className="px-4 py-2 bg-rose-100 text-rose-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed font-extrabold rounded-xl hover:bg-rose-200 transition-colors flex items-center gap-1.5 shadow-2xs text-xs"
-                  >
-                    <XCircle className="w-4 h-4" /> Tolak
-                  </button>
-                  <button 
-                    disabled={isStatusLocked}
-                    onClick={async () => {
-                      if (!selectedApplicant) return;
-                      try {
-                        const id = selectedApplicant.userId || selectedApplicant.id;
-                        await fetchAPI(`/admin/applicants/${id}/verify`, {
-                          method: 'PATCH',
-                          body: JSON.stringify({ status: 'DITERIMA', notes: 'Berkas lengkap dan dinyatakan lolos verifikasi.' }),
-                        });
-                        handleCloseDetail();
-                        loadApplicants();
-                        showNotification('Status pendaftar berhasil diubah menjadi DITERIMA!', 'success', 'Status Berhasil Diubah');
-                      } catch (err: any) {
-                        showNotification(err.message || 'Gagal mengubah status.', 'error', 'Gagal Update Status');
-                      }
-                    }}
-                    className="px-4 py-2 bg-emerald-600 text-white disabled:bg-slate-300 disabled:cursor-not-allowed font-extrabold rounded-xl hover:bg-emerald-700 transition-colors flex items-center gap-1.5 shadow-2xs text-xs"
-                  >
-                    <CheckCircle2 className="w-4 h-4" /> Loloskan
-                  </button>
-                </div>
-              );
-            })()}
-          </div>
-        </div>
-      )}
-
-      {/* Modal Alasan Penolakan Pendaftaran */}
-      {showRejectModal && (
-        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-in fade-in">
-          <div className="bg-white rounded-3xl w-[94vw] max-w-lg shadow-2xl overflow-hidden border border-slate-200">
-            {/* Modal Header */}
-            <div className="bg-rose-600 text-white p-5 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-white/10 rounded-xl">
-                  <XCircle className="w-5 h-5 text-rose-100" />
-                </div>
-                <div>
-                  <h3 className="text-base font-extrabold">Alasan Penolakan Pendaftaran</h3>
-                  <p className="text-xs text-rose-100">Pendaftar: {selectedApplicant?.namaLengkap || selectedApplicant?.email}</p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowRejectModal(false)}
-                className="text-rose-200 hover:text-white transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Modal Body */}
-            <div className="p-5 sm:p-6 space-y-4">
-              <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-2.5 text-amber-900 text-xs leading-relaxed">
-                <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                <span>
-                  Alasan penolakan ini akan <strong>ditampilkan di akun mahasiswa</strong> agar mahasiswa yang ditolak dapat mengajukan <strong>sanggahan / perbaikan berkas</strong> pada masa sanggah.
-                </span>
+                    );
+                  })()
+                ) : null}
               </div>
 
-              {/* Template Quick Chips */}
-              <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <label className="block text-xs font-bold text-slate-700">Pilih Template Alasan (Bisa Pilih &gt; 1):</label>
-                  {rejectReason && (
+              {/* Modal Footer */}
+              {(() => {
+                const currentStatus = applicantDetail?.application?.status || selectedApplicant?.status;
+                const isAccepted = currentStatus === 'DITERIMA';
+                const isRejected = currentStatus === 'DITOLAK';
+
+                return (
+                  <div className="p-3.5 sm:p-4 border-t border-slate-200 bg-white flex items-center justify-end gap-2.5 shrink-0 shadow-xs">
+                    <button
+                      onClick={() => window.print()}
+                      className="px-4 py-2 bg-slate-800 text-white font-normal rounded-xl hover:bg-slate-900 transition-colors flex items-center gap-2 mr-auto text-xs shadow-2xs"
+                    >
+                      <Printer className="w-4 h-4" /> Cetak Formulir
+                    </button>
+                    <button
+                      onClick={handleCloseDetail}
+                      className="px-4 py-2 bg-slate-200 text-slate-700 font-bold rounded-xl hover:bg-slate-300 transition-colors text-xs"
+                    >
+                      Tutup
+                    </button>
                     <button
                       type="button"
-                      onClick={() => setRejectReason('')}
-                      className="text-[10px] text-rose-600 font-semibold hover:underline"
+                      onClick={handleOpenRejectModal}
+                      className={`px-4 py-2 font-extrabold rounded-xl transition-colors flex items-center gap-1.5 shadow-2xs text-xs ${
+                        isRejected
+                          ? 'bg-rose-200 text-rose-900 border border-rose-300'
+                          : 'bg-rose-100 text-rose-700 hover:bg-rose-200'
+                      }`}
+                      title={isRejected ? 'Status saat ini: Ditolak (Klik untuk mengubah alasan penolakan)' : 'Tolak berkas / alihkan status'}
                     >
-                      Reset Alasan
+                      <XCircle className="w-4 h-4" /> {isRejected ? 'Ubah Alasan Tolak' : 'Tolak'}
                     </button>
-                  )}
-                </div>
-                <div className="flex flex-wrap gap-1.5">
-                  {REJECTION_TEMPLATES.map((tmpl, idx) => {
-                    const isSelected = rejectReason.includes(tmpl);
-                    return (
-                      <button
-                        key={idx}
-                        type="button"
-                        onClick={() => handleToggleTemplate(tmpl)}
-                        className={`px-2.5 py-1 text-[11px] font-medium rounded-lg transition-all text-left flex items-center gap-1 ${
-                          isSelected
-                            ? 'bg-rose-600 text-white font-semibold shadow-sm'
-                            : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
-                        }`}
-                      >
-                        {isSelected ? '✓' : '+'} {tmpl.slice(0, 38)}...
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
+                    <button
+                      onClick={async () => {
+                        if (!selectedApplicant) return;
+                        try {
+                          const id = selectedApplicant.userId || selectedApplicant.id;
+                          await fetchAPI(`/admin/applicants/${id}/verify`, {
+                            method: 'PATCH',
+                            body: JSON.stringify({ status: 'DITERIMA', notes: 'Berkas Anda lolos verifikasi. Silakan tunggu pengumuman penetapan penerima resmi.' }),
+                          });
+                          handleCloseDetail();
+                          loadApplicants();
+                          showNotification('Status pendaftar berhasil diubah: Berkas Lolos Verifikasi!', 'success', 'Status Berhasil Diubah');
+                        } catch (err: any) {
+                          showNotification(err.message || 'Gagal mengubah status.', 'error', 'Gagal Update Status');
+                        }
+                      }}
+                      className={`px-4 py-2 font-extrabold rounded-xl transition-colors flex items-center gap-1.5 shadow-2xs text-xs ${
+                        isAccepted
+                          ? 'bg-emerald-700 text-white shadow-emerald-700/20'
+                          : 'bg-emerald-600 text-white hover:bg-emerald-700'
+                      }`}
+                      title={isAccepted ? 'Status saat ini: Berkas Lolos Verifikasi' : 'Verifikasi dan loloskan berkas'}
+                    >
+                      <CheckCircle2 className="w-4 h-4" /> {isAccepted ? '✓ Berkas Lolos Verifikasi' : 'Loloskan Berkas'}
+                    </button>
+                  </div>
+                );
+              })()}
+            </div>
+          </div>
+        )}
 
-              {/* Reason Textarea */}
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1.5">Catatan / Alasan Penolakan Spesifik *</label>
-                <textarea
-                  rows={4}
-                  value={rejectReason}
-                  onChange={(e) => setRejectReason(e.target.value)}
-                  placeholder="Tuliskan catatan spesifik alasan berkas ditolak (misal: Transkrip Nilai buram atau belum berstempel basah fakultas)..."
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs focus:ring-2 focus:ring-rose-500 focus:outline-none leading-relaxed text-slate-900"
-                ></textarea>
-              </div>
-
-              {/* Footer Actions */}
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+        {/* Modal Alasan Penolakan Pendaftaran */}
+        {showRejectModal && (
+          <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-in fade-in">
+            <div className="bg-white rounded-3xl w-[94vw] max-w-lg shadow-2xl overflow-hidden border border-slate-200">
+              {/* Modal Header */}
+              <div className="bg-rose-600 text-white p-5 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-white/10 rounded-xl">
+                    <XCircle className="w-5 h-5 text-rose-100" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-extrabold">Alasan Penolakan Pendaftaran</h3>
+                    <p className="text-xs text-rose-100">Pendaftar: {selectedApplicant?.namaLengkap || selectedApplicant?.email}</p>
+                  </div>
+                </div>
                 <button
                   type="button"
                   onClick={() => setShowRejectModal(false)}
-                  className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
+                  className="text-rose-200 hover:text-white transition-colors"
                 >
-                  Batal
+                  <X className="w-5 h-5" />
                 </button>
-                <button
-                  type="button"
-                  disabled={submittingReject || !rejectReason.trim()}
-                  onClick={handleConfirmReject}
-                  className="px-5 py-2.5 text-xs font-extrabold text-white bg-rose-600 hover:bg-rose-700 disabled:bg-slate-300 disabled:cursor-not-allowed rounded-xl shadow-md transition-all flex items-center gap-1.5"
-                >
-                  {submittingReject ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" /> Memproses...
-                    </>
-                  ) : (
-                    <>
-                      <XCircle className="w-4 h-4" /> Konfirmasi Tolak Pendaftaran
-                    </>
-                  )}
-                </button>
+              </div>
+
+              {/* Modal Body */}
+              <div className="p-5 sm:p-6 space-y-4">
+                <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-2.5 text-amber-900 text-xs leading-relaxed">
+                  <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                  <span>
+                    Alasan penolakan ini akan <strong>ditampilkan di akun mahasiswa</strong> agar mahasiswa yang ditolak dapat mengajukan <strong>sanggahan / perbaikan berkas</strong> pada masa sanggah.
+                  </span>
+                </div>
+
+                {/* Template Quick Chips */}
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-xs font-bold text-slate-700">Pilih Template Alasan (Bisa Pilih &gt; 1):</label>
+                    {rejectReason && (
+                      <button
+                        type="button"
+                        onClick={() => setRejectReason('')}
+                        className="text-[10px] text-rose-600 font-semibold hover:underline"
+                      >
+                        Reset Alasan
+                      </button>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {REJECTION_TEMPLATES.map((tmpl, idx) => {
+                      const isSelected = rejectReason.includes(tmpl);
+                      return (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => handleToggleTemplate(tmpl)}
+                          className={`px-2.5 py-1 text-[11px] font-medium rounded-lg transition-all text-left flex items-center gap-1 ${isSelected
+                              ? 'bg-rose-600 text-white font-semibold shadow-sm'
+                              : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                            }`}
+                        >
+                          {isSelected ? '✓' : '+'} {tmpl.slice(0, 38)}...
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Reason Textarea */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">Catatan / Alasan Penolakan Spesifik *</label>
+                  <textarea
+                    rows={4}
+                    value={rejectReason}
+                    onChange={(e) => setRejectReason(e.target.value)}
+                    placeholder="Tuliskan catatan spesifik alasan berkas ditolak (misal: Transkrip Nilai buram atau belum berstempel basah fakultas)..."
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs focus:ring-2 focus:ring-rose-500 focus:outline-none leading-relaxed text-slate-900"
+                  ></textarea>
+                </div>
+
+                {/* Footer Actions */}
+                <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                  <button
+                    type="button"
+                    onClick={() => setShowRejectModal(false)}
+                    className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="button"
+                    disabled={submittingReject || !rejectReason.trim()}
+                    onClick={handleConfirmReject}
+                    className="px-5 py-2.5 text-xs font-extrabold text-white bg-rose-600 hover:bg-rose-700 disabled:bg-slate-300 disabled:cursor-not-allowed rounded-xl shadow-md transition-all flex items-center gap-1.5"
+                  >
+                    {submittingReject ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" /> Memproses...
+                      </>
+                    ) : (
+                      <>
+                        <XCircle className="w-4 h-4" /> Konfirmasi Tolak Pendaftaran
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
       </div>
 
       {/* Printable CV - Only visible during print */}
@@ -1179,7 +1184,7 @@ export default function SeleksiPage() {
               <div className="text-center w-64 space-y-1">
                 <p className="text-xs">Kendari, {applicantDetail.application?.submittedAt ? new Date(applicantDetail.application.submittedAt).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' }) : new Date().toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
                 <p className="text-xs font-semibold mb-1">Pemohon / Pendaftar Beasiswa,</p>
-                
+
                 {/* Signature Display */}
                 <div className="h-16 flex items-center justify-center my-1">
                   {applicantDetail.profile?.signatureData ? (
@@ -1203,11 +1208,10 @@ export default function SeleksiPage() {
       {toast && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-in fade-in">
           <div className="bg-white rounded-3xl w-[90vw] max-w-sm shadow-2xl overflow-hidden border border-slate-100 p-6 text-center animate-in zoom-in-95">
-            <div className={`w-14 h-14 rounded-2xl mx-auto flex items-center justify-center mb-4 ${
-              toast.type === 'success' ? 'bg-emerald-100 text-emerald-600' :
-              toast.type === 'error' ? 'bg-rose-100 text-rose-600' :
-              'bg-amber-100 text-amber-600'
-            }`}>
+            <div className={`w-14 h-14 rounded-2xl mx-auto flex items-center justify-center mb-4 ${toast.type === 'success' ? 'bg-emerald-100 text-emerald-600' :
+                toast.type === 'error' ? 'bg-rose-100 text-rose-600' :
+                  'bg-amber-100 text-amber-600'
+              }`}>
               {toast.type === 'success' && <CheckCircle2 className="w-8 h-8" />}
               {toast.type === 'error' && <XCircle className="w-8 h-8" />}
               {toast.type === 'warning' && <AlertCircle className="w-8 h-8" />}
@@ -1216,11 +1220,10 @@ export default function SeleksiPage() {
             <p className="text-xs text-slate-600 leading-relaxed mb-6">{toast.message}</p>
             <button
               onClick={() => setToast(null)}
-              className={`w-full py-2.5 px-4 font-bold text-xs text-white rounded-xl transition-all shadow-md ${
-                toast.type === 'success' ? 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-200' :
-                toast.type === 'error' ? 'bg-rose-600 hover:bg-rose-700 shadow-rose-200' :
-                'bg-slate-900 hover:bg-slate-800 shadow-slate-200'
-              }`}
+              className={`w-full py-2.5 px-4 font-bold text-xs text-white rounded-xl transition-all shadow-md ${toast.type === 'success' ? 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-200' :
+                  toast.type === 'error' ? 'bg-rose-600 hover:bg-rose-700 shadow-rose-200' :
+                    'bg-slate-900 hover:bg-slate-800 shadow-slate-200'
+                }`}
             >
               OK
             </button>

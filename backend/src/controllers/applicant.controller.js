@@ -8,6 +8,7 @@
 const { v4: uuidv4 } = require('uuid');
 const { getPool } = require('../config/database');
 const { auditLog, getClientIp, log, LOG_LEVELS } = require('../utils/logger');
+const { DOC_ALIAS_GROUPS, normalizeDocType, getAliasGroup } = require('../config/documentTypes');
 
 /**
  * Batas akhir pendaftaran online & perbaikan berkas: 18 Oktober 2026 pukul 23:59:59 WITA (UTC+8)
@@ -67,6 +68,8 @@ async function getProfile(req, res) {
       docList.push({
         id: doc.id,
         docType: doc.doc_type,
+        doc_type: doc.doc_type,
+        canonicalType: normalizeDocType(doc.doc_type),
         originalName: doc.original_name,
         mimeType: doc.mime_type,
         fileSize: doc.file_size,
@@ -384,17 +387,9 @@ function uploadDocument(docType) {
                             appNotes.includes('[SANGGAHAN');
 
       // Same logical document can be stored under different doc_type aliases (legacy form keys vs. berkas page keys)
-      const DOC_ALIAS_GROUPS = [
-        ['selfie', 'filePasfoto', 'pasfoto'],
-        ['ktm', 'fileSuratAktif', 'surataktif'],
-        ['ktp', 'fileKtp'],
-        ['transkrip', 'fileTranskrip'],
-        ['dtks', 'fileDtks', 'kip'],
-        ['pernyataan', 'surat_pernyataan', 'fileSuratPernyataan'],
-        ['surat_permohonan', 'fileSuratPermohonan'],
-        ['esai', 'fileMotivationOrEsai'],
-      ];
-      const aliasGroup = DOC_ALIAS_GROUPS.find((g) => g.includes(docType)) || [docType];
+      // Normalize to canonical doc_type so that database storage is 100% consistent and unambiguous.
+      const canonicalDocType = normalizeDocType(docType) || docType;
+      const aliasGroup = getAliasGroup(canonicalDocType);
       const aliasPlaceholders = aliasGroup.map(() => '?').join(',');
 
       // Check if any existing document of this type (or alias) is missing physically from disk
@@ -414,28 +409,36 @@ function uploadDocument(docType) {
         }
       }
 
-      // Save document record
+      // Save document record using canonical doc_type
       const docId = uuidv4();
       await pool.execute(
         `INSERT INTO documents (id, user_id, doc_type, original_name, stored_name, mime_type, file_size, file_path)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-        [docId, userId, docType, req.file.originalname, req.file.filename, req.file.mimetype, req.file.size, req.file.path]
+        [docId, userId, canonicalDocType, req.file.originalname, req.file.filename, req.file.mimetype, req.file.size, req.file.path]
       );
 
-      if (docType === 'selfie' || docType === 'filePasfoto') {
+      if (canonicalDocType === 'selfie') {
         await pool.execute('UPDATE profiles SET selfie_path = ? WHERE user_id = ?', [req.file.path, userId]);
       }
 
       auditLog({
         action: 'FILE_UPLOADED', userId, ipAddress: getClientIp(req),
-        details: { docType, originalName: req.file.originalname, storedName: req.file.filename, mimeType: req.file.mimetype, size: req.file.size, isAppealState },
+        details: { docType: canonicalDocType, originalName: req.file.originalname, storedName: req.file.filename, mimeType: req.file.mimetype, size: req.file.size, isAppealState },
         requestId: req.requestId,
       });
 
       res.json({
         success: true,
-        message: `File ${docType} berhasil diunggah.`,
-        data: { documentId: docId, originalName: req.file.originalname, mimeType: req.file.mimetype, size: req.file.size },
+        message: `File ${canonicalDocType} berhasil diunggah.`,
+        data: {
+          documentId: docId,
+          docType: canonicalDocType,
+          doc_type: canonicalDocType,
+          canonicalType: canonicalDocType,
+          originalName: req.file.originalname,
+          mimeType: req.file.mimetype,
+          size: req.file.size
+        },
       });
     } catch (err) {
       log(LOG_LEVELS.ERROR, `Upload ${docType} error: ${err.message}`);

@@ -1,0 +1,49 @@
+========================================================================
+       LAPORAN RESMI AUDIT & BACKUP MANUAL BSSC 2026
+========================================================================
+Tanggal & Waktu    : 27/10/2026, 15.32.54
+Folder Backup      : D:\ppa-project\beasiswa_cerdas_sultra\backend\backups\bssc_backup_20261027_153254
+Durasi Pembuatan   : 0.27 detik
+Ukuran Total Backup: 20.34 MB
+------------------------------------------------------------------------
+RINGKASAN DATABASE:
+  - Tabel applications         : 1 baris
+  - Tabel audit_logs           : 53 baris
+  - Tabel documents            : 12 baris
+  - Tabel education_history    : 3 baris
+  - Tabel profiles             : 3 baris
+  - Tabel refresh_tokens       : 3 baris
+  - Tabel token_blacklist      : 0 baris
+  - Tabel users                : 3 baris
+------------------------------------------------------------------------
+INTEGRITAS BERKAS FISIK:
+  - Total Dokumen di DB        : 12
+  - Berkas Fisik Valid di Disk : 12
+  - Berkas Fisik Hilang        : 0
+  - File Disalin ke Cadangan   : 91
+------------------------------------------------------------------------
+AUDIT KELENGKAPAN 8 FILE PENDAFTAR (S1: 8 Wajib, S2/S3: +Ijazah):
+  - Total Pendaftar Disubmit   : 1
+  - Berkas Lengkap             : 1
+  - Berkas Belum Lengkap       : 0
+
+DETAIL CHECKLIST PENDAFTAR:
+  [BSSC-2026-S1-0001] testing cuy (S1) - Status: DITERIMA
+    DTKS Terunggah   : YA (Valid)
+    Ijazah Terunggah : TIDAK (Opsional/S1)
+    Status 8 Dokumen : LENGKAP 100%
+    Daftar Berkas    :
+      * selfie             : selfie.webp (9.32 KB)
+      * surat_permohonan   : download (1).jpg (112 KB)
+      * ktp                : download.jpg (126.98 KB)
+      * transkrip          : INTECHREST KE PT BOSOWA.pdf (732.97 KB)
+      * surat_pernyataan   : LAMPIRAN LOGBOOK AGUSTUS.pdf (139.64 KB)
+      * ktm                : LAMPIRAN_1_LOG_BOOK_ALQAF.pdf (136.45 KB)
+      * dtks               : INTECHREST KE PT BOSOWA.pdf (732.97 KB)
+      * esai               : Intechrest Logo.png (19.47 KB)
+      * ktp                : download.jpg (126.98 KB)
+      * dtks               : download (1).jpg (112 KB)
+
+========================================================================
+HASIL AUDIT KESELURUHAN: AMBIL KEPUTUSAN: 100% AMAN & LENGKAP
+========================================================================

@@ -1,0 +1,26 @@
+[
+  {
+    "id": "073d4551-94a8-4727-a879-821b2835bcc1",
+    "user_id": "f24aa3d6-027f-43af-ac2b-69cdfbe61394",
+    "token_hash": "863ee12f498b38251a877ad1817549963489e3957f18b732fbdaa23df833bf5e",
+    "expires_at": "2026-10-25T14:42:52.000Z",
+    "created_at": "2026-10-18T21:42:52.000Z",
+    "revoked": 0
+  },
+  {
+    "id": "be7e8dce-4bf4-4134-9c3a-7d50650aab33",
+    "user_id": "be82c5f6-14d9-4a9a-a8c0-fb0ca7f4f0cf",
+    "token_hash": "c1795e5eb824b26fe050544cc0287c10df7b2bd8c120e0b7b8d45280c3802fc9",
+    "expires_at": "2026-10-26T02:22:43.000Z",
+    "created_at": "2026-10-19T09:22:43.000Z",
+    "revoked": 0
+  },
+  {
+    "id": "dec81d66-05c3-4f85-9194-506584beb57f",
+    "user_id": "be82c5f6-14d9-4a9a-a8c0-fb0ca7f4f0cf",
+    "token_hash": "fe2c2b0a62e5d104e718a806b05b176d0f466b3b41f3ff31bca440ad096b66fa",
+    "expires_at": "2026-10-25T14:36:15.000Z",
+    "created_at": "2026-10-18T21:36:15.000Z",
+    "revoked": 1
+  }
+]

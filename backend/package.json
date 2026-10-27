@@ -7,7 +7,8 @@
     "dev": "node --watch src/index.js",
     "start": "node src/index.js",
     "seed": "node src/seed.js",
-    "clean-db": "node clean_db.js"
+    "clean-db": "node clean_db.js",
+    "backup": "node scripts/backup_manual.js"
   },
   "dependencies": {
     "bcrypt": "^5.1.1",

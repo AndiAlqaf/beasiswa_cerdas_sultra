@@ -1,0 +1,532 @@
+[
+  {
+    "id": "219cc82c-6f43-49f5-ae73-c796576375bf",
+    "user_id": "be82c5f6-14d9-4a9a-a8c0-fb0ca7f4f0cf",
+    "action": "FILE_UPLOADED",
+    "ip_address": "::1",
+    "user_agent": null,
+    "details": "{\"docType\":\"ktp\",\"originalName\":\"download.jpg\",\"storedName\":\"da90b77f-8c7a-4d28-aab2-920140a0efd0.jpg\",\"mimeType\":\"image/jpeg\",\"size\":130028,\"isAppealState\":true}",
+    "request_id": "b3742856-436d-4886-81a0-5b786fb86394",
+    "created_at": "2026-10-18T21:10:22.000Z"
+  },
+  {
+    "id": "27443aaa-ad73-4479-8352-89dffaac923f",
+    "user_id": "73548a22-f581-4f86-97db-4430a23c5278",
+    "action": "FILE_UPLOADED",
+    "ip_address": "::1",
+    "user_agent": null,
+    "details": "{\"docType\":\"ktm\",\"originalName\":\"PROJECT DEFINITION RAFFI.pdf\",\"storedName\":\"c0cbdcd0-7144-4022-944b-9811f06ac389.pdf\",\"mimeType\":\"application/pdf\",\"size\":146642,\"isAppealState\":false}",
+    "request_id": "c5bafe57-606d-4031-acab-83938f33bc06",
+    "created_at": "2026-09-30T15:41:55.000Z"
+  },
+  {
+    "id": "308f9309-7b08-4a32-b25f-c400f91110ef",
+    "user_id": "be82c5f6-14d9-4a9a-a8c0-fb0ca7f4f0cf",
+    "action": "FILE_UPLOADED",
+    "ip_address": "::1",
+    "user_agent": null,
+    "details": "{\"docType\":\"surat_pernyataan\",\"originalName\":\"LAMPIRAN LOGBOOK AGUSTUS.pdf\",\"storedName\":\"511e1ed5-3af1-437b-b6aa-cef22be616a0.pdf\",\"mimeType\":\"application/pdf\",\"size\":142987,\"isAppealState\":false}",
+    "request_id": "e9268594-9177-47f8-aef3-abf194704a96",
+    "created_at": "2026-10-18T21:08:58.000Z"
+  },
+  {
+    "id": "32dca424-ae83-4aae-8981-553b6d157c74",
+    "user_id": "a32daad7-a8cd-49ac-bcb7-8aa674f62930",
+    "action": "EDUCATION_UPDATED",
+    "ip_address": "127.0.0.1",
+    "user_agent": null,
+    "details": "{\"count\":3}",
+    "request_id": "test",
+    "created_at": "2026-10-04T11:13:40.000Z"
+  },
+  {
+    "id": "35914ba7-e2c2-496a-8aee-4291176af255",
+    "user_id": "f24aa3d6-027f-43af-ac2b-69cdfbe61394",
+    "action": "LOGIN_SUCCESS",
+    "ip_address": "::1",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36",
+    "details": "null",
+    "request_id": "1fd78d07-8781-4ee4-8a54-8618ed2afadc",
+    "created_at": "2026-10-18T21:00:26.000Z"
+  },
+  {
+    "id": "36547a8e-48ce-47d3-bee4-0b6c79718c49",
+    "user_id": "b72e0393-1913-4b1f-8352-9d4e376c6227",
+    "action": "PROFILE_UPDATED",
+    "ip_address": "127.0.0.1",
+    "user_agent": null,
+    "details": "null",
+    "request_id": "test",
+    "created_at": "2026-10-04T11:13:40.000Z"
+  },
+  {
+    "id": "37b496cb-6fff-4588-bab1-51f113d656f8",
+    "user_id": "be82c5f6-14d9-4a9a-a8c0-fb0ca7f4f0cf",
+    "action": "REGISTER_SUCCESS",
+    "ip_address": "::1",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36",
+    "details": "{\"email\":\"test@gmail.com\",\"jenjangTarget\":\"S1\"}",
+    "request_id": "93bc70fe-a15c-4691-8af2-72bcaea6115f",
+    "created_at": "2026-10-18T21:07:54.000Z"
+  },
+  {
+    "id": "3cf36571-3c38-40e8-ac32-8fd61ba8441a",
+    "user_id": "f24aa3d6-027f-43af-ac2b-69cdfbe61394",
+    "action": "LOGIN_SUCCESS",
+    "ip_address": "::1",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36",
+    "details": "null",
+    "request_id": "503f7ea8-7fe9-411e-8a19-72f75293ee07",
+    "created_at": "2026-10-18T21:42:52.000Z"
+  },
+  {
+    "id": "3dbb9097-874d-4fcf-843f-3707f45873c4",
+    "user_id": "73548a22-f581-4f86-97db-4430a23c5278",
+    "action": "REGISTER_SUCCESS",
+    "ip_address": "::1",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+    "details": "{\"email\":\"test1@gmail.com\",\"jenjangTarget\":\"S1\"}",
+    "request_id": "2ad88fb8-dacd-4c34-b36b-001e8b492f7d",
+    "created_at": "2026-09-30T15:41:20.000Z"
+  },
+  {
+    "id": "4ac31c20-9186-4eb0-945c-1ea2f86010d2",
+    "user_id": "be82c5f6-14d9-4a9a-a8c0-fb0ca7f4f0cf",
+    "action": "PROFILE_UPDATED",
+    "ip_address": "::1",
+    "user_agent": null,
+    "details": "null",
+    "request_id": "54852ff8-d9d2-44e6-8b6b-eee4bf425d16",
+    "created_at": "2026-10-18T21:09:16.000Z"
+  },
+  {
+    "id": "4c86ea35-83d5-4a2b-8583-531e35a56a98",
+    "user_id": "73548a22-f581-4f86-97db-4430a23c5278",
+    "action": "LOGIN_FAILED",
+    "ip_address": "::1",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36",
+    "details": "null",
+    "request_id": "3359af49-20b3-4b16-9b24-c7676b82d64d",
+    "created_at": "2026-10-18T21:00:41.000Z"
+  },
+  {
+    "id": "4f80ed29-9cae-49f8-b31f-baf6f3a3be5f",
+    "user_id": "be82c5f6-14d9-4a9a-a8c0-fb0ca7f4f0cf",
+    "action": "FILE_UPLOADED",
+    "ip_address": "::1",
+    "user_agent": null,
+    "details": "{\"docType\":\"ktm\",\"originalName\":\"download (1).jpg\",\"storedName\":\"ec004777-ceab-4622-adbd-63a72fff8db4.jpg\",\"mimeType\":\"image/jpeg\",\"size\":114690,\"isAppealState\":false}",
+    "request_id": "19d6e75d-59fb-4e15-88e9-0a08e844dce9",
+    "created_at": "2026-10-18T21:07:54.000Z"
+  },
+  {
+    "id": "55a6f7ce-985a-4adf-b563-f057c6bb9958",
+    "user_id": "be82c5f6-14d9-4a9a-a8c0-fb0ca7f4f0cf",
+    "action": "FILE_UPLOADED",
+    "ip_address": "::1",
+    "user_agent": null,
+    "details": "{\"docType\":\"dtks\",\"originalName\":\"INTECHREST KE PT BOSOWA.pdf\",\"storedName\":\"2f9a0065-327e-4d10-9399-9c0ad66f6366.pdf\",\"mimeType\":\"application/pdf\",\"size\":750563,\"isAppealState\":false}",
+    "request_id": "5b2da642-0ecb-4310-826a-1fc920d27d07",
+    "created_at": "2026-10-18T21:09:05.000Z"
+  },
+  {
+    "id": "569de9af-bc75-491b-b3cc-ae9327d1a80b",
+    "user_id": "b72e0393-1913-4b1f-8352-9d4e376c6227",
+    "action": "EDUCATION_UPDATED",
+    "ip_address": "127.0.0.1",
+    "user_agent": null,
+    "details": "{\"count\":2}",
+    "request_id": "test",
+    "created_at": "2026-10-04T11:13:40.000Z"
+  },
+  {
+    "id": "5fdeee32-3859-41fc-8873-8146e05784ed",
+    "user_id": "b72e0393-1913-4b1f-8352-9d4e376c6227",
+    "action": "EDUCATION_UPDATED",
+    "ip_address": "127.0.0.1",
+    "user_agent": null,
+    "details": "{\"count\":2}",
+    "request_id": "test",
+    "created_at": "2026-10-04T11:13:40.000Z"
+  },
+  {
+    "id": "65649428-8f10-4ae0-bb39-34e3c965ff41",
+    "user_id": "be82c5f6-14d9-4a9a-a8c0-fb0ca7f4f0cf",
+    "action": "LOGIN_SUCCESS",
+    "ip_address": "::1",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36",
+    "details": "null",
+    "request_id": "a110d409-82e4-45c6-ab33-d6d6b95adab3",
+    "created_at": "2026-10-18T21:11:47.000Z"
+  },
+  {
+    "id": "657b11ce-93c2-47ca-a42f-ca3faed7b9c4",
+    "user_id": "be82c5f6-14d9-4a9a-a8c0-fb0ca7f4f0cf",
+    "action": "APPLICATION_SUBMITTED",
+    "ip_address": "::1",
+    "user_agent": null,
+    "details": "{\"registrationNo\":\"BSSC-2026-S1-0001\"}",
+    "request_id": "f75adb82-d4d2-436d-aa2c-126e0dc613fd",
+    "created_at": "2026-10-18T21:09:16.000Z"
+  },
+  {
+    "id": "672fc819-f454-444b-969f-497729b7e973",
+    "user_id": "f24aa3d6-027f-43af-ac2b-69cdfbe61394",
+    "action": "APPLICATION_STATUS_UPDATED",
+    "ip_address": "::1",
+    "user_agent": null,
+    "details": "{\"applicantUserId\":\"be82c5f6-14d9-4a9a-a8c0-fb0ca7f4f0cf\",\"oldStatus\":\"TERKIRIM\",\"newStatus\":\"DITOLAK\",\"notes\":\"- Dokumen Kartu Tanda Penduduk (KTP) / KK tidak sesuai dengan domisili Sultra.\\n- Dokumen persyaratan utama (Surat Pernyataan / Esai) tidak dilampirkan.\"}",
+    "request_id": "52018012-1083-4ce6-bad3-5996501ec5aa",
+    "created_at": "2026-10-18T21:09:32.000Z"
+  },
+  {
+    "id": "6981a311-4869-4678-9450-db2df6210fac",
+    "user_id": "be82c5f6-14d9-4a9a-a8c0-fb0ca7f4f0cf",
+    "action": "LOGIN_SUCCESS",
+    "ip_address": "::1",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36",
+    "details": "null",
+    "request_id": "7529e3ac-ebfa-4e72-bb70-79fca4e1f653",
+    "created_at": "2026-10-18T21:09:46.000Z"
+  },
+  {
+    "id": "72fe2252-c197-4b73-9ca2-c0562cdbbff9",
+    "user_id": "be82c5f6-14d9-4a9a-a8c0-fb0ca7f4f0cf",
+    "action": "APPLICATION_APPEALED",
+    "ip_address": "::1",
+    "user_agent": null,
+    "details": "{\"registrationNo\":\"BSSC-2026-S1-0001\",\"appealNotes\":\"sdh ya kami perbaiki\"}",
+    "request_id": "c3c6d549-b66f-4a11-b839-4272840aa05d",
+    "created_at": "2026-10-18T21:10:45.000Z"
+  },
+  {
+    "id": "742805ed-ba7e-403b-8fd1-6078e89efcd4",
+    "user_id": "73548a22-f581-4f86-97db-4430a23c5278",
+    "action": "EDUCATION_UPDATED",
+    "ip_address": "::1",
+    "user_agent": null,
+    "details": "{\"count\":1}",
+    "request_id": "2fdcfcef-87b2-411f-aed9-4260d6ddb494",
+    "created_at": "2026-09-30T15:41:55.000Z"
+  },
+  {
+    "id": "752d4234-10cb-4c7d-8b00-88df006e58d7",
+    "user_id": "73548a22-f581-4f86-97db-4430a23c5278",
+    "action": "FILE_UPLOADED",
+    "ip_address": "::1",
+    "user_agent": null,
+    "details": "{\"docType\":\"selfie\",\"originalName\":\"selfie.webp\",\"storedName\":\"2995ecd6-536c-4c61-8bb7-0e9e52ee7fe0.webp\",\"mimeType\":\"image/webp\",\"size\":8746,\"isAppealState\":false}",
+    "request_id": "ac85e84d-fd2f-4a45-8e20-cbc1a29664cb",
+    "created_at": "2026-09-30T15:41:55.000Z"
+  },
+  {
+    "id": "7a7aff52-9f06-41ca-8221-9c4aa650c27e",
+    "user_id": "f24aa3d6-027f-43af-ac2b-69cdfbe61394",
+    "action": "LOGIN_SUCCESS",
+    "ip_address": "::1",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36",
+    "details": "null",
+    "request_id": "6ed94ca7-a623-448e-a677-ac2aaf7120b8",
+    "created_at": "2026-10-18T21:10:57.000Z"
+  },
+  {
+    "id": "7ba63b42-0f5e-4203-90c4-20daca679106",
+    "user_id": "a32daad7-a8cd-49ac-bcb7-8aa674f62930",
+    "action": "PROFILE_UPDATED",
+    "ip_address": "127.0.0.1",
+    "user_agent": null,
+    "details": "null",
+    "request_id": "test",
+    "created_at": "2026-10-04T11:13:40.000Z"
+  },
+  {
+    "id": "80b7e6cf-40c0-406f-9e44-6194c0b1c703",
+    "user_id": "73548a22-f581-4f86-97db-4430a23c5278",
+    "action": "LOGIN_FAILED",
+    "ip_address": "::1",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36",
+    "details": "null",
+    "request_id": "bc69af77-3842-476b-80da-ebc708d30704",
+    "created_at": "2026-10-18T21:00:52.000Z"
+  },
+  {
+    "id": "8549345d-f5f3-4b68-9d9f-04055eb21624",
+    "user_id": "f24aa3d6-027f-43af-ac2b-69cdfbe61394",
+    "action": "APPLICATION_STATUS_UPDATED",
+    "ip_address": "::1",
+    "user_agent": null,
+    "details": "{\"applicantUserId\":\"be82c5f6-14d9-4a9a-a8c0-fb0ca7f4f0cf\",\"oldStatus\":\"VERIFIKASI_BERKAS\",\"newStatus\":\"DITOLAK\",\"notes\":\"- Transkrip Nilai buram, terpotong, atau tidak terbaca dengan jelas.\\n- Surat Keterangan Aktif Kuliah / KTM tidak valid atau belum disahkan pejabat berwenang.\"}",
+    "request_id": "b23cd593-9909-4462-8d15-e892f45dec82",
+    "created_at": "2026-10-18T21:11:31.000Z"
+  },
+  {
+    "id": "85f1d769-769b-4cce-a5a0-a406d55f0675",
+    "user_id": "be82c5f6-14d9-4a9a-a8c0-fb0ca7f4f0cf",
+    "action": "PROFILE_UPDATED",
+    "ip_address": "::1",
+    "user_agent": null,
+    "details": "null",
+    "request_id": "aa501b6f-3ffc-43a6-a27a-4a6c07ac571d",
+    "created_at": "2026-10-18T21:42:43.000Z"
+  },
+  {
+    "id": "8e596808-f5be-46bb-b24d-fe02c41c0a0d",
+    "user_id": "be82c5f6-14d9-4a9a-a8c0-fb0ca7f4f0cf",
+    "action": "REFRESH_TOKEN_REUSE_DETECTED",
+    "ip_address": "::1",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36",
+    "details": "null",
+    "request_id": "bccd8290-c088-4192-b3c2-d82f922e48cf",
+    "created_at": "2026-10-18T21:27:40.000Z"
+  },
+  {
+    "id": "955d7c23-e486-47de-b509-0da3238fc7de",
+    "user_id": "be82c5f6-14d9-4a9a-a8c0-fb0ca7f4f0cf",
+    "action": "FILE_UPLOADED",
+    "ip_address": "::1",
+    "user_agent": null,
+    "details": "{\"docType\":\"transkrip\",\"originalName\":\"INTECHREST KE PT BOSOWA.pdf\",\"storedName\":\"a529a683-ff9d-4192-bd9a-9a55f1746a6b.pdf\",\"mimeType\":\"application/pdf\",\"size\":750563,\"isAppealState\":false}",
+    "request_id": "8ff25d60-4282-4acc-9bb5-afecdb82c4ba",
+    "created_at": "2026-10-18T21:08:54.000Z"
+  },
+  {
+    "id": "960d3296-dd51-4edb-9e1b-16fe5d83ffbd",
+    "user_id": "77a40f29-0e6e-4d3e-a36e-7f07919fe410",
+    "action": "PROFILE_UPDATED",
+    "ip_address": "127.0.0.1",
+    "user_agent": null,
+    "details": "null",
+    "request_id": "test",
+    "created_at": "2026-10-04T11:13:40.000Z"
+  },
+  {
+    "id": "9eb5ab5c-fe9b-401e-8daf-dfbed17c3c46",
+    "user_id": "be82c5f6-14d9-4a9a-a8c0-fb0ca7f4f0cf",
+    "action": "FILE_UPLOADED",
+    "ip_address": "::1",
+    "user_agent": null,
+    "details": "{\"docType\":\"esai\",\"originalName\":\"Intechrest Logo.png\",\"storedName\":\"61823853-e254-49ed-922e-094e267698db.png\",\"mimeType\":\"image/png\",\"size\":19936,\"isAppealState\":false}",
+    "request_id": "9d274b3c-8df8-4c34-b098-ee0b7fa5269b",
+    "created_at": "2026-10-18T21:09:10.000Z"
+  },
+  {
+    "id": "a15357d3-ba95-4902-8679-9ef6607f52fd",
+    "user_id": "77a40f29-0e6e-4d3e-a36e-7f07919fe410",
+    "action": "EDUCATION_UPDATED",
+    "ip_address": "127.0.0.1",
+    "user_agent": null,
+    "details": "{\"count\":4}",
+    "request_id": "test",
+    "created_at": "2026-10-04T11:13:40.000Z"
+  },
+  {
+    "id": "af85dd95-1d10-494c-91e7-918008abeac6",
+    "user_id": "be82c5f6-14d9-4a9a-a8c0-fb0ca7f4f0cf",
+    "action": "FILE_UPLOADED",
+    "ip_address": "::1",
+    "user_agent": null,
+    "details": "{\"docType\":\"ktm\",\"originalName\":\"LAMPIRAN_1_LOG_BOOK_ALQAF.pdf\",\"storedName\":\"f8e50858-7e38-440d-9048-8667a082b8b3.pdf\",\"mimeType\":\"application/pdf\",\"size\":139721,\"isAppealState\":false}",
+    "request_id": "3343cc3a-d961-4f3b-8036-9427079515b7",
+    "created_at": "2026-10-18T21:09:02.000Z"
+  },
+  {
+    "id": "afa74db0-590d-4768-b2ed-6887ef94b007",
+    "user_id": "f24aa3d6-027f-43af-ac2b-69cdfbe61394",
+    "action": "LOGIN_SUCCESS",
+    "ip_address": "::1",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36",
+    "details": "null",
+    "request_id": "52c658ad-e58d-4a15-825a-f7acc104b4ef",
+    "created_at": "2026-10-18T21:09:22.000Z"
+  },
+  {
+    "id": "b15b2be0-ca26-468f-981f-56dbf0df04a2",
+    "user_id": "a32daad7-a8cd-49ac-bcb7-8aa674f62930",
+    "action": "PROFILE_UPDATED",
+    "ip_address": "127.0.0.1",
+    "user_agent": null,
+    "details": "null",
+    "request_id": "test",
+    "created_at": "2026-10-04T11:13:40.000Z"
+  },
+  {
+    "id": "ba0710ce-0e4f-4c27-9baa-81f507fcdcb3",
+    "user_id": "b72e0393-1913-4b1f-8352-9d4e376c6227",
+    "action": "PROFILE_UPDATED",
+    "ip_address": "127.0.0.1",
+    "user_agent": null,
+    "details": "null",
+    "request_id": "test",
+    "created_at": "2026-10-04T11:13:40.000Z"
+  },
+  {
+    "id": "bd28edd3-acf1-4c80-90d7-81135ad92800",
+    "user_id": "be82c5f6-14d9-4a9a-a8c0-fb0ca7f4f0cf",
+    "action": "EDUCATION_UPDATED",
+    "ip_address": "::1",
+    "user_agent": null,
+    "details": "{\"count\":1}",
+    "request_id": "306bc64e-9155-47fd-90c7-db41b0bae55d",
+    "created_at": "2026-10-18T21:07:54.000Z"
+  },
+  {
+    "id": "c6db4662-133e-4eca-87f1-2a250f9888d8",
+    "user_id": "73548a22-f581-4f86-97db-4430a23c5278",
+    "action": "PROFILE_UPDATED",
+    "ip_address": "::1",
+    "user_agent": null,
+    "details": "null",
+    "request_id": "4ec47fae-175e-4223-81ff-ef7f35ba1ca3",
+    "created_at": "2026-09-30T15:41:55.000Z"
+  },
+  {
+    "id": "c988112f-1a58-45b1-8c85-63013cfa3f9b",
+    "user_id": "73548a22-f581-4f86-97db-4430a23c5278",
+    "action": "LOGIN_FAILED",
+    "ip_address": "::1",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36",
+    "details": "null",
+    "request_id": "0fa313b3-438d-4ab4-b674-acd0315474be",
+    "created_at": "2026-10-18T21:00:47.000Z"
+  },
+  {
+    "id": "cb9faafc-7bfa-4fab-be07-081b88160692",
+    "user_id": "be82c5f6-14d9-4a9a-a8c0-fb0ca7f4f0cf",
+    "action": "REFRESH_TOKEN_REUSE_DETECTED",
+    "ip_address": "::1",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36",
+    "details": "null",
+    "request_id": "0c020c3f-4d6f-4736-8b48-d81bc77d1282",
+    "created_at": "2026-10-18T21:27:40.000Z"
+  },
+  {
+    "id": "cda51813-0c3b-4994-bc0e-f7d3ce550145",
+    "user_id": "be82c5f6-14d9-4a9a-a8c0-fb0ca7f4f0cf",
+    "action": "REFRESH_TOKEN_REUSE_DETECTED",
+    "ip_address": "::1",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36",
+    "details": "null",
+    "request_id": "4743e7b8-b241-4e14-b29b-48e8ddbdee99",
+    "created_at": "2026-10-18T21:27:40.000Z"
+  },
+  {
+    "id": "cda9a0d5-934f-40ff-93ba-2c08515d8389",
+    "user_id": "be82c5f6-14d9-4a9a-a8c0-fb0ca7f4f0cf",
+    "action": "LOGIN_SUCCESS",
+    "ip_address": "::1",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36",
+    "details": "null",
+    "request_id": "578ea109-b040-458f-a96e-f1ec203ace04",
+    "created_at": "2026-10-18T21:36:15.000Z"
+  },
+  {
+    "id": "ce2c7de7-7aaa-47f4-9604-4f5746d0ad86",
+    "user_id": "77a40f29-0e6e-4d3e-a36e-7f07919fe410",
+    "action": "PROFILE_UPDATED",
+    "ip_address": "127.0.0.1",
+    "user_agent": null,
+    "details": "null",
+    "request_id": "test",
+    "created_at": "2026-10-04T11:13:40.000Z"
+  },
+  {
+    "id": "d4323e99-54d1-4a7f-9bec-99a2ab20e46d",
+    "user_id": "be82c5f6-14d9-4a9a-a8c0-fb0ca7f4f0cf",
+    "action": "LOGIN_FAILED",
+    "ip_address": "::1",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36",
+    "details": "null",
+    "request_id": "76b91163-e06f-4f91-becb-681fb9f8656f",
+    "created_at": "2026-10-19T09:22:35.000Z"
+  },
+  {
+    "id": "d8936468-f03d-42d6-a746-3d5b540915fc",
+    "user_id": "77a40f29-0e6e-4d3e-a36e-7f07919fe410",
+    "action": "EDUCATION_UPDATED",
+    "ip_address": "127.0.0.1",
+    "user_agent": null,
+    "details": "{\"count\":4}",
+    "request_id": "test",
+    "created_at": "2026-10-04T11:13:40.000Z"
+  },
+  {
+    "id": "d9339907-3d47-4a44-acaa-d9e064c9f392",
+    "user_id": "be82c5f6-14d9-4a9a-a8c0-fb0ca7f4f0cf",
+    "action": "FILE_UPLOADED",
+    "ip_address": "::1",
+    "user_agent": null,
+    "details": "{\"docType\":\"ktp\",\"originalName\":\"download.jpg\",\"storedName\":\"49c2af0f-4f32-450a-884b-e1193d1e1786.jpg\",\"mimeType\":\"image/jpeg\",\"size\":130028,\"isAppealState\":false}",
+    "request_id": "a2390d29-3751-48fd-b1b1-bf36bc31cf9f",
+    "created_at": "2026-10-18T21:08:50.000Z"
+  },
+  {
+    "id": "dae4eb52-255d-4c26-b1f2-5987c1a5099f",
+    "user_id": "a32daad7-a8cd-49ac-bcb7-8aa674f62930",
+    "action": "EDUCATION_UPDATED",
+    "ip_address": "127.0.0.1",
+    "user_agent": null,
+    "details": "{\"count\":3}",
+    "request_id": "test",
+    "created_at": "2026-10-04T11:13:40.000Z"
+  },
+  {
+    "id": "dcaa55fa-1150-423c-8649-06c3272c07ee",
+    "user_id": "be82c5f6-14d9-4a9a-a8c0-fb0ca7f4f0cf",
+    "action": "FILE_UPLOADED",
+    "ip_address": "::1",
+    "user_agent": null,
+    "details": "{\"docType\":\"surat_permohonan\",\"originalName\":\"download (1).jpg\",\"storedName\":\"fa5056d1-c1f6-4072-aa73-272910cd74ce.jpg\",\"mimeType\":\"image/jpeg\",\"size\":114690,\"isAppealState\":false}",
+    "request_id": "03291ec7-cb6b-4372-9b6b-d775eca3242b",
+    "created_at": "2026-10-18T21:08:46.000Z"
+  },
+  {
+    "id": "e38fd3e5-9df9-43bc-8f6e-33caa89c087c",
+    "user_id": "be82c5f6-14d9-4a9a-a8c0-fb0ca7f4f0cf",
+    "action": "EDUCATION_UPDATED",
+    "ip_address": "::1",
+    "user_agent": null,
+    "details": "{\"count\":2}",
+    "request_id": "259876a7-0500-424e-866b-38f498180006",
+    "created_at": "2026-10-18T21:09:16.000Z"
+  },
+  {
+    "id": "e4e5b87c-ba9e-4953-9c32-11d97eae56ff",
+    "user_id": "be82c5f6-14d9-4a9a-a8c0-fb0ca7f4f0cf",
+    "action": "PROFILE_UPDATED",
+    "ip_address": "::1",
+    "user_agent": null,
+    "details": "null",
+    "request_id": "ac9fa6bd-409c-456e-8fc6-7f5a1b5f6a64",
+    "created_at": "2026-10-18T21:07:54.000Z"
+  },
+  {
+    "id": "f2572097-a3db-47ee-a255-508446ccc224",
+    "user_id": "be82c5f6-14d9-4a9a-a8c0-fb0ca7f4f0cf",
+    "action": "FILE_UPLOADED",
+    "ip_address": "::1",
+    "user_agent": null,
+    "details": "{\"docType\":\"dtks\",\"originalName\":\"download (1).jpg\",\"storedName\":\"2fd9e515-e599-4eb3-a44b-cbb9f0aeab42.jpg\",\"mimeType\":\"image/jpeg\",\"size\":114690,\"isAppealState\":true}",
+    "request_id": "6683df77-6be6-4d85-8284-6ae37cf9a186",
+    "created_at": "2026-10-18T21:10:29.000Z"
+  },
+  {
+    "id": "f4be891e-1b3e-47d4-81d9-eba720fb8c5a",
+    "user_id": "be82c5f6-14d9-4a9a-a8c0-fb0ca7f4f0cf",
+    "action": "LOGIN_SUCCESS",
+    "ip_address": "::1",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36",
+    "details": "null",
+    "request_id": "efd511d8-9cdb-4aff-b189-9db9446fdc94",
+    "created_at": "2026-10-19T09:22:43.000Z"
+  },
+  {
+    "id": "f5cc43db-8ca8-4c9f-bdf1-f650f89de276",
+    "user_id": "be82c5f6-14d9-4a9a-a8c0-fb0ca7f4f0cf",
+    "action": "FILE_UPLOADED",
+    "ip_address": "::1",
+    "user_agent": null,
+    "details": "{\"docType\":\"selfie\",\"originalName\":\"selfie.webp\",\"storedName\":\"47535992-7190-4c6e-90eb-c1ea931dc2ca.webp\",\"mimeType\":\"image/webp\",\"size\":9548,\"isAppealState\":false}",
+    "request_id": "e8c78819-fc60-4900-ac69-6e18e2a1f465",
+    "created_at": "2026-10-18T21:07:54.000Z"
+  }
+]

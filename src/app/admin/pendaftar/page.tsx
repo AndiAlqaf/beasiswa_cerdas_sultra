@@ -5,20 +5,19 @@ import { Search, Filter, Download, Eye, Edit, Trash2, Loader2, AlertCircle, X, F
 import { fetchAPI } from '@/lib/api';
 
 const getDocTitle = (key: string) => {
-  const map: Record<string, string> = {
-    fileSuratPermohonan: 'Surat Permohonan',
-    filePasfoto: 'Pasfoto / Selfie',
-    fileKtp: 'KTP',
-    fileSuratAktif: 'Surat Aktif Kuliah / KTM',
-    fileTranskrip: 'Transkrip Nilai Sementara',
-    fileDtks: 'Surat Keterangan (DTKS / Ijazah)',
-    fileSuratPernyataan: 'Surat Pernyataan',
-    fileMotivationOrEsai: 'Motivation Letter / Esai',
-    selfie: 'Selfie Profil',
-    ktm: 'KTM',
-    pendukung: 'Berkas Pendukung',
-  };
-  return map[key] || key;
+  if (!key) return '-';
+  const clean = String(key).trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+  if (['dtks', 'filedtks', 'kip', 'dtsen', 'kemensos', 'suratdtks'].includes(clean)) return 'Bukti DTKS / DTSEN';
+  if (['ijazah', 'fileijazah', 'ijazahs1', 'ijazahs2', 'ijazahsebelumnya'].includes(clean)) return 'Ijazah & Transkrip Jenjang Sebelumnya';
+  if (['ktm', 'filesurataktif', 'surataktif', 'filektm', 'kartumahasiswa', 'suratketeranganaktif'].includes(clean)) return 'Surat Aktif Kuliah / KTM';
+  if (['ktp', 'filektp', 'kartutandapenduduk'].includes(clean)) return 'KTP';
+  if (['transkrip', 'filetranskrip', 'transkripnilai', 'khs'].includes(clean)) return 'Transkrip Nilai';
+  if (['suratpermohonan', 'filesuratpermohonan', 'permohonan'].includes(clean)) return 'Surat Permohonan';
+  if (['suratpernyataan', 'filesuratpernyataan', 'pernyataan'].includes(clean)) return 'Surat Pernyataan';
+  if (['esai', 'filemotivationoresai', 'motivationletter', 'essay', 'fileesai'].includes(clean)) return 'Motivation Letter / Esai';
+  if (['selfie', 'filepasfoto', 'pasfoto', 'fileselfie', 'foto'].includes(clean)) return 'Pasfoto / Selfie';
+  if (['pendukung', 'filependukung', 'prestasi', 'sertifikat'].includes(clean)) return 'Berkas Pendukung / Sertifikat';
+  return key;
 };
 
 const getOngoingEducation = (detail: any) => {
@@ -337,8 +336,8 @@ export default function PendaftarPage() {
         // Format CSV
         const headers = [
           'No.', 'No. Registrasi', 'Nama Lengkap', 'NIK', 'Jenis Kelamin', 'No. HP',
-          'Email', 'Asal Daerah', 'Jenjang Target', 'Perguruan Tinggi', 'Prodi', 
-          'Semester', 'IPK', 'Status Pendaftaran', 'Tanggal Submit', 
+          'Email', 'Asal Daerah', 'Jenjang Target', 'Perguruan Tinggi', 'Prodi',
+          'Semester', 'IPK', 'Status Pendaftaran', 'Tanggal Submit',
           'Nama Bank', 'Nomor Rekening', 'Nama Pemilik Rekening', 'Catatan'
         ];
 
@@ -389,567 +388,560 @@ export default function PendaftarPage() {
   return (
     <div className="relative">
       <div className="space-y-6 print:hidden">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-900">Data Pendaftar</h2>
-          <p className="text-slate-500">Kelola dan pantau seluruh data pendaftar beasiswa.</p>
-        </div>
-        <button 
-          onClick={() => setShowExportModal(true)} 
-          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors shadow-sm cursor-pointer"
-        >
-          <Download className="w-4 h-4" />
-          Export Data ({pagination?.totalItems || applicants.length})
-        </button>
-      </div>
-
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-        {/* Table Controls */}
-        <div className="p-4 sm:p-6 border-b border-slate-200 flex flex-col sm:flex-row justify-between gap-4">
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-            <input 
-              type="text" 
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Cari nama, No. Registrasi, atau Universitas..." 
-              className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-normal text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-colors"
-            />
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h2 className="text-2xl font-bold text-slate-900">Data Pendaftar</h2>
+            <p className="text-slate-500">Kelola dan pantau seluruh data pendaftar beasiswa.</p>
           </div>
-          <div className="flex gap-2 flex-wrap sm:flex-nowrap">
-            <select 
-              value={jenjangFilter}
-              onChange={(e) => setJenjangFilter(e.target.value)}
-              className="px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-xl text-sm font-semibold hover:bg-slate-50 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">Semua Jenjang</option>
-              <option value="S1/D4">S1 / D4</option>
-              <option value="S2">S2</option>
-              <option value="S3">S3</option>
-            </select>
-            <select 
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-xl text-sm font-semibold hover:bg-slate-50 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">Semua Status</option>
-              <option value="TERKIRIM">Menunggu Verifikasi (TERKIRIM)</option>
-              <option value="PERLU_UNGGAH_ULANG">Perlu Unggah Ulang (KTM hilang)</option>
-              <option value="VERIFIKASI_BERKAS">Proses Verifikasi (VERIFIKASI)</option>
-              <option value="SELEKSI_ADMINISTRASI">Seleksi Administrasi</option>
-              <option value="DITERIMA">Lolos Seleksi (DITERIMA)</option>
-              <option value="DITOLAK">Ditolak (DITOLAK)</option>
-            </select>
-            <button 
-              type="button"
-              onClick={() => { setPage(1); loadData(); }}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-50 border border-blue-200 text-blue-700 rounded-xl text-sm font-semibold hover:bg-blue-100 transition-colors cursor-pointer"
-            >
-              <Filter className="w-4 h-4" />
-              Terapkan
-            </button>
-            {selectedIds.length > 0 && (
-              <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-100 text-blue-800 rounded-xl text-xs font-bold border border-blue-200">
-                <span>{selectedIds.length} dipilih</span>
-                <button
-                  type="button"
-                  onClick={() => setSelectedIds([])}
-                  className="text-blue-600 hover:text-blue-900 ml-1 underline cursor-pointer"
-                >
-                  Reset
-                </button>
-              </div>
-            )}
-          </div>
+          <button
+            onClick={() => setShowExportModal(true)}
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors shadow-sm cursor-pointer"
+          >
+            <Download className="w-4 h-4" />
+            Export Data ({pagination?.totalItems || applicants.length})
+          </button>
         </div>
 
-        {/* Table */}
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-slate-50 text-slate-500 text-sm border-b border-slate-200">
-                <th className="p-4 w-10 text-center">
-                  <input 
-                    type="checkbox" 
-                    checked={applicants.length > 0 && applicants.every(u => selectedIds.includes(u.userId || u.id))}
-                    onChange={toggleSelectAll}
-                    title="Pilih semua di halaman ini"
-                    className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer"
-                  />
-                </th>
-                <th className="p-4 font-semibold whitespace-nowrap">No. Registrasi</th>
-                <th className="p-4 font-semibold whitespace-nowrap">Nama & Prodi</th>
-                <th className="p-4 font-semibold whitespace-nowrap">Universitas</th>
-                <th className="p-4 font-semibold whitespace-nowrap">Jenjang</th>
-                <th className="p-4 font-semibold whitespace-nowrap">IPK</th>
-                <th className="p-4 font-semibold whitespace-nowrap">Tanggal</th>
-                <th className="p-4 font-semibold whitespace-nowrap">Status</th>
-                <th className="p-4 font-semibold text-center whitespace-nowrap">Aksi</th>
-              </tr>
-            </thead>
-            <tbody className="text-sm">
-              {loading ? (
-                <tr>
-                  <td colSpan={9} className="p-8 text-center text-slate-500">
-                    <Loader2 className="w-6 h-6 animate-spin mx-auto text-blue-900 mb-2" />
-                    Memuat data pendaftar...
-                  </td>
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          {/* Table Controls */}
+          <div className="p-4 sm:p-6 border-b border-slate-200 flex flex-col sm:flex-row justify-between gap-4">
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Cari nama, No. Registrasi, atau Universitas..."
+                className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-normal text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-colors"
+              />
+            </div>
+            <div className="flex gap-2 flex-wrap sm:flex-nowrap">
+              <select
+                value={jenjangFilter}
+                onChange={(e) => setJenjangFilter(e.target.value)}
+                className="px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-xl text-sm font-semibold hover:bg-slate-50 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Semua Jenjang</option>
+                <option value="S1/D4">S1 / D4</option>
+                <option value="S2">S2</option>
+                <option value="S3">S3</option>
+              </select>
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-xl text-sm font-semibold hover:bg-slate-50 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Semua Status</option>
+                <option value="TERKIRIM">Menunggu Verifikasi (TERKIRIM)</option>
+                <option value="PERLU_UNGGAH_ULANG">Perlu Unggah Ulang (KTM hilang)</option>
+                <option value="VERIFIKASI_BERKAS">Proses Verifikasi (VERIFIKASI)</option>
+                <option value="SELEKSI_ADMINISTRASI">Seleksi Administrasi</option>
+                <option value="DITERIMA">Lolos Seleksi (DITERIMA)</option>
+                <option value="DITOLAK">Ditolak (DITOLAK)</option>
+              </select>
+              <button
+                type="button"
+                onClick={() => { setPage(1); loadData(); }}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-50 border border-blue-200 text-blue-700 rounded-xl text-sm font-semibold hover:bg-blue-100 transition-colors cursor-pointer"
+              >
+                <Filter className="w-4 h-4" />
+                Terapkan
+              </button>
+              {selectedIds.length > 0 && (
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-100 text-blue-800 rounded-xl text-xs font-bold border border-blue-200">
+                  <span>{selectedIds.length} dipilih</span>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedIds([])}
+                    className="text-blue-600 hover:text-blue-900 ml-1 underline cursor-pointer"
+                  >
+                    Reset
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Table */}
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-50 text-slate-500 text-sm border-b border-slate-200">
+                  <th className="p-4 w-10 text-center">
+                    <input
+                      type="checkbox"
+                      checked={applicants.length > 0 && applicants.every(u => selectedIds.includes(u.userId || u.id))}
+                      onChange={toggleSelectAll}
+                      title="Pilih semua di halaman ini"
+                      className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer"
+                    />
+                  </th>
+                  <th className="p-4 font-semibold whitespace-nowrap">No. Registrasi</th>
+                  <th className="p-4 font-semibold whitespace-nowrap">Nama & Prodi</th>
+                  <th className="p-4 font-semibold whitespace-nowrap">Universitas</th>
+                  <th className="p-4 font-semibold whitespace-nowrap">Jenjang</th>
+                  <th className="p-4 font-semibold whitespace-nowrap">IPK</th>
+                  <th className="p-4 font-semibold whitespace-nowrap">Tanggal</th>
+                  <th className="p-4 font-semibold whitespace-nowrap">Status</th>
+                  <th className="p-4 font-semibold text-center whitespace-nowrap">Aksi</th>
                 </tr>
-              ) : applicants.length === 0 ? (
-                <tr>
-                  <td colSpan={9} className="p-8 text-center text-slate-500">
-                    Tidak ada pendaftar yang sesuai dengan kriteria filter.
-                  </td>
-                </tr>
-              ) : (
-                applicants.map((user, idx) => (
-                  <tr key={idx} className={`border-b border-slate-100 hover:bg-slate-50 transition-colors ${selectedIds.includes(user.userId || user.id) ? 'bg-blue-50/50' : ''}`}>
-                    <td className="p-4 text-center">
-                      <input 
-                        type="checkbox" 
-                        checked={selectedIds.includes(user.userId || user.id)}
-                        onChange={() => toggleSelect(user.userId || user.id)}
-                        className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer"
-                      />
-                    </td>
-                    <td className="p-4 text-slate-600 font-mono text-xs">{user.registrationNo}</td>
-                    <td className="p-4">
-                      <p className="font-bold text-slate-900">{user.namaLengkap}</p>
-                      <p className="text-xs text-slate-500 mt-0.5">{user.prodi && user.prodi !== '-' ? user.prodi : user.email}</p>
-                    </td>
-                    <td className="p-4 text-slate-600 text-xs font-medium truncate max-w-[200px]" title={user.perguruanTinggi || `NIK: ${user.nik}`}>
-                      {user.perguruanTinggi && user.perguruanTinggi !== '-' ? user.perguruanTinggi : `NIK: ${user.nik}`}
-                    </td>
-                    <td className="p-4">
-                      <span className="bg-slate-100 text-slate-700 px-2.5 py-1 rounded-md text-xs font-bold border border-slate-200 whitespace-nowrap">{user.jenjangTarget}</span>
-                    </td>
-                    <td className="p-4 text-slate-900 font-extrabold text-sm">{user.ipk && user.ipk !== '-' ? user.ipk : '-'}</td>
-                    <td className="p-4 text-slate-500 text-xs">
-                      {user.submittedAt ? new Date(user.submittedAt).toLocaleDateString('id-ID') : '-'}
-                    </td>
-                    <td className="p-4">
-                      <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
-                        user.status === 'DITERIMA' ? 'bg-emerald-100 text-emerald-700' :
-                        user.status === 'DITOLAK' ? 'bg-rose-100 text-rose-700' :
-                        user.status === 'PERLU_UNGGAH_ULANG' ? 'bg-rose-100 text-rose-700' :
-                        'bg-amber-100 text-amber-700'
-                      }`}>
-                        {user.status}
-                      </span>
-                    </td>
-                    <td className="p-4 text-center">
-                      <div className="flex items-center justify-center gap-2">
-                        <button 
-                          onClick={() => handleOpenDetail(user)}
-                          className="p-1.5 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors cursor-pointer" 
-                          title="Lihat Detail"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </button>
-                      </div>
+              </thead>
+              <tbody className="text-sm">
+                {loading ? (
+                  <tr>
+                    <td colSpan={9} className="p-8 text-center text-slate-500">
+                      <Loader2 className="w-6 h-6 animate-spin mx-auto text-blue-900 mb-2" />
+                      Memuat data pendaftar...
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Pagination */}
-        <div className="p-4 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-slate-600">
-          <p>Total {pagination?.totalItems || applicants.length} pendaftar (Halaman {pagination?.currentPage || 1} dari {pagination?.totalPages || 1})</p>
-          <div className="flex gap-1">
-            <button
-              disabled={page <= 1}
-              onClick={() => setPage(p => Math.max(1, p - 1))}
-              className="px-3 py-1 border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-50 cursor-pointer"
-            >
-              Sebelumnya
-            </button>
-            <button
-              disabled={page >= (pagination?.totalPages || 1)}
-              onClick={() => setPage(p => p + 1)}
-              className="px-3 py-1 border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-50 cursor-pointer"
-            >
-              Selanjutnya
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Modal Pilihan Export Data */}
-      {showExportModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col border border-slate-100">
-            {/* Header Modal */}
-            <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-gradient-to-r from-blue-50 to-indigo-50">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-sm">
-                  <Download className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold text-slate-900">Export Data Pendaftar</h3>
-                  <p className="text-xs text-slate-500">Unduh data pendaftar beasiswa ke file spreadsheet</p>
-                </div>
-              </div>
-              <button 
-                onClick={() => setShowExportModal(false)}
-                disabled={isExporting}
-                className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-white rounded-lg transition-colors cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Body Modal */}
-            <div className="p-6 space-y-5">
-              {/* Opsi Jangkauan Data */}
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2.5">
-                  1. Pilih Jangkauan Data
-                </label>
-                <div className="space-y-2.5">
-                  {/* Opsi 1: Seluruh Data */}
-                  <label className={`flex items-start gap-3 p-3.5 rounded-xl border cursor-pointer transition-all ${
-                    exportScope === 'all' 
-                      ? 'border-blue-500 bg-blue-50/60 ring-2 ring-blue-500/20' 
-                      : 'border-slate-200 hover:bg-slate-50'
-                  }`}>
-                    <input 
-                      type="radio" 
-                      name="exportScope" 
-                      value="all" 
-                      checked={exportScope === 'all'} 
-                      onChange={() => setExportScope('all')}
-                      className="mt-0.5 text-blue-600 focus:ring-blue-500" 
-                    />
-                    <div className="flex-1 text-sm">
-                      <div className="flex items-center justify-between">
-                        <span className="font-bold text-slate-900">
-                          Seluruh Data ({pagination?.totalItems || applicants.length} Pendaftar)
-                        </span>
-                        <span className="text-[11px] bg-blue-100 text-blue-700 font-semibold px-2 py-0.5 rounded-full">
-                          Direkomendasikan
-                        </span>
-                      </div>
-                      <p className="text-xs text-slate-500 mt-0.5">
-                        Mengunduh <strong>SEMUA</strong> pendaftar sekaligus dalam satu file (bukan per sheet / per halaman).
-                        {jenjangFilter || statusFilter || searchTerm ? ' Mengikuti filter aktif saat ini.' : ''}
-                      </p>
-                    </div>
-                  </label>
-
-                  {/* Opsi 2: Halaman Ini Saja */}
-                  <label className={`flex items-start gap-3 p-3.5 rounded-xl border cursor-pointer transition-all ${
-                    exportScope === 'page' 
-                      ? 'border-blue-500 bg-blue-50/60 ring-2 ring-blue-500/20' 
-                      : 'border-slate-200 hover:bg-slate-50'
-                  }`}>
-                    <input 
-                      type="radio" 
-                      name="exportScope" 
-                      value="page" 
-                      checked={exportScope === 'page'} 
-                      onChange={() => setExportScope('page')}
-                      className="mt-0.5 text-blue-600 focus:ring-blue-500" 
-                    />
-                    <div className="flex-1 text-sm">
-                      <span className="font-semibold text-slate-900">
-                        Halaman Ini Saja ({applicants.length} Pendaftar)
-                      </span>
-                      <p className="text-xs text-slate-500 mt-0.5">
-                        Hanya mengunduh data pendaftar yang sedang tampil di halaman tabel saat ini (Halaman {pagination?.currentPage || 1}).
-                      </p>
-                    </div>
-                  </label>
-
-                  {/* Opsi 3: Data yang Dipilih */}
-                  <label className={`flex items-start gap-3 p-3.5 rounded-xl border transition-all ${
-                    selectedIds.length === 0 ? 'opacity-50 cursor-not-allowed border-slate-200 bg-slate-50' :
-                    exportScope === 'selected' 
-                      ? 'border-blue-500 bg-blue-50/60 ring-2 ring-blue-500/20 cursor-pointer' 
-                      : 'border-slate-200 hover:bg-slate-50 cursor-pointer'
-                  }`}>
-                    <input 
-                      type="radio" 
-                      name="exportScope" 
-                      value="selected" 
-                      disabled={selectedIds.length === 0}
-                      checked={exportScope === 'selected'} 
-                      onChange={() => setExportScope('selected')}
-                      className="mt-0.5 text-blue-600 focus:ring-blue-500" 
-                    />
-                    <div className="flex-1 text-sm">
-                      <div className="flex items-center justify-between">
-                        <span className="font-semibold text-slate-900">
-                          Data yang Dipilih ({selectedIds.length} Pendaftar)
-                        </span>
-                        {selectedIds.length === 0 && (
-                          <span className="text-[10px] text-slate-400 italic">Centang baris tabel dulu</span>
-                        )}
-                      </div>
-                      <p className="text-xs text-slate-500 mt-0.5">
-                        Hanya mengekspor baris pendaftar yang telah dicentang di tabel.
-                      </p>
-                    </div>
-                  </label>
-                </div>
-              </div>
-
-              {/* Opsi Format File */}
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2.5">
-                  2. Pilih Format File
-                </label>
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setExportFormat('xlsx')}
-                    className={`flex items-center gap-3 p-3 rounded-xl border text-left transition-all cursor-pointer ${
-                      exportFormat === 'xlsx'
-                        ? 'border-emerald-500 bg-emerald-50/60 ring-2 ring-emerald-500/20 text-emerald-950 font-bold'
-                        : 'border-slate-200 hover:bg-slate-50 text-slate-700'
-                    }`}
-                  >
-                    <div className="w-9 h-9 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-xs">
-                      XLSX
-                    </div>
-                    <div>
-                      <p className="text-sm font-bold">Microsoft Excel</p>
-                      <p className="text-[11px] text-slate-500 font-normal">.xlsx (Format Resmi)</p>
-                    </div>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setExportFormat('csv')}
-                    className={`flex items-center gap-3 p-3 rounded-xl border text-left transition-all cursor-pointer ${
-                      exportFormat === 'csv'
-                        ? 'border-blue-500 bg-blue-50/60 ring-2 ring-blue-500/20 text-blue-950 font-bold'
-                        : 'border-slate-200 hover:bg-slate-50 text-slate-700'
-                    }`}
-                  >
-                    <div className="w-9 h-9 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-xs">
-                      CSV
-                    </div>
-                    <div>
-                      <p className="text-sm font-bold">File CSV</p>
-                      <p className="text-[11px] text-slate-500 font-normal">.csv (UTF-8 Excel)</p>
-                    </div>
-                  </button>
-                </div>
-              </div>
-
-              {/* Info Tambahan */}
-              <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-xs text-amber-900 flex items-start gap-2">
-                <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                <span>
-                  Nomor NIK (16 digit) dan Nomor Rekening otomatis diformat sebagai teks agar tidak rusak menjadi format ilmiah (scientific <code>7.40E+15</code>) di Microsoft Excel.
-                </span>
-              </div>
-            </div>
-
-            {/* Footer Modal */}
-            <div className="p-4 border-t border-slate-100 bg-slate-50 flex items-center justify-end gap-3">
-              <button
-                type="button"
-                disabled={isExporting}
-                onClick={() => setShowExportModal(false)}
-                className="px-4 py-2 border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
-              >
-                Batal
-              </button>
-              <button
-                type="button"
-                disabled={isExporting}
-                onClick={handlePerformExport}
-                className="flex items-center gap-2 px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold transition-colors shadow-sm disabled:opacity-50 cursor-pointer"
-              >
-                {isExporting ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Menyiapkan Data...
-                  </>
+                ) : applicants.length === 0 ? (
+                  <tr>
+                    <td colSpan={9} className="p-8 text-center text-slate-500">
+                      Tidak ada pendaftar yang sesuai dengan kriteria filter.
+                    </td>
+                  </tr>
                 ) : (
-                  <>
-                    <Download className="w-4 h-4" />
-                    Unduh File {exportFormat.toUpperCase()}
-                  </>
+                  applicants.map((user, idx) => (
+                    <tr key={idx} className={`border-b border-slate-100 hover:bg-slate-50 transition-colors ${selectedIds.includes(user.userId || user.id) ? 'bg-blue-50/50' : ''}`}>
+                      <td className="p-4 text-center">
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.includes(user.userId || user.id)}
+                          onChange={() => toggleSelect(user.userId || user.id)}
+                          className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer"
+                        />
+                      </td>
+                      <td className="p-4 text-slate-600 font-mono text-xs">{user.registrationNo}</td>
+                      <td className="p-4">
+                        <p className="font-bold text-slate-900">{user.namaLengkap}</p>
+                        <p className="text-xs text-slate-500 mt-0.5">{user.prodi && user.prodi !== '-' ? user.prodi : user.email}</p>
+                      </td>
+                      <td className="p-4 text-slate-600 text-xs font-medium truncate max-w-[200px]" title={user.perguruanTinggi || `NIK: ${user.nik}`}>
+                        {user.perguruanTinggi && user.perguruanTinggi !== '-' ? user.perguruanTinggi : `NIK: ${user.nik}`}
+                      </td>
+                      <td className="p-4">
+                        <span className="bg-slate-100 text-slate-700 px-2.5 py-1 rounded-md text-xs font-bold border border-slate-200 whitespace-nowrap">{user.jenjangTarget}</span>
+                      </td>
+                      <td className="p-4 text-slate-900 font-extrabold text-sm">{user.ipk && user.ipk !== '-' ? user.ipk : '-'}</td>
+                      <td className="p-4 text-slate-500 text-xs">
+                        {user.submittedAt ? new Date(user.submittedAt).toLocaleDateString('id-ID') : '-'}
+                      </td>
+                      <td className="p-4">
+                        <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${user.status === 'DITERIMA' ? 'bg-emerald-100 text-emerald-700' :
+                            user.status === 'DITOLAK' ? 'bg-rose-100 text-rose-700' :
+                              user.status === 'PERLU_UNGGAH_ULANG' ? 'bg-rose-100 text-rose-700' :
+                                'bg-amber-100 text-amber-700'
+                          }`}>
+                          {user.status}
+                        </span>
+                      </td>
+                      <td className="p-4 text-center">
+                        <div className="flex items-center justify-center gap-2">
+                          <button
+                            onClick={() => handleOpenDetail(user)}
+                            className="p-1.5 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors cursor-pointer"
+                            title="Lihat Detail"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
                 )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pagination */}
+          <div className="p-4 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-slate-600">
+            <p>Total {pagination?.totalItems || applicants.length} pendaftar (Halaman {pagination?.currentPage || 1} dari {pagination?.totalPages || 1})</p>
+            <div className="flex gap-1">
+              <button
+                disabled={page <= 1}
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+                className="px-3 py-1 border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-50 cursor-pointer"
+              >
+                Sebelumnya
+              </button>
+              <button
+                disabled={page >= (pagination?.totalPages || 1)}
+                onClick={() => setPage(p => p + 1)}
+                className="px-3 py-1 border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-50 cursor-pointer"
+              >
+                Selanjutnya
               </button>
             </div>
           </div>
         </div>
-      )}
 
-      {/* Modal Detail Berkas Pendaftar */}
-      {selectedApplicant && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
-            {/* Modal Header */}
-            <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-              <div>
-                <h3 className="text-xl font-bold text-slate-900">Detail Pendaftar</h3>
-                <p className="text-sm text-slate-500 mt-1">No. Registrasi: {selectedApplicant.registrationNo}</p>
-              </div>
-              <button 
-                onClick={() => { setSelectedApplicant(null); setApplicantDetail(null); }}
-                className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-200 rounded-lg transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Modal Body */}
-            <div className="p-6 overflow-y-auto flex-1 space-y-6">
-              {loadingDetail ? (
-                <div className="p-12 text-center text-slate-500">
-                  <Loader2 className="w-8 h-8 animate-spin mx-auto text-blue-900 mb-2" />
-                  Mengambil data pendaftar...
+        {/* Modal Pilihan Export Data */}
+        {showExportModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col border border-slate-100">
+              {/* Header Modal */}
+              <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-gradient-to-r from-blue-50 to-indigo-50">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-sm">
+                    <Download className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-slate-900">Export Data Pendaftar</h3>
+                    <p className="text-xs text-slate-500">Unduh data pendaftar beasiswa ke file spreadsheet</p>
+                  </div>
                 </div>
-              ) : applicantDetail ? (
-                <>
-                  {/* Applicant Info */}
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 bg-blue-50/50 rounded-xl border border-blue-100">
-                    <div className="flex-1">
-                      <h4 className="font-bold text-slate-900 text-lg">{applicantDetail.user?.namaLengkap}</h4>
-                      <p className="text-sm text-slate-600">NIK: {applicantDetail.user?.nik} • Email: {applicantDetail.user?.email}</p>
-                      <p className="text-xs text-slate-500 mt-1">Jenjang Target: <strong>{applicantDetail.user?.jenjangTarget}</strong></p>
-                    </div>
-                    <div className="text-right">
-                      <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                        selectedApplicant.status === 'DITERIMA' ? 'bg-emerald-100 text-emerald-700' :
-                        selectedApplicant.status === 'DITOLAK' ? 'bg-rose-100 text-rose-700' :
-                        'bg-amber-100 text-amber-700'
+                <button
+                  onClick={() => setShowExportModal(false)}
+                  disabled={isExporting}
+                  className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-white rounded-lg transition-colors cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Body Modal */}
+              <div className="p-6 space-y-5">
+                {/* Opsi Jangkauan Data */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2.5">
+                    1. Pilih Jangkauan Data
+                  </label>
+                  <div className="space-y-2.5">
+                    {/* Opsi 1: Seluruh Data */}
+                    <label className={`flex items-start gap-3 p-3.5 rounded-xl border cursor-pointer transition-all ${exportScope === 'all'
+                        ? 'border-blue-500 bg-blue-50/60 ring-2 ring-blue-500/20'
+                        : 'border-slate-200 hover:bg-slate-50'
                       }`}>
-                        {selectedApplicant.status}
-                      </span>
-                    </div>
-                  </div>
+                      <input
+                        type="radio"
+                        name="exportScope"
+                        value="all"
+                        checked={exportScope === 'all'}
+                        onChange={() => setExportScope('all')}
+                        className="mt-0.5 text-blue-600 focus:ring-blue-500"
+                      />
+                      <div className="flex-1 text-sm">
+                        <div className="flex items-center justify-between">
+                          <span className="font-bold text-slate-900">
+                            Seluruh Data ({pagination?.totalItems || applicants.length} Pendaftar)
+                          </span>
+                          <span className="text-[11px] bg-blue-100 text-blue-700 font-semibold px-2 py-0.5 rounded-full">
+                            Direkomendasikan
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-500 mt-0.5">
+                          Mengunduh <strong>SEMUA</strong> pendaftar sekaligus dalam satu file (bukan per sheet / per halaman).
+                          {jenjangFilter || statusFilter || searchTerm ? ' Mengikuti filter aktif saat ini.' : ''}
+                        </p>
+                      </div>
+                    </label>
 
-                  {/* Biodata Summary */}
-                  {applicantDetail.profile && (
-                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs space-y-1 text-slate-700">
-                      <p>• Tempat/Tanggal Lahir: <strong>{applicantDetail.profile.tempatLahir || '-'}, {applicantDetail.profile.tanggalLahir || '-'}</strong></p>
-                      <p>• Gender: <strong>{applicantDetail.profile.gender || '-'}</strong> | No. HP: <strong>{applicantDetail.profile.noHp || '-'}</strong></p>
-                      <p>• Alamat Domisili: <strong>{applicantDetail.profile.alamatDomisili || '-'}</strong></p>
-                    </div>
+                    {/* Opsi 2: Halaman Ini Saja */}
+                    <label className={`flex items-start gap-3 p-3.5 rounded-xl border cursor-pointer transition-all ${exportScope === 'page'
+                        ? 'border-blue-500 bg-blue-50/60 ring-2 ring-blue-500/20'
+                        : 'border-slate-200 hover:bg-slate-50'
+                      }`}>
+                      <input
+                        type="radio"
+                        name="exportScope"
+                        value="page"
+                        checked={exportScope === 'page'}
+                        onChange={() => setExportScope('page')}
+                        className="mt-0.5 text-blue-600 focus:ring-blue-500"
+                      />
+                      <div className="flex-1 text-sm">
+                        <span className="font-semibold text-slate-900">
+                          Halaman Ini Saja ({applicants.length} Pendaftar)
+                        </span>
+                        <p className="text-xs text-slate-500 mt-0.5">
+                          Hanya mengunduh data pendaftar yang sedang tampil di halaman tabel saat ini (Halaman {pagination?.currentPage || 1}).
+                        </p>
+                      </div>
+                    </label>
+
+                    {/* Opsi 3: Data yang Dipilih */}
+                    <label className={`flex items-start gap-3 p-3.5 rounded-xl border transition-all ${selectedIds.length === 0 ? 'opacity-50 cursor-not-allowed border-slate-200 bg-slate-50' :
+                        exportScope === 'selected'
+                          ? 'border-blue-500 bg-blue-50/60 ring-2 ring-blue-500/20 cursor-pointer'
+                          : 'border-slate-200 hover:bg-slate-50 cursor-pointer'
+                      }`}>
+                      <input
+                        type="radio"
+                        name="exportScope"
+                        value="selected"
+                        disabled={selectedIds.length === 0}
+                        checked={exportScope === 'selected'}
+                        onChange={() => setExportScope('selected')}
+                        className="mt-0.5 text-blue-600 focus:ring-blue-500"
+                      />
+                      <div className="flex-1 text-sm">
+                        <div className="flex items-center justify-between">
+                          <span className="font-semibold text-slate-900">
+                            Data yang Dipilih ({selectedIds.length} Pendaftar)
+                          </span>
+                          {selectedIds.length === 0 && (
+                            <span className="text-[10px] text-slate-400 italic">Centang baris tabel dulu</span>
+                          )}
+                        </div>
+                        <p className="text-xs text-slate-500 mt-0.5">
+                          Hanya mengekspor baris pendaftar yang telah dicentang di tabel.
+                        </p>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+
+                {/* Opsi Format File */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2.5">
+                    2. Pilih Format File
+                  </label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setExportFormat('xlsx')}
+                      className={`flex items-center gap-3 p-3 rounded-xl border text-left transition-all cursor-pointer ${exportFormat === 'xlsx'
+                          ? 'border-emerald-500 bg-emerald-50/60 ring-2 ring-emerald-500/20 text-emerald-950 font-bold'
+                          : 'border-slate-200 hover:bg-slate-50 text-slate-700'
+                        }`}
+                    >
+                      <div className="w-9 h-9 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-xs">
+                        XLSX
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold">Microsoft Excel</p>
+                        <p className="text-[11px] text-slate-500 font-normal">.xlsx (Format Resmi)</p>
+                      </div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setExportFormat('csv')}
+                      className={`flex items-center gap-3 p-3 rounded-xl border text-left transition-all cursor-pointer ${exportFormat === 'csv'
+                          ? 'border-blue-500 bg-blue-50/60 ring-2 ring-blue-500/20 text-blue-950 font-bold'
+                          : 'border-slate-200 hover:bg-slate-50 text-slate-700'
+                        }`}
+                    >
+                      <div className="w-9 h-9 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-xs">
+                        CSV
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold">File CSV</p>
+                        <p className="text-[11px] text-slate-500 font-normal">.csv (UTF-8 Excel)</p>
+                      </div>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Info Tambahan */}
+                <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-xs text-amber-900 flex items-start gap-2">
+                  <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                  <span>
+                    Nomor NIK (16 digit) dan Nomor Rekening otomatis diformat sebagai teks agar tidak rusak menjadi format ilmiah (scientific <code>7.40E+15</code>) di Microsoft Excel.
+                  </span>
+                </div>
+              </div>
+
+              {/* Footer Modal */}
+              <div className="p-4 border-t border-slate-100 bg-slate-50 flex items-center justify-end gap-3">
+                <button
+                  type="button"
+                  disabled={isExporting}
+                  onClick={() => setShowExportModal(false)}
+                  className="px-4 py-2 border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+                >
+                  Batal
+                </button>
+                <button
+                  type="button"
+                  disabled={isExporting}
+                  onClick={handlePerformExport}
+                  className="flex items-center gap-2 px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold transition-colors shadow-sm disabled:opacity-50 cursor-pointer"
+                >
+                  {isExporting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Menyiapkan Data...
+                    </>
+                  ) : (
+                    <>
+                      <Download className="w-4 h-4" />
+                      Unduh File {exportFormat.toUpperCase()}
+                    </>
                   )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
-                  {/* Bank Account Info Card (Penyaluran Beasiswa 50%) */}
-                  <div className="bg-blue-50/80 p-4 rounded-xl border border-blue-200 text-xs space-y-1.5 text-slate-800">
-                    <h5 className="font-extrabold text-blue-900 text-xs uppercase tracking-wider flex items-center gap-1.5">
-                      💳 Rekening Bank Penerima (Penyaluran 50% Tahap 1)
-                    </h5>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1 font-medium">
-                      <p>• Bank: <strong className="text-slate-900">{applicantDetail.profile?.namaBank || '-'}</strong></p>
-                      <p>• No. Rekening: <strong className="font-mono text-slate-900">{applicantDetail.profile?.noRekening || '-'}</strong></p>
-                      <p>• Atas Nama: <strong className="text-slate-900">{applicantDetail.profile?.namaRekening || '-'}</strong></p>
-                    </div>
+        {/* Modal Detail Berkas Pendaftar */}
+        {selectedApplicant && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+            <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
+              {/* Modal Header */}
+              <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                <div>
+                  <h3 className="text-xl font-bold text-slate-900">Detail Pendaftar</h3>
+                  <p className="text-sm text-slate-500 mt-1">No. Registrasi: {selectedApplicant.registrationNo}</p>
+                </div>
+                <button
+                  onClick={() => { setSelectedApplicant(null); setApplicantDetail(null); }}
+                  className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-200 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Modal Body */}
+              <div className="p-6 overflow-y-auto flex-1 space-y-6">
+                {loadingDetail ? (
+                  <div className="p-12 text-center text-slate-500">
+                    <Loader2 className="w-8 h-8 animate-spin mx-auto text-blue-900 mb-2" />
+                    Mengambil data pendaftar...
                   </div>
-
-                  {/* Education History */}
-                  {applicantDetail.education && applicantDetail.education.length > 0 && (
-                    <div>
-                      <h4 className="font-bold text-slate-900 mb-3 text-sm">Riwayat Pendidikan</h4>
-                      <div className="space-y-2">
-                        {applicantDetail.education.map((edu: any, idx: number) => (
-                          <div key={idx} className="bg-slate-50 p-3 rounded-lg border border-slate-200 text-xs text-slate-700">
-                            <p className="font-semibold text-slate-900">{edu.tingkat} - {edu.institusi}</p>
-                            {edu.jurusan && <p>Jurusan: {edu.jurusan}</p>}
-                            <p>Tahun: {edu.tahunMulai || '-'} s/d {edu.tahunLulus || 'Sekarang'}</p>
-                          </div>
-                        ))}
+                ) : applicantDetail ? (
+                  <>
+                    {/* Applicant Info */}
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 bg-blue-50/50 rounded-xl border border-blue-100">
+                      <div className="flex-1">
+                        <h4 className="font-bold text-slate-900 text-lg">{applicantDetail.user?.namaLengkap}</h4>
+                        <p className="text-sm text-slate-600">NIK: {applicantDetail.user?.nik} • Email: {applicantDetail.user?.email}</p>
+                        <p className="text-xs text-slate-500 mt-1">Jenjang Target: <strong>{applicantDetail.user?.jenjangTarget}</strong></p>
+                      </div>
+                      <div className="text-right">
+                        <span className={`px-3 py-1 rounded-full text-xs font-bold ${selectedApplicant.status === 'DITERIMA' ? 'bg-emerald-100 text-emerald-700' :
+                            selectedApplicant.status === 'DITOLAK' ? 'bg-rose-100 text-rose-700' :
+                              'bg-amber-100 text-amber-700'
+                          }`}>
+                          {selectedApplicant.status}
+                        </span>
                       </div>
                     </div>
-                  )}
 
-                  {/* Documents List */}
-                  <div>
-                    <h4 className="font-bold text-slate-900 mb-3 text-sm">Berkas Unggahan</h4>
-                    {applicantDetail.documents && applicantDetail.documents.length > 0 ? (
-                      <div className="space-y-2">
-                        {(() => {
-                          const hasSanggahanNote = applicantDetail.application?.notes?.toLowerCase().includes('sanggah') || applicantDetail.application?.status === 'DITOLAK';
-                          const hasMultipleDocs = applicantDetail.documents.some((d: any) => 
-                            applicantDetail.documents.filter((x: any) => (x.docType || '').toLowerCase() === (d.docType || '').toLowerCase()).length > 1
-                          );
-                          const isAppeal = hasSanggahanNote || hasMultipleDocs;
+                    {/* Biodata Summary */}
+                    {applicantDetail.profile && (
+                      <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs space-y-1 text-slate-700">
+                        <p>• Tempat/Tanggal Lahir: <strong>{applicantDetail.profile.tempatLahir || '-'}, {applicantDetail.profile.tanggalLahir || '-'}</strong></p>
+                        <p>• Gender: <strong>{applicantDetail.profile.gender || '-'}</strong> | No. HP: <strong>{applicantDetail.profile.noHp || '-'}</strong></p>
+                        <p>• Alamat Domisili: <strong>{applicantDetail.profile.alamatDomisili || '-'}</strong></p>
+                      </div>
+                    )}
 
-                          let docsToRender = applicantDetail.documents;
-                          if (!isAppeal) {
-                            const latestDocsMap = new Map();
-                            applicantDetail.documents.forEach((d: any) => {
-                              const key = (d.docType || '').toLowerCase();
-                              latestDocsMap.set(key, d);
-                            });
-                            docsToRender = Array.from(latestDocsMap.values());
-                          }
+                    {/* Bank Account Info Card (Penyaluran Beasiswa 50%) */}
+                    <div className="bg-blue-50/80 p-4 rounded-xl border border-blue-200 text-xs space-y-1.5 text-slate-800">
+                      <h5 className="font-extrabold text-blue-900 text-xs uppercase tracking-wider flex items-center gap-1.5">
+                        💳 Rekening Bank Penerima (Penyaluran 50% Tahap 1)
+                      </h5>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1 font-medium">
+                        <p>• Bank: <strong className="text-slate-900">{applicantDetail.profile?.namaBank || '-'}</strong></p>
+                        <p>• No. Rekening: <strong className="font-mono text-slate-900">{applicantDetail.profile?.noRekening || '-'}</strong></p>
+                        <p>• Atas Nama: <strong className="text-slate-900">{applicantDetail.profile?.namaRekening || '-'}</strong></p>
+                      </div>
+                    </div>
 
-                          return docsToRender.map((doc: any, docIdx: number) => {
-                            const sameTypeDocs = applicantDetail.documents.filter((d: any) => (d.docType || '').toLowerCase() === (doc.docType || '').toLowerCase());
-                            const sameTypeIndex = sameTypeDocs.findIndex((d: any) => d.id === doc.id);
-                            const isMultiple = sameTypeDocs.length > 1;
-                            const isLatest = sameTypeIndex === sameTypeDocs.length - 1;
+                    {/* Education History */}
+                    {applicantDetail.education && applicantDetail.education.length > 0 && (
+                      <div>
+                        <h4 className="font-bold text-slate-900 mb-3 text-sm">Riwayat Pendidikan</h4>
+                        <div className="space-y-2">
+                          {applicantDetail.education.map((edu: any, idx: number) => (
+                            <div key={idx} className="bg-slate-50 p-3 rounded-lg border border-slate-200 text-xs text-slate-700">
+                              <p className="font-semibold text-slate-900">{edu.tingkat} - {edu.institusi}</p>
+                              {edu.jurusan && <p>Jurusan: {edu.jurusan}</p>}
+                              <p>Tahun: {edu.tahunMulai || '-'} s/d {edu.tahunLulus || 'Sekarang'}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
 
-                            return (
-                              <div key={docIdx} className={`flex items-center justify-between p-3 rounded-lg border transition-colors ${isMultiple && isLatest ? 'bg-amber-50/70 border-amber-300' : 'bg-white border-slate-200 hover:bg-slate-50'}`}>
-                                <div className="flex items-center gap-2">
-                                  <FileText className={`w-4 h-4 ${isMultiple && isLatest ? 'text-amber-600' : 'text-blue-500'}`} />
-                                  <div>
-                                    <div className="flex items-center gap-1.5 flex-wrap">
-                                      <p className="font-medium text-slate-800 text-xs uppercase">{getDocTitle(doc.docType)}</p>
-                                      {isMultiple && (
-                                        <span className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded border ${isLatest ? 'bg-amber-100 text-amber-900 border-amber-300' : 'bg-slate-100 text-slate-600 border-slate-200'}`}>
-                                          {isLatest ? '🆕 Berkas Sanggahan Baru' : `📁 Berkas Lama (#${sameTypeIndex + 1})`}
-                                        </span>
-                                      )}
+                    {/* Documents List */}
+                    <div>
+                      <h4 className="font-bold text-slate-900 mb-3 text-sm">Berkas Unggahan</h4>
+                      {applicantDetail.documents && applicantDetail.documents.length > 0 ? (
+                        <div className="space-y-2">
+                          {(() => {
+                            const hasSanggahanNote = applicantDetail.application?.notes?.toLowerCase().includes('sanggah') || applicantDetail.application?.status === 'DITOLAK';
+                            const hasMultipleDocs = applicantDetail.documents.some((d: any) =>
+                              applicantDetail.documents.filter((x: any) => (x.docType || '').toLowerCase() === (d.docType || '').toLowerCase()).length > 1
+                            );
+                            const isAppeal = hasSanggahanNote || hasMultipleDocs;
+
+                            let docsToRender = applicantDetail.documents;
+                            if (!isAppeal) {
+                              const latestDocsMap = new Map();
+                              applicantDetail.documents.forEach((d: any) => {
+                                const key = (d.docType || '').toLowerCase();
+                                latestDocsMap.set(key, d);
+                              });
+                              docsToRender = Array.from(latestDocsMap.values());
+                            }
+
+                            return docsToRender.map((doc: any, docIdx: number) => {
+                              const sameTypeDocs = applicantDetail.documents.filter((d: any) => (d.docType || '').toLowerCase() === (doc.docType || '').toLowerCase());
+                              const sameTypeIndex = sameTypeDocs.findIndex((d: any) => d.id === doc.id);
+                              const isMultiple = sameTypeDocs.length > 1;
+                              const isLatest = sameTypeIndex === sameTypeDocs.length - 1;
+
+                              return (
+                                <div key={docIdx} className={`flex items-center justify-between p-3 rounded-lg border transition-colors ${isMultiple && isLatest ? 'bg-amber-50/70 border-amber-300' : 'bg-white border-slate-200 hover:bg-slate-50'}`}>
+                                  <div className="flex items-center gap-2">
+                                    <FileText className={`w-4 h-4 ${isMultiple && isLatest ? 'text-amber-600' : 'text-blue-500'}`} />
+                                    <div>
+                                      <div className="flex items-center gap-1.5 flex-wrap">
+                                        <p className="font-medium text-slate-800 text-xs uppercase">{getDocTitle(doc.docType)}</p>
+                                        {isMultiple && (
+                                          <span className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded border ${isLatest ? 'bg-amber-100 text-amber-900 border-amber-300' : 'bg-slate-100 text-slate-600 border-slate-200'}`}>
+                                            {isLatest ? '🆕 Berkas Sanggahan Baru' : `📁 Berkas Lama (#${sameTypeIndex + 1})`}
+                                          </span>
+                                        )}
+                                      </div>
+                                      <p className="text-[10px] text-slate-500">{doc.originalName}</p>
                                     </div>
-                                    <p className="text-[10px] text-slate-500">{doc.originalName}</p>
+                                  </div>
+                                  <div className="flex items-center gap-3">
+                                    <span className="text-[10px] bg-slate-100 px-2 py-0.5 rounded text-slate-500 font-mono">Terverifikasi</span>
+                                    <button
+                                      onClick={() => handleViewDocument(applicantDetail.user?.id || selectedApplicant?.id, doc.id)}
+                                      className="px-2 py-1 text-[10px] font-bold bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors flex items-center gap-1"
+                                    >
+                                      <ExternalLink className="w-3 h-3" /> Lihat
+                                    </button>
                                   </div>
                                 </div>
-                                <div className="flex items-center gap-3">
-                                  <span className="text-[10px] bg-slate-100 px-2 py-0.5 rounded text-slate-500 font-mono">Terverifikasi</span>
-                                  <button 
-                                    onClick={() => handleViewDocument(applicantDetail.user?.id || selectedApplicant?.id, doc.id)}
-                                    className="px-2 py-1 text-[10px] font-bold bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors flex items-center gap-1"
-                                  >
-                                    <ExternalLink className="w-3 h-3" /> Lihat
-                                  </button>
-                                </div>
-                              </div>
-                            );
-                          });
-                        })()}
-                      </div>
-                    ) : (
-                      <p className="text-xs text-slate-400 italic p-3 bg-slate-50 rounded-lg border border-dashed border-slate-200 text-center">
-                        Belum ada dokumen yang diunggah.
-                      </p>
-                    )}
-                  </div>
-                </>
-              ) : null}
-            </div>
+                              );
+                            });
+                          })()}
+                        </div>
+                      ) : (
+                        <p className="text-xs text-slate-400 italic p-3 bg-slate-50 rounded-lg border border-dashed border-slate-200 text-center">
+                          Belum ada dokumen yang diunggah.
+                        </p>
+                      )}
+                    </div>
+                  </>
+                ) : null}
+              </div>
 
-            {/* Modal Footer */}
-            <div className="p-5 border-t border-slate-100 bg-slate-50 flex justify-end gap-3">
-              <button 
-                onClick={() => window.print()}
-                className="px-5 py-2.5 bg-slate-800 text-white font-normal rounded-xl hover:bg-slate-900 transition-colors flex items-center gap-2"
-              >
-                <Printer className="w-4 h-4" /> Cetak Formulir
-              </button>
-              <button 
-                onClick={() => { setSelectedApplicant(null); setApplicantDetail(null); }}
-                className="px-5 py-2.5 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 transition-colors"
-              >
-                Tutup
-              </button>
+              {/* Modal Footer */}
+              <div className="p-5 border-t border-slate-100 bg-slate-50 flex justify-end gap-3">
+                <button
+                  onClick={() => window.print()}
+                  className="px-5 py-2.5 bg-slate-800 text-white font-normal rounded-xl hover:bg-slate-900 transition-colors flex items-center gap-2"
+                >
+                  <Printer className="w-4 h-4" /> Cetak Formulir
+                </button>
+                <button
+                  onClick={() => { setSelectedApplicant(null); setApplicantDetail(null); }}
+                  className="px-5 py-2.5 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 transition-colors"
+                >
+                  Tutup
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
       </div>
 
       {/* Printable CV - Only visible during print */}
@@ -959,7 +951,7 @@ export default function PendaftarPage() {
             <h1 className="text-2xl font-black uppercase tracking-wider mb-2">Formulir Pendaftaran Beasiswa Sultra Cerdas 2026</h1>
             <p className="text-lg">Nomor Registrasi: <span className="font-bold font-mono px-3 py-1 bg-gray-100 border border-black inline-block ml-2">{applicantDetail.application?.registrationNo || '-'}</span></p>
           </div>
-          
+
           <div className="space-y-6 text-sm">
             <section>
               <h2 className="font-bold text-lg border-b-2 border-black mb-3 uppercase bg-gray-100 px-2 py-1">1. Data Diri & Kependudukan</h2>
@@ -977,7 +969,7 @@ export default function PendaftarPage() {
                 </tbody>
               </table>
             </section>
-            
+
             <section>
               <h2 className="font-bold text-lg border-b-2 border-black mb-3 uppercase bg-gray-100 px-2 py-1">2. Data Akademik</h2>
               <table className="w-full text-left border-collapse">
@@ -1025,7 +1017,7 @@ export default function PendaftarPage() {
             <section className="mt-8 p-4 border-2 border-black text-xs text-justify">
               <p><strong>PERNYATAAN:</strong> Saya yang bertanda tangan di bawah ini menyatakan dengan sesungguhnya bahwa seluruh data dan dokumen yang terlampir pada pendaftaran ini adalah <strong>BENAR, SAH, dan DAPAT DIPERTANGGUNGJAWABKAN</strong>. Apabila di kemudian hari terbukti memberikan data fiktif atau menerima pendanaan ganda (double funding), saya bersedia menerima sanksi pembatalan status penerima beasiswa dan wajib mengembalikan seluruh dana beasiswa yang telah diterima ke Kas Daerah Pemerintah Provinsi Sulawesi Tenggara.</p>
             </section>
-            
+
             <div className="mt-12 flex justify-end">
               <div className="text-center w-64">
                 <p>Pendaftar Beasiswa,</p>

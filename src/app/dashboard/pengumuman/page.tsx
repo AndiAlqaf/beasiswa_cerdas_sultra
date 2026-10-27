@@ -141,19 +141,19 @@ export default function PengumumanPage() {
           <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
             <div className="space-y-3 max-w-3xl">
               <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-extrabold tracking-wider uppercase border border-emerald-400/30">
-                <Award className="w-4 h-4 text-emerald-300" />{' '}
+                <CheckCircle2 className="w-4 h-4 text-emerald-300" />{' '}
                 {isPenetapanPeriodOpen
-                  ? 'RESMI DITETAPKAN (SK GUBERNUR)'
+                  ? 'RESMI DITETAPKAN (SK GUBERNUR - TAHAP 06)'
                   : isPengumumanSanggahPeriodOpen
-                  ? 'HASIL SANGGAH: ANDA DINYATAKAN LOLOS'
-                  : 'SELAMAT! ANDA DINYATAKAN LOLOS SELEKSI'}
+                  ? 'HASIL SANGGAH: BERKAS TERVERIFIKASI'
+                  : 'TAHAP 03: BERKAS TERVERIFIKASI'}
               </div>
               <h1 className="text-2xl sm:text-4xl font-black tracking-tight text-white">
                 {isPenetapanPeriodOpen
                   ? 'Penerima Resmi Beasiswa Sultra Cerdas 2026'
                   : isPengumumanSanggahPeriodOpen
-                  ? 'Kelulusan Hasil Evaluasi Sanggahan'
-                  : 'Penerima Beasiswa Sultra Cerdas 2026'}
+                  ? 'Hasil Evaluasi Sanggahan: Berkas Terverifikasi'
+                  : 'Berkas Terverifikasi'}
               </h1>
               <p className="text-blue-100 text-xs sm:text-sm leading-relaxed font-light">
                 Nomor Registrasi:{' '}
@@ -162,10 +162,10 @@ export default function PengumumanPage() {
                 </strong>
                 .{' '}
                 {isPenetapanPeriodOpen
-                  ? 'Nama Anda telah tercantum dalam SK Gubernur sebagai penerima sah. Silakan lengkapi nomor rekening bank Anda di Beranda Dashboard untuk pencairan Termin 1.'
+                  ? 'Selamat! Nama Anda telah resmi tercantum dalam SK Gubernur sebagai penerima sah Beasiswa Sultra Cerdas 2026. Silakan lengkapi nomor rekening bank Anda di Beranda Dashboard untuk pencairan Termin 1.'
                   : isPengumumanSanggahPeriodOpen
-                  ? 'Sanggahan Anda telah disetujui oleh tim seleksi. Penetapan resmi SK Gubernur dijadwalkan pada 16 - 17 November 2026.'
-                  : 'Berkas dan kualifikasi Anda telah dinyatakan lengkap dan memenuhi seluruh kriteria kelulusan.'}
+                  ? 'Sanggahan Anda telah ditinjau dan berkas dinyatakan terverifikasi. Pengumuman penetapan penerima beasiswa resmi (SK Gubernur) akan diumumkan pada 16 - 17 November 2026.'
+                  : 'Berkas pendaftaran Anda telah selesai diverifikasi oleh tim penilai. Pengumuman penetapan penerima beasiswa resmi (SK Gubernur) akan diumumkan pada 16 - 17 November 2026.'}
               </p>
             </div>
             <div className="shrink-0 flex flex-col sm:flex-row gap-3">
@@ -177,12 +177,14 @@ export default function PengumumanPage() {
                   💳 Input Norek Bank
                 </Link>
               )}
-              <button
-                onClick={() => setShowSkModal(true)}
-                className="px-6 py-3.5 bg-emerald-700 hover:bg-emerald-800 text-white font-extrabold text-xs sm:text-sm rounded-2xl shadow-sm transition-all flex items-center justify-center gap-2 border border-emerald-600"
-              >
-                <Printer className="w-4 h-4" /> Cetak SK &amp; Bukti Lolos (PDF)
-              </button>
+              {isPenetapanPeriodOpen && (
+                <button
+                  onClick={() => setShowSkModal(true)}
+                  className="px-6 py-3.5 bg-emerald-700 hover:bg-emerald-800 text-white font-extrabold text-xs sm:text-sm rounded-2xl shadow-sm transition-all flex items-center justify-center gap-2 border border-emerald-600"
+                >
+                  <Printer className="w-4 h-4" /> Cetak SK &amp; Bukti Lolos (PDF)
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -289,7 +291,7 @@ export default function PengumumanPage() {
                   {isPenetapanPeriodOpen
                     ? 'SK GUBERNUR • KEPUTUSAN FINAL'
                     : isPengumumanSanggahPeriodOpen
-                    ? 'PENGUMUMAN HASIL SANGGAHAN'
+                    ? 'PENGUMUMAN HASIL SANGGAH'
                     : 'PENGUMUMAN HASIL SELEKSI AWAL'}
                 </span>
               </div>
@@ -299,22 +301,24 @@ export default function PengumumanPage() {
                   ? 'Penetapan Penerima Resmi Beasiswa (SK Gubernur)'
                   : isPengumumanSanggahPeriodOpen
                   ? 'Pengumuman Hasil Verifikasi Sanggahan'
-                  : 'Daftar Nama Lolos Seleksi Awal'}
+                  : 'Daftar Nama Lolos Verifikasi Berkas'}
               </h3>
               <p className="text-xs text-slate-500 mt-1">
                 {isPenetapanPeriodOpen
-                  ? 'Daftar KESELURUHAN penerima resmi beasiswa (gabungan seleksi awal dan pasca sanggah) yang telah ditetapkan secara sah.'
+                  ? 'Daftar keseluruhan penerima resmi beasiswa yang telah ditetapkan dalam SK Gubernur.'
                   : isPengumumanSanggahPeriodOpen
-                  ? 'Pengumuman hasil peninjauan ulang berkas bagi pendaftar yang berstatus VERIFIKASI BERKAS / mengajukan sanggahan.'
-                  : 'Daftar nama mahasiswa yang dinyatakan memenuhi kualifikasi seleksi administrasi tahap awal.'}
+                  ? 'Daftar berkas pendaftar yang telah selesai diteliti ulang pada masa sanggah.'
+                  : 'Daftar mahasiswa yang berkas pendaftarannya telah dinyatakan terverifikasi.'}
               </p>
             </div>
-            <button
-              onClick={() => setShowSkModal(true)}
-              className="inline-flex items-center gap-2 px-4 py-2.5 bg-slate-900 text-white font-bold text-xs rounded-xl hover:bg-slate-800 transition-colors shrink-0 shadow-xs"
-            >
-              <Printer className="w-4 h-4 text-amber-400" /> Lihat Format SK Resmi
-            </button>
+            {isPenetapanPeriodOpen && (
+              <button
+                onClick={() => setShowSkModal(true)}
+                className="inline-flex items-center gap-2 px-4 py-2.5 bg-slate-900 text-white font-bold text-xs rounded-xl hover:bg-slate-800 transition-colors shrink-0 shadow-xs"
+              >
+                <Printer className="w-4 h-4 text-amber-400" /> Lihat Format SK Resmi
+              </button>
+            )}
           </div>
 
           {/* Mode Switcher Tabs */}
@@ -342,7 +346,7 @@ export default function PengumumanPage() {
                     : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                 }`}
               >
-                🔄 {isPenetapanPeriodOpen ? 'Penerima Jalur Pasca Sanggah' : 'Hasil Verifikasi Sanggahan'}
+                🔄 {isPenetapanPeriodOpen ? 'Penerima Jalur Pasca Sanggah' : 'Berkas Terverifikasi (Pasca Sanggah)'}
               </button>
             )}
             <button
@@ -354,7 +358,7 @@ export default function PengumumanPage() {
                   : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               }`}
             >
-              📋 {isPenetapanPeriodOpen ? 'Penerima Jalur Seleksi Awal' : 'Lolos Seleksi Awal'}
+              📋 {isPenetapanPeriodOpen ? 'Penerima Jalur Seleksi Awal' : 'Berkas Terverifikasi (Seleksi Awal)'}
             </button>
           </div>
 
@@ -413,8 +417,8 @@ export default function PengumumanPage() {
                     <th className="py-3.5 px-4">Nama Mahasiswa</th>
                     <th className="py-3.5 px-4">Jenjang</th>
                     <th className="py-3.5 px-4">Perguruan Tinggi / Prodi</th>
-                    <th className="py-3.5 px-4 text-center">Jalur Kelulusan</th>
-                    <th className="py-3.5 px-4 text-center">Status Penetapan</th>
+                    <th className="py-3.5 px-4 text-center">{isPenetapanPeriodOpen ? 'Jalur Kelulusan' : 'Jalur Berkas'}</th>
+                    <th className="py-3.5 px-4 text-center">{isPenetapanPeriodOpen ? 'Status Penetapan (No. 06)' : 'Status Verifikasi Berkas'}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 font-medium text-slate-800">
@@ -445,7 +449,7 @@ export default function PengumumanPage() {
                         {rec.status === 'DITERIMA' || rec.status === 'PENCAIRAN_TERMIN_1' || rec.status === 'PENCAIRAN_TERMIN_2' ? (
                           <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[10px] font-extrabold uppercase bg-emerald-100 text-emerald-800 border border-emerald-200">
                             <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                            {isPenetapanPeriodOpen ? 'RESMI DITETAPKAN' : 'DITERIMA'}
+                            {isPenetapanPeriodOpen ? 'RESMI DITETAPKAN' : 'BERKAS TERVERIFIKASI'}
                           </span>
                         ) : rec.status === 'DITOLAK' ? (
                           <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[10px] font-extrabold uppercase bg-rose-100 text-rose-800 border border-rose-200">

@@ -90,27 +90,16 @@ if (typeof window !== 'undefined') {
     window.dispatchEvent(new Event('bssc_schedule_updated'));
     console.log(`[BSSC] Fase aktif: ${phase} (${mockTime || 'Waktu Real'})`);
 
-    // 1. Jika phase diubah ke 'pengumuman', otomatis trigger blast email kelulusan awal ke peserta LULUS
-    if (p === 'pengumuman') {
+    // Sesuai arahan panitia: Email kelulusan HANYA dikirim saat fase Penetapan Resmi Penerima Beasiswa (SK Gubernur).
+    // Pengumuman hasil seleksi awal & hasil sanggah hanya di portal web saat mahasiswa login.
+    if (p === 'penetapan' || p === 'penetapan-resmi' || p === 'penetapan-penerima') {
       try {
-        await fetch('/api/v1/public/trigger-announcement-blast', {
+        await fetch('/api/v1/public/trigger-penetapan-blast', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
         });
       } catch (err: any) {
-        console.warn('Gagal memicu email pengumuman:', err.message);
-      }
-    }
-
-    // 2. Jika phase diubah ke 'hasil-sanggah', otomatis trigger blast email KHUSUS bagi yang lulus lewat sanggahan
-    if (p === 'hasil-sanggah' || p === 'pengumuman-sanggah') {
-      try {
-        await fetch('/api/v1/public/trigger-appeal-blast', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-        });
-      } catch (err: any) {
-        console.warn('Gagal memicu email hasil sanggah:', err.message);
+        console.warn('Gagal memicu email penetapan penerima:', err.message);
       }
     }
   };

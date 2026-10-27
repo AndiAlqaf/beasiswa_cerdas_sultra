@@ -64,6 +64,11 @@ export default function CheckStatusPage() {
             : 'Berkas KTM/Surat Aktif Kuliah Anda tidak terbaca di sistem. Silakan login ke dashboard, unggah ulang berkas, lalu klik "Kirim Ulang Pendaftaran". Nomor registrasi Anda tidak berubah.';
         }
 
+        const penetapanStep = timeline.find((s) => s.id === 'penetapan');
+        const isPenetapanPeriodOpen = penetapanStep
+          ? penetapanStep.status === 'active' || penetapanStep.status === 'completed'
+          : false;
+
         const sanggahStep = timeline.find((s) => s.id === 'sanggah');
         const isSanggahOpen = sanggahStep ? sanggahStep.status === 'active' : false;
         const isSanggahCompleted = sanggahStep ? sanggahStep.status === 'completed' : false;
@@ -77,6 +82,7 @@ export default function CheckStatusPage() {
           notes: effectiveNotes,
           isSanggahOpen,
           isSanggahCompleted,
+          isPenetapanOpen: isPenetapanPeriodOpen,
         });
       } else {
         setSearchedApp(null);
@@ -94,7 +100,7 @@ export default function CheckStatusPage() {
     { key: 'TERKIRIM', title: 'Permohonan Terkirim' },
     { key: 'VERIFIKASI_BERKAS', title: 'Verifikasi Berkas' },
     { key: 'SELEKSI_ADMINISTRASI', title: 'Seleksi Administrasi' },
-    { key: 'DITERIMA', title: 'Penetapan Penerima' },
+    { key: 'DITERIMA', title: searchedApp?.isPenetapanOpen ? 'Penetapan Penerima' : 'Berkas Terverifikasi' },
     { key: 'PENCAIRAN_TERMIN_1', title: 'Pencairan Termin I' }
   ];
 

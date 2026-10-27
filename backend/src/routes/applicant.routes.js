@@ -16,6 +16,7 @@ const router = express.Router();
 const { authenticate, authorize } = require('../middleware/auth');
 const { ROLES } = require('../config/security');
 const { createUploadMiddleware } = require('../middleware/fileUpload');
+const { isAllowedDocType, normalizeDocType } = require('../config/documentTypes');
 const { profileUpdateValidation, educationValidation } = require('../middleware/validator');
 const {
   getProfile,
@@ -46,8 +47,12 @@ router.get('/documents/:docId/view', viewDocument);
 // File uploads (multer middleware handles file processing & validation)
 router.post('/upload/:docType', (req, res, next) => {
   const dt = req.params.docType;
-  createUploadMiddleware(dt)(req, res, () => {
-    uploadDocument(dt)(req, res, next);
+  if (!isAllowedDocType(dt)) {
+    return res.status(400).json({ success: false, message: `Jenis dokumen "${dt}" tidak dikenali.` });
+  }
+  const canonicalDt = normalizeDocType(dt);
+  createUploadMiddleware(canonicalDt)(req, res, () => {
+    uploadDocument(canonicalDt)(req, res, next);
   });
 });
 

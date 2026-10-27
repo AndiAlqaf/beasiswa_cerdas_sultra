@@ -192,6 +192,7 @@ export default function RegistrationPage() {
     fileSuratAktif: '',
     fileTranskrip: '',
     fileDtks: '',
+    fileIjazah: '',
     fileSuratPernyataan: '',
     fileMotivationOrEsai: '',
 
@@ -245,14 +246,35 @@ export default function RegistrationPage() {
             setIsSubmitted(true);
           }
 
-          const selfieDoc = docs.find((d: any) => d.docType === 'selfie');
-          const ktmDoc = docs.find((d: any) => d.docType === 'ktm');
-          const ktpDoc = docs.find((d: any) => d.docType === 'ktp' || d.docType === 'pendukung');
-          const suratPermohonanDoc = docs.find((d: any) => d.docType === 'surat_permohonan');
-          const transkripDoc = docs.find((d: any) => d.docType === 'transkrip');
-          const dtksDoc = docs.find((d: any) => d.docType === 'dtks');
-          const suratPernyataanDoc = docs.find((d: any) => d.docType === 'surat_pernyataan');
-          const esaiDoc = docs.find((d: any) => d.docType === 'esai');
+          const matchDoc = (doc: any, ...targetKeys: string[]) => {
+            if (!doc) return false;
+            const rawKey = (doc.canonicalType || doc.docType || doc.doc_type || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+            return targetKeys.some(tgt => {
+              const cleanTgt = tgt.toLowerCase().replace(/[^a-z0-9]/g, '');
+              if (rawKey === cleanTgt) return true;
+              if (cleanTgt === 'dtks' && ['filedtks', 'kip', 'dtsen', 'kemensos', 'suratdtks'].includes(rawKey)) return true;
+              if (cleanTgt === 'ijazah' && ['fileijazah', 'ijazahs1', 'ijazahs2', 'ijazahsebelumnya'].includes(rawKey)) return true;
+              if (cleanTgt === 'ktm' && ['filesurataktif', 'surataktif', 'filektm', 'kartumahasiswa', 'suratketeranganaktif'].includes(rawKey)) return true;
+              if (cleanTgt === 'ktp' && ['filektp', 'kartutandapenduduk'].includes(rawKey)) return true;
+              if (cleanTgt === 'transkrip' && ['filetranskrip', 'transkripnilai', 'khs'].includes(rawKey)) return true;
+              if (cleanTgt === 'suratpermohonan' && ['filesuratpermohonan', 'permohonan'].includes(rawKey)) return true;
+              if ((cleanTgt === 'suratpernyataan' || cleanTgt === 'pernyataan') && ['suratpernyataan', 'filesuratpernyataan', 'pernyataan'].includes(rawKey)) return true;
+              if (cleanTgt === 'esai' && ['filemotivationoresai', 'motivationletter', 'essay', 'fileesai'].includes(rawKey)) return true;
+              if (cleanTgt === 'selfie' && ['filepasfoto', 'pasfoto', 'fileselfie', 'foto'].includes(rawKey)) return true;
+              if (cleanTgt === 'pendukung' && ['filependukung', 'prestasi', 'sertifikat'].includes(rawKey)) return true;
+              return false;
+            });
+          };
+
+          const selfieDoc = docs.find((d: any) => matchDoc(d, 'selfie', 'pasfoto', 'filePasfoto'));
+          const ktmDoc = docs.find((d: any) => matchDoc(d, 'ktm', 'surat_aktif', 'fileSuratAktif'));
+          const ktpDoc = docs.find((d: any) => matchDoc(d, 'ktp', 'fileKtp'));
+          const suratPermohonanDoc = docs.find((d: any) => matchDoc(d, 'surat_permohonan', 'fileSuratPermohonan'));
+          const transkripDoc = docs.find((d: any) => matchDoc(d, 'transkrip', 'fileTranskrip'));
+          const dtksDoc = docs.find((d: any) => matchDoc(d, 'dtks', 'fileDtks', 'kip', 'dtsen'));
+          const ijazahDoc = docs.find((d: any) => matchDoc(d, 'ijazah', 'fileIjazah'));
+          const suratPernyataanDoc = docs.find((d: any) => matchDoc(d, 'surat_pernyataan', 'pernyataan', 'fileSuratPernyataan'));
+          const esaiDoc = docs.find((d: any) => matchDoc(d, 'esai', 'fileMotivationOrEsai', 'essay'));
 
           let regDraft: any = null;
           try {
@@ -310,6 +332,7 @@ export default function RegistrationPage() {
             fileSuratPermohonan: suratPermohonanDoc ? suratPermohonanDoc.originalName : '',
             fileTranskrip: transkripDoc ? transkripDoc.originalName : '',
             fileDtks: dtksDoc ? dtksDoc.originalName : '',
+            fileIjazah: ijazahDoc ? ijazahDoc.originalName : '',
             fileSuratPernyataan: suratPernyataanDoc ? suratPernyataanDoc.originalName : '',
             fileMotivationOrEsai: esaiDoc ? esaiDoc.originalName : '',
           };
@@ -463,7 +486,7 @@ export default function RegistrationPage() {
       { key: 'fileKtp', name: 'Dokumen: KTP (Tahap 7)' },
       { key: 'fileSuratAktif', name: 'Dokumen: Surat Aktif Kuliah (Tahap 7)' },
       { key: 'fileTranskrip', name: 'Dokumen: Transkrip Nilai (Tahap 7)' },
-      { key: 'fileDtks', name: 'Dokumen: Syarat ke-6 (Tahap 7)' },
+      { key: 'fileDtks', name: 'Dokumen: Bukti Terdaftar DTKS / DTSEN (Tahap 7)' },
       { key: 'fileSuratPernyataan', name: 'Dokumen: Surat Pernyataan (Tahap 7)' },
       { key: 'fileMotivationOrEsai', name: 'Dokumen: Motivation Letter/Esai (Tahap 7)' }
     ];
@@ -1390,9 +1413,10 @@ export default function RegistrationPage() {
                           { key: 'fileKtp', docType: 'ktp', title: '3. KTP Provinsi Sulawesi Tenggara' },
                           { key: 'fileSuratAktif', docType: 'ktm', title: '4. KTM / Surat Aktif S2' },
                           { key: 'fileTranskrip', docType: 'transkrip', title: '5. Transkrip Nilai Semester S2' },
-                          { key: 'fileDtks', docType: 'dtks', title: '6. Ijazah & Transkrip Nilai S1' },
+                          { key: 'fileDtks', docType: 'dtks', title: '6. Bukti Terdaftar DTKS / DTSEN' },
                           { key: 'fileSuratPernyataan', docType: 'surat_pernyataan', title: '7. Surat Pernyataan Tidak Sedang Menerima Beasiswa Lain' },
-                          { key: 'fileMotivationOrEsai', docType: 'esai', title: '8. Esai Kontribusi Daerah (5 Tahun)' }
+                          { key: 'fileMotivationOrEsai', docType: 'esai', title: '8. Esai Kontribusi Daerah (5 Tahun)' },
+                          { key: 'fileIjazah', docType: 'ijazah', title: '9. Ijazah & Transkrip Nilai S1 (Opsional)' }
                         ]
                       : [
                           { key: 'fileSuratPermohonan', docType: 'surat_permohonan', title: '1. Surat Permohonan BSSC (Gubernur Sultra)' },
@@ -1400,9 +1424,10 @@ export default function RegistrationPage() {
                           { key: 'fileKtp', docType: 'ktp', title: '3. KTP Provinsi Sulawesi Tenggara' },
                           { key: 'fileSuratAktif', docType: 'ktm', title: '4. KTM / Surat Aktif S3' },
                           { key: 'fileTranskrip', docType: 'transkrip', title: '5. Transkrip Nilai Semester S3' },
-                          { key: 'fileDtks', docType: 'dtks', title: '6. Ijazah & Transkrip S1 & S2' },
+                          { key: 'fileDtks', docType: 'dtks', title: '6. Bukti Terdaftar DTKS / DTSEN' },
                           { key: 'fileSuratPernyataan', docType: 'surat_pernyataan', title: '7. Surat Pernyataan Tidak Sedang Menerima Beasiswa Lain' },
-                          { key: 'fileMotivationOrEsai', docType: 'esai', title: '8. Esai Kontribusi Daerah (5 Tahun)' }
+                          { key: 'fileMotivationOrEsai', docType: 'esai', title: '8. Esai Kontribusi Daerah (5 Tahun)' },
+                          { key: 'fileIjazah', docType: 'ijazah', title: '9. Ijazah & Transkrip S1 & S2 (Opsional)' }
                         ]
                     ).map((docItem, idx) => {
                       const currentVal = (formData as any)[docItem.key];

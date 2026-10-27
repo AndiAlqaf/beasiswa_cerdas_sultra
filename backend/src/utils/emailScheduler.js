@@ -188,17 +188,79 @@ async function jalankanBlastHasilSanggah() {
 }
 
 /**
- * Start cron job — cek setiap menit
+ * 3. Blast Email Resmi Penetapan Penerima Beasiswa (SK Gubernur)
+ * Khusus dikirim pada tahap Penetapan Penerima Beasiswa.
+ */
+async function jalankanBlastPenetapanPenerima() {
+  log(LOG_LEVELS.INFO, '[SCHEDULER] Memulai blast email PENETAPAN RESMI PENERIMA BEASISWA (SK Gubernur)...');
+
+  try {
+    const pool = getPool();
+    const [penerimaResmi] = await pool.execute(`
+      SELECT
+        a.id AS application_id,
+        u.email,
+        u.nama_lengkap,
+        u.jenjang_target,
+        a.registration_no,
+        a.status
+      FROM applications a
+      JOIN users u ON u.id = a.user_id
+      WHERE a.status IN ('DITERIMA', 'PENCAIRAN_TERMIN_1', 'PENCAIRAN_TERMIN_2')
+        AND a.announcement_email_sent_at IS NULL
+    `);
+
+    if (penerimaResmi.length === 0) {
+      log(LOG_LEVELS.WARN, '[SCHEDULER] Tidak ada penerima beasiswa baru yang belum dikirimi email penetapan.');
+      return { sent: 0, failed: 0 };
+    }
+
+    const tglPenetapan = new Date().toLocaleDateString('id-ID', {
+      weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+    });
+
+    log(LOG_LEVELS.INFO, `[SCHEDULER] Ditemukan ${penerimaResmi.length} penerima resmi SK Gubernur. Menyiapkan email...`);
+
+    const recipients = penerimaResmi.map((p) => {
+      const { subject, html } = templateKelulusan({
+        namaLengkap: p.nama_lengkap,
+        registrationNo: p.registration_no,
+        jenjangTarget: p.jenjang_target,
+        announcementDate: tglPenetapan,
+      });
+      return { to: p.email, subject, html };
+    });
+
+    const { sent, failed } = await sendBulkMail(recipients);
+
+    if (sent > 0) {
+      const appIds = penerimaResmi.map(p => p.application_id);
+      const placeholders = appIds.map(() => '?').join(',');
+      await pool.execute(
+        `UPDATE applications SET announcement_email_sent_at = NOW() WHERE id IN (${placeholders})`,
+        appIds
+      );
+    }
+
+    log(LOG_LEVELS.INFO, `[SCHEDULER] ✅ Blast penetapan penerima selesai. Terkirim: ${sent}, Gagal: ${failed}`);
+    blastPengumumanSudahTerkirim = true;
+    return { sent, failed };
+  } catch (err) {
+    log(LOG_LEVELS.ERROR, `[SCHEDULER] ❌ Blast email penetapan gagal: ${err.message}`);
+    throw err;
+  }
+}
+
+/**
+ * Start cron job
+ * Sesuai arahan Panitia: Pengumuman hasil seleksi awal & hasil sanggah HANYA ada di portal web
+ * (tidak ada email terkirim saat mahasiswa melihat hasil seleksi/sanggah).
+ * Email resmi HANYA dikirimkan saat tahap Penetapan Penerima Beasiswa (SK Gubernur).
  */
 function startEmailScheduler() {
-  const announcementDate = env.ANNOUNCEMENT_DATE;
+  const penetapanDate = env.PENETAPAN_DATE || '2026-11-16';
 
-  if (!announcementDate) {
-    log(LOG_LEVELS.WARN, '[SCHEDULER] ANNOUNCEMENT_DATE tidak diset di .env. Email scheduler dinonaktifkan.');
-    return;
-  }
-
-  log(LOG_LEVELS.INFO, `[SCHEDULER] Email scheduler aktif. Pengumuman kelulusan dijadwalkan: ${announcementDate}`);
+  log(LOG_LEVELS.INFO, `[SCHEDULER] Email scheduler aktif. Email kelulusan hanya dikirim pada tahap Penetapan Penerima Beasiswa: ${penetapanDate}`);
 
   // Reset guard setiap tengah malam
   cron.schedule('0 0 * * *', () => {
@@ -207,18 +269,20 @@ function startEmailScheduler() {
     log(LOG_LEVELS.INFO, '[SCHEDULER] Guard blast direset untuk hari baru.');
   });
 
-  // Cek setiap menit apakah hari pengumuman awal tiba
-  cron.schedule('* * * * *', async () => {
+  // Cek pada hari penetapan penerima beasiswa
+  cron.schedule('0 9 * * *', async () => {
     if (blastPengumumanSudahTerkirim) return;
-    if (!isAnnouncementDay()) return;
+    const today = new Date().toISOString().split('T')[0];
+    if (today !== penetapanDate) return;
 
-    log(LOG_LEVELS.INFO, '[SCHEDULER] 🔔 Hari pengumuman tiba! Memulai blast email ke seluruh peserta LULUS awal...');
-    await jalankanBlastEmail();
+    log(LOG_LEVELS.INFO, '[SCHEDULER] 🔔 Hari penetapan penerima beasiswa tiba! Memulai pengiriman email SK...');
+    await jalankanBlastPenetapanPenerima();
   });
 }
 
 module.exports = {
   startEmailScheduler,
+  jalankanBlastPenetapanPenerima,
   jalankanBlastEmail,
   jalankanBlastHasilSanggah,
   getPendaftarDiterimaAwal,
