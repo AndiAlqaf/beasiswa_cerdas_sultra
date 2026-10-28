@@ -266,8 +266,8 @@ export default function DashboardPage() {
         };
       case 'DITOLAK':
         return {
-          title: 'Belum Lolos Seleksi',
-          desc: effectiveNotes || 'Mohon maaf, berkas pendaftaran Anda belum memenuhi kualifikasi seleksi.',
+          title: 'Belum Lolos Verifikasi',
+          desc: effectiveNotes || 'Mohon maaf, berkas pendaftaran Anda belum memenuhi kualifikasi verifikasi berkas.',
           badgeBg: 'bg-rose-100 text-rose-800',
           icon: XCircle,
           iconBg: 'bg-rose-50 text-rose-600',
@@ -699,7 +699,7 @@ export default function DashboardPage() {
           </div>
           <div className="bg-white p-5 rounded-2xl border border-amber-200 text-xs text-slate-700 leading-relaxed space-y-2">
             <p>
-              Mohon maaf, berkas pendaftaran Anda dinyatakan <strong>Belum Lolos Seleksi</strong>. Pengajuan sanggahan dan perbaikan dokumen hanya dapat dilakukan pada jadwal <strong>Masa Sanggah</strong> ({sanggahStep?.date || '5 - 8 November 2026'}).
+              Mohon maaf, berkas pendaftaran Anda dinyatakan <strong>Belum Lolos Verifikasi</strong>. Pengajuan sanggahan dan perbaikan dokumen hanya dapat dilakukan pada jadwal <strong>Masa Sanggah</strong> ({sanggahStep?.date || '5 - 8 November 2026'}).
             </p>
             <p className="text-slate-500 text-[11px]">
               Silakan siapkan dokumen perbaikan Anda (seperti perbaikan KTP/KK atau Surat Pernyataan) dan ajukan sanggahan ketika jadwal Masa Sanggah resmi dibuka.
