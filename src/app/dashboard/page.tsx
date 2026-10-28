@@ -199,12 +199,12 @@ export default function DashboardPage() {
   let effectiveNotes = application?.notes;
 
   if (isSanggahan) {
-    if (!isPengumumanSanggahPeriodOpen && (application?.status === 'DITERIMA' || application?.status === 'DITOLAK')) {
+    if (!isPengumumanSanggahPeriodOpen && (application?.status === 'DITERIMA' || application?.status === 'LOLOS_VERIFIKASI' || application?.status === 'DITOLAK')) {
       effectiveStatus = 'VERIFIKASI_BERKAS';
       effectiveNotes = 'Sanggahan sedang diperiksa. Mohon pantau kembali pada masa pengumuman hasil sanggah.';
     }
   } else {
-    if (!isAnnouncementPeriodOpen && (application?.status === 'DITERIMA' || application?.status === 'DITOLAK')) {
+    if (!isAnnouncementPeriodOpen && (application?.status === 'DITERIMA' || application?.status === 'LOLOS_VERIFIKASI' || application?.status === 'DITOLAK')) {
       effectiveStatus = 'VERIFIKASI_BERKAS';
       effectiveNotes = undefined; // Sembunyikan catatan penolakan jika belum waktunya
     }
@@ -245,6 +245,15 @@ export default function DashboardPage() {
 
   const getStatusBadge = (status?: string) => {
     switch (status) {
+      case 'LOLOS_VERIFIKASI':
+        return {
+          title: 'Lolos Verifikasi Berkas',
+          desc: 'Berkas pendaftaran Anda dinyatakan lolos verifikasi. Silakan tunggu pengumuman penetapan penerima beasiswa resmi.',
+          badgeBg: 'bg-teal-100 text-teal-800',
+          icon: CheckCircle2,
+          iconBg: 'bg-teal-50 text-teal-600',
+          badgeText: 'Lolos Verifikasi',
+        };
       case 'DITERIMA':
         if (isPenetapanPeriodOpen) {
           return {

@@ -35,6 +35,31 @@ const getOngoingEducation = (detail: any) => {
   return { institusi, jurusan };
 };
 
+const formatStatusLabel = (status?: string) => {
+  switch (status) {
+    case 'LOLOS_VERIFIKASI':
+      return 'Lolos Verifikasi';
+    case 'DITERIMA':
+      return 'Diterima';
+    case 'DITOLAK':
+      return 'Ditolak';
+    case 'TERKIRIM':
+      return 'Terkirim';
+    case 'VERIFIKASI_BERKAS':
+      return 'Verifikasi Berkas';
+    case 'SELEKSI_ADMINISTRASI':
+      return 'Seleksi Administrasi';
+    case 'PERLU_UNGGAH_ULANG':
+      return 'Perlu Unggah Ulang';
+    case 'PENCAIRAN_TERMIN_1':
+      return 'Pencairan Termin 1';
+    case 'PENCAIRAN_TERMIN_2':
+      return 'Pencairan Termin 2';
+    default:
+      return status || '-';
+  }
+};
+
 const renderAchievementDetails = (rawStr?: string) => {
   if (!rawStr || !rawStr.trim()) return '-';
   if (rawStr.trim().startsWith('[')) {
@@ -436,7 +461,8 @@ export default function PendaftarPage() {
                 <option value="PERLU_UNGGAH_ULANG">Perlu Unggah Ulang (KTM hilang)</option>
                 <option value="VERIFIKASI_BERKAS">Proses Verifikasi (VERIFIKASI)</option>
                 <option value="SELEKSI_ADMINISTRASI">Seleksi Administrasi</option>
-                <option value="DITERIMA">Lolos Seleksi (DITERIMA)</option>
+                <option value="LOLOS_VERIFIKASI">Lolos Verifikasi Berkas</option>
+                <option value="DITERIMA">Diterima - Final (DITERIMA)</option>
                 <option value="DITOLAK">Ditolak (DITOLAK)</option>
               </select>
               <button
@@ -528,11 +554,12 @@ export default function PendaftarPage() {
                       </td>
                       <td className="p-4">
                         <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${user.status === 'DITERIMA' ? 'bg-emerald-100 text-emerald-700' :
+                            user.status === 'LOLOS_VERIFIKASI' ? 'bg-teal-100 text-teal-700' :
                             user.status === 'DITOLAK' ? 'bg-rose-100 text-rose-700' :
                               user.status === 'PERLU_UNGGAH_ULANG' ? 'bg-rose-100 text-rose-700' :
                                 'bg-amber-100 text-amber-700'
                           }`}>
-                          {user.status}
+                          {formatStatusLabel(user.status)}
                         </span>
                       </td>
                       <td className="p-4 text-center">
@@ -811,10 +838,11 @@ export default function PendaftarPage() {
                       </div>
                       <div className="text-right">
                         <span className={`px-3 py-1 rounded-full text-xs font-bold ${selectedApplicant.status === 'DITERIMA' ? 'bg-emerald-100 text-emerald-700' :
+                            selectedApplicant.status === 'LOLOS_VERIFIKASI' ? 'bg-teal-100 text-teal-700' :
                             selectedApplicant.status === 'DITOLAK' ? 'bg-rose-100 text-rose-700' :
                               'bg-amber-100 text-amber-700'
                           }`}>
-                          {selectedApplicant.status}
+                          {formatStatusLabel(selectedApplicant.status)}
                         </span>
                       </div>
                     </div>

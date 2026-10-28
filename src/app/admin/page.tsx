@@ -122,10 +122,19 @@ export default function AdminDashboardPage() {
                     <td className="p-4">
                       <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
                         applicant.status === 'DITERIMA' ? 'bg-emerald-100 text-emerald-700' :
+                        applicant.status === 'LOLOS_VERIFIKASI' ? 'bg-teal-100 text-teal-700' :
                         applicant.status === 'DITOLAK' ? 'bg-rose-100 text-rose-700' :
                         'bg-amber-100 text-amber-700'
                       }`}>
-                        {applicant.status}
+                        {applicant.status === 'LOLOS_VERIFIKASI'
+                          ? 'Lolos Verifikasi'
+                          : applicant.status === 'DITERIMA'
+                          ? 'Diterima'
+                          : applicant.status === 'DITOLAK'
+                          ? 'Ditolak'
+                          : applicant.status === 'TERKIRIM'
+                          ? 'Terkirim'
+                          : applicant.status}
                       </span>
                     </td>
                     <td className="p-4">

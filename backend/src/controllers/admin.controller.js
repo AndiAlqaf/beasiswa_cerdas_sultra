@@ -18,7 +18,7 @@ async function getDashboard(req, res) {
 
     const [[{ totalPendaftar }]] = await pool.execute('SELECT COUNT(*) as totalPendaftar FROM applications');
     const [[{ menungguVerifikasi }]] = await pool.execute("SELECT COUNT(*) as menungguVerifikasi FROM applications WHERE status = 'TERKIRIM'");
-    const [[{ berkasLolos }]] = await pool.execute("SELECT COUNT(*) as berkasLolos FROM applications WHERE status IN ('VERIFIKASI_BERKAS', 'SELEKSI_ADMINISTRASI', 'DITERIMA', 'PENCAIRAN_TERMIN_1', 'PENCAIRAN_TERMIN_2')");
+    const [[{ berkasLolos }]] = await pool.execute("SELECT COUNT(*) as berkasLolos FROM applications WHERE status IN ('VERIFIKASI_BERKAS', 'SELEKSI_ADMINISTRASI', 'LOLOS_VERIFIKASI', 'DITERIMA', 'PENCAIRAN_TERMIN_1', 'PENCAIRAN_TERMIN_2')");
     const [[{ diterima }]] = await pool.execute("SELECT COUNT(*) as diterima FROM applications WHERE status IN ('DITERIMA', 'PENCAIRAN_TERMIN_1', 'PENCAIRAN_TERMIN_2')");
     const [[{ ditolak }]] = await pool.execute("SELECT COUNT(*) as ditolak FROM applications WHERE status = 'DITOLAK'");
     const [[{ totalUsers }]] = await pool.execute("SELECT COUNT(*) as totalUsers FROM users WHERE role = 'mahasiswa'");

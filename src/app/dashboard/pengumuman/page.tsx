@@ -130,6 +130,7 @@ export default function PengumumanPage() {
   const isUserAccepted =
     isAnnouncementPeriodOpen &&
     (effectiveMyStatus === 'DITERIMA' ||
+      (effectiveMyStatus === 'LOLOS_VERIFIKASI' && !isPenetapanPeriodOpen) ||
       effectiveMyStatus === 'PENCAIRAN_TERMIN_1' ||
       effectiveMyStatus === 'PENCAIRAN_TERMIN_2');
 
@@ -446,7 +447,11 @@ export default function PengumumanPage() {
                         </span>
                       </td>
                       <td className="py-3.5 px-4 text-center">
-                        {rec.status === 'DITERIMA' || rec.status === 'PENCAIRAN_TERMIN_1' || rec.status === 'PENCAIRAN_TERMIN_2' ? (
+                        {rec.status === 'LOLOS_VERIFIKASI' ? (
+                          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[10px] font-extrabold uppercase bg-teal-100 text-teal-800 border border-teal-200">
+                            <CheckCircle2 className="w-3 h-3 text-teal-600" /> BERKAS TERVERIFIKASI
+                          </span>
+                        ) : rec.status === 'DITERIMA' || rec.status === 'PENCAIRAN_TERMIN_1' || rec.status === 'PENCAIRAN_TERMIN_2' ? (
                           <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[10px] font-extrabold uppercase bg-emerald-100 text-emerald-800 border border-emerald-200">
                             <CheckCircle2 className="w-3 h-3 text-emerald-600" />
                             {isPenetapanPeriodOpen ? 'RESMI DITETAPKAN' : 'BERKAS TERVERIFIKASI'}

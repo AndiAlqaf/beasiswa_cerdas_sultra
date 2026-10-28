@@ -82,7 +82,7 @@ async function getAcceptedRecipients(req, res) {
       baseWhere = "(a.is_lulus_sanggah = 1 OR a.notes LIKE '%[SANGGAHAN%' OR a.status = 'VERIFIKASI_BERKAS')";
     } else if (mode === 'awal') {
       // Khusus yang lolos seleksi awal tanpa jalur sanggah
-      baseWhere = "a.status IN ('DITERIMA', 'PENCAIRAN_TERMIN_1', 'PENCAIRAN_TERMIN_2') AND a.is_lulus_sanggah = 0 AND (a.notes IS NULL OR a.notes NOT LIKE '%[SANGGAHAN%')";
+      baseWhere = "a.status IN ('LOLOS_VERIFIKASI', 'DITERIMA', 'PENCAIRAN_TERMIN_1', 'PENCAIRAN_TERMIN_2') AND a.is_lulus_sanggah = 0 AND (a.notes IS NULL OR a.notes NOT LIKE '%[SANGGAHAN%')";
     }
 
     let query = `

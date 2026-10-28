@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { CheckCircle2, XCircle, Clock, FileText, ExternalLink, Search, X, Loader2, AlertCircle, Printer, RefreshCw, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ZoomIn, ZoomOut, RotateCw, Eye, ChevronDown, ChevronUp } from 'lucide-react';
+import { CheckCircle2, Award, XCircle, Clock, FileText, ExternalLink, Search, X, Loader2, AlertCircle, Printer, RefreshCw, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ZoomIn, ZoomOut, RotateCw, Eye, ChevronDown, ChevronUp } from 'lucide-react';
 import { fetchAPI } from '@/lib/api';
 
 const getDocTitle = (key: string) => {
@@ -33,6 +33,31 @@ const getOngoingEducation = (detail: any) => {
   const jurusan = profileProdi || targetEdu?.jurusan || higherEdu?.jurusan || lastEdu?.jurusan || detail.education?.[0]?.jurusan || '-';
 
   return { institusi, jurusan };
+};
+
+const formatStatusLabel = (status?: string) => {
+  switch (status) {
+    case 'LOLOS_VERIFIKASI':
+      return 'Lolos Verifikasi';
+    case 'DITERIMA':
+      return 'Diterima';
+    case 'DITOLAK':
+      return 'Ditolak';
+    case 'TERKIRIM':
+      return 'Terkirim';
+    case 'VERIFIKASI_BERKAS':
+      return 'Verifikasi Berkas';
+    case 'SELEKSI_ADMINISTRASI':
+      return 'Seleksi Administrasi';
+    case 'PERLU_UNGGAH_ULANG':
+      return 'Perlu Unggah Ulang';
+    case 'PENCAIRAN_TERMIN_1':
+      return 'Pencairan Termin 1';
+    case 'PENCAIRAN_TERMIN_2':
+      return 'Pencairan Termin 2';
+    default:
+      return status || '-';
+  }
 };
 
 const renderAchievementDetails = (rawStr?: string) => {
@@ -370,7 +395,8 @@ export default function SeleksiPage() {
               <option value="PERLU_UNGGAH_ULANG">Perlu Unggah Ulang (KTM hilang)</option>
               <option value="VERIFIKASI_BERKAS">Proses Verifikasi (VERIFIKASI)</option>
               <option value="SELEKSI_ADMINISTRASI">Seleksi Administrasi</option>
-              <option value="DITERIMA">Lolos Seleksi (DITERIMA)</option>
+              <option value="LOLOS_VERIFIKASI">Lolos Verifikasi Berkas</option>
+              <option value="DITERIMA">Diterima - Final (DITERIMA)</option>
               <option value="DITOLAK">Ditolak (DITOLAK)</option>
             </select>
             <select
@@ -454,11 +480,12 @@ export default function SeleksiPage() {
                       </td>
                       <td className="p-4 align-middle text-center">
                         <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${applicant.status === 'DITERIMA' ? 'bg-emerald-100 text-emerald-700' :
+                            applicant.status === 'LOLOS_VERIFIKASI' ? 'bg-teal-100 text-teal-700' :
                             applicant.status === 'DITOLAK' ? 'bg-rose-100 text-rose-700' :
                               applicant.status === 'PERLU_UNGGAH_ULANG' ? 'bg-rose-100 text-rose-700' :
                                 'bg-amber-100 text-amber-700'
                           }`}>
-                          {applicant.status}
+                          {formatStatusLabel(applicant.status)}
                         </span>
                       </td>
                       <td className="p-4 align-middle text-center">
@@ -677,10 +704,11 @@ export default function SeleksiPage() {
                           </div>
                           <div className="text-right">
                             <span className={`px-3 py-1.5 rounded-full text-xs font-extrabold shadow-xs ${(applicantDetail.application?.status || selectedApplicant.status) === 'DITERIMA' ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' :
+                                (applicantDetail.application?.status || selectedApplicant.status) === 'LOLOS_VERIFIKASI' ? 'bg-teal-100 text-teal-800 border border-teal-300' :
                                 (applicantDetail.application?.status || selectedApplicant.status) === 'DITOLAK' ? 'bg-rose-100 text-rose-800 border border-rose-300' :
                                   'bg-amber-100 text-amber-800 border border-amber-300'
                               }`}>
-                              {applicantDetail.application?.status || selectedApplicant.status}
+                              {formatStatusLabel(applicantDetail.application?.status || selectedApplicant.status)}
                             </span>
                           </div>
                         </div>
@@ -896,7 +924,24 @@ export default function SeleksiPage() {
               {(() => {
                 const currentStatus = applicantDetail?.application?.status || selectedApplicant?.status;
                 const isAccepted = currentStatus === 'DITERIMA';
+                const isVerified = currentStatus === 'LOLOS_VERIFIKASI';
                 const isRejected = currentStatus === 'DITOLAK';
+
+                const updateStatus = async (status: string, notes: string, successMsg: string) => {
+                  if (!selectedApplicant) return;
+                  try {
+                    const id = selectedApplicant.userId || selectedApplicant.id;
+                    await fetchAPI(`/admin/applicants/${id}/verify`, {
+                      method: 'PATCH',
+                      body: JSON.stringify({ status, notes }),
+                    });
+                    handleCloseDetail();
+                    loadApplicants();
+                    showNotification(successMsg, 'success', 'Status Berhasil Diubah');
+                  } catch (err: any) {
+                    showNotification(err.message || 'Gagal mengubah status.', 'error', 'Gagal Update Status');
+                  }
+                };
 
                 return (
                   <div className="p-3.5 sm:p-4 border-t border-slate-200 bg-white flex items-center justify-end gap-2.5 shrink-0 shadow-xs">
@@ -925,29 +970,51 @@ export default function SeleksiPage() {
                       <XCircle className="w-4 h-4" /> {isRejected ? 'Ubah Alasan Tolak' : 'Tolak'}
                     </button>
                     <button
-                      onClick={async () => {
-                        if (!selectedApplicant) return;
-                        try {
-                          const id = selectedApplicant.userId || selectedApplicant.id;
-                          await fetchAPI(`/admin/applicants/${id}/verify`, {
-                            method: 'PATCH',
-                            body: JSON.stringify({ status: 'DITERIMA', notes: 'Berkas Anda lolos verifikasi. Silakan tunggu pengumuman penetapan penerima resmi.' }),
-                          });
-                          handleCloseDetail();
-                          loadApplicants();
-                          showNotification('Status pendaftar berhasil diubah: Berkas Lolos Verifikasi!', 'success', 'Status Berhasil Diubah');
-                        } catch (err: any) {
-                          showNotification(err.message || 'Gagal mengubah status.', 'error', 'Gagal Update Status');
-                        }
+                      type="button"
+                      disabled={isVerified}
+                      onClick={() => {
+                        if (isAccepted && !window.confirm('Pendaftar ini sudah berstatus DITERIMA (final). Kembalikan ke Lolos Verifikasi Berkas?')) return;
+                        updateStatus(
+                          'LOLOS_VERIFIKASI',
+                          'Berkas Anda lolos verifikasi. Silakan tunggu pengumuman penetapan penerima resmi.',
+                          'Status pendaftar berhasil diubah: Berkas Lolos Verifikasi!'
+                        );
                       }}
                       className={`px-4 py-2 font-extrabold rounded-xl transition-colors flex items-center gap-1.5 shadow-2xs text-xs ${
-                        isAccepted
-                          ? 'bg-emerald-700 text-white shadow-emerald-700/20'
-                          : 'bg-emerald-600 text-white hover:bg-emerald-700'
+                        isVerified
+                          ? 'bg-teal-700 text-white cursor-default'
+                          : 'bg-teal-600 text-white hover:bg-teal-700'
                       }`}
-                      title={isAccepted ? 'Status saat ini: Berkas Lolos Verifikasi' : 'Verifikasi dan loloskan berkas'}
+                      title={isVerified ? 'Status saat ini: Berkas Lolos Verifikasi' : 'Verifikasi dan loloskan berkas'}
                     >
-                      <CheckCircle2 className="w-4 h-4" /> {isAccepted ? '✓ Berkas Lolos Verifikasi' : 'Loloskan Berkas'}
+                      <CheckCircle2 className="w-4 h-4" /> {isVerified ? '✓ Berkas Lolos Verifikasi' : 'Loloskan Berkas'}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={!isVerified}
+                      onClick={() =>
+                        updateStatus(
+                          'DITERIMA',
+                          'Selamat! Anda ditetapkan sebagai penerima Beasiswa Stimulan Sultra Cerdas.',
+                          'Pendaftar berhasil diterima sebagai penerima beasiswa (keputusan final)!'
+                        )
+                      }
+                      className={`px-4 py-2 font-extrabold rounded-xl transition-colors flex items-center gap-1.5 shadow-2xs text-xs ${
+                        isAccepted
+                          ? 'bg-emerald-700 text-white'
+                          : isVerified
+                          ? 'bg-emerald-600 text-white hover:bg-emerald-700'
+                          : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                      }`}
+                      title={
+                        isAccepted
+                          ? 'Status saat ini: Diterima (keputusan final)'
+                          : isVerified
+                          ? 'Tetapkan sebagai penerima beasiswa (keputusan final)'
+                          : 'Loloskan berkas terlebih dahulu sebelum menerima'
+                      }
+                    >
+                      <Award className="w-4 h-4" /> {isAccepted ? '✓ Diterima' : 'Terima'}
                     </button>
                   </div>
                 );

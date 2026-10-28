@@ -43,12 +43,12 @@ export default function CheckStatusPage() {
         const isSanggahan = effectiveNotes.includes('[SANGGAHAN MAHASISWA]');
 
         if (isSanggahan) {
-          if (!isPengumumanSanggahPeriodOpen && (effectiveStatus === 'DITERIMA' || effectiveStatus === 'DITOLAK')) {
+          if (!isPengumumanSanggahPeriodOpen && (effectiveStatus === 'DITERIMA' || effectiveStatus === 'LOLOS_VERIFIKASI' || effectiveStatus === 'DITOLAK')) {
             effectiveStatus = 'VERIFIKASI_BERKAS';
             effectiveNotes = 'Sanggahan sedang diperiksa. Mohon pantau kembali pada masa pengumuman hasil sanggah.';
           }
         } else {
-          if (!isAnnouncementPeriodOpen && (effectiveStatus === 'DITERIMA' || effectiveStatus === 'DITOLAK')) {
+          if (!isAnnouncementPeriodOpen && (effectiveStatus === 'DITERIMA' || effectiveStatus === 'LOLOS_VERIFIKASI' || effectiveStatus === 'DITOLAK')) {
             effectiveStatus = 'VERIFIKASI_BERKAS';
             effectiveNotes = 'Dokumen pendaftaran sedang diteliti dan divalidasi oleh tim penilai Pemprov Sultra.';
           }
@@ -100,7 +100,8 @@ export default function CheckStatusPage() {
     { key: 'TERKIRIM', title: 'Permohonan Terkirim' },
     { key: 'VERIFIKASI_BERKAS', title: 'Verifikasi Berkas' },
     { key: 'SELEKSI_ADMINISTRASI', title: 'Seleksi Administrasi' },
-    { key: 'DITERIMA', title: searchedApp?.isPenetapanOpen ? 'Penetapan Penerima' : 'Berkas Terverifikasi' },
+    { key: 'LOLOS_VERIFIKASI', title: 'Lolos Verifikasi Berkas' },
+    { key: 'DITERIMA', title: 'Penetapan Penerima' },
     { key: 'PENCAIRAN_TERMIN_1', title: 'Pencairan Termin I' }
   ];
 
@@ -178,7 +179,7 @@ export default function CheckStatusPage() {
                     Progres Status Verifikasi Berkas & Seleksi
                   </h3>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-5 gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-6 gap-2">
                     {statusSteps.map((step, idx) => {
                       const currentIdx = getStepIndex(searchedApp.status);
                       const isComplete = idx <= currentIdx;
