@@ -194,7 +194,8 @@ const educationValidation = [
 const normalizeStatus = (status) => {
   if (!status) return status;
   const s = String(status).toUpperCase();
-  if (['LOLOS', 'APPROVED', 'DITERIMA'].includes(s)) return 'DITERIMA';
+  if (s === 'LOLOS_VERIFIKASI' || s === 'LOLOS_BERKAS') return 'LOLOS_VERIFIKASI';
+  if (['APPROVED', 'DITERIMA'].includes(s)) return 'DITERIMA';
   if (['MENUNGGU', 'PENDING', 'SUBMITTED', 'TERKIRIM'].includes(s)) return 'TERKIRIM';
   if (['DITOLAK', 'REJECTED'].includes(s)) return 'DITOLAK';
   return s;

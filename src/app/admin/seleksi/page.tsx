@@ -157,6 +157,10 @@ export default function SeleksiPage() {
   const [rejectReason, setRejectReason] = useState<string>('');
   const [submittingReject, setSubmittingReject] = useState<boolean>(false);
 
+  // Accept Confirmation Modal State
+  const [showAcceptConfirmModal, setShowAcceptConfirmModal] = useState<boolean>(false);
+  const [submittingAccept, setSubmittingAccept] = useState<boolean>(false);
+
   const REJECTION_TEMPLATES = [
     'Transkrip Nilai buram, terpotong, atau tidak terbaca dengan jelas.',
     'Surat Keterangan Aktif Kuliah / KTM tidak valid atau belum disahkan pejabat berwenang.',
@@ -234,6 +238,7 @@ export default function SeleksiPage() {
   };
 
   const handleCloseDetail = () => {
+    setShowAcceptConfirmModal(false);
     setSelectedApplicant(null);
     setApplicantDetail(null);
     Object.values(previewUrls).forEach(url => {
@@ -273,6 +278,30 @@ export default function SeleksiPage() {
     }
   };
 
+  const handleConfirmAccept = async () => {
+    if (!selectedApplicant) return;
+    setSubmittingAccept(true);
+    try {
+      const id = selectedApplicant.userId || selectedApplicant.id;
+      await fetchAPI(`/admin/applicants/${id}/verify`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          status: 'DITERIMA',
+          notes: 'Selamat! Anda ditetapkan sebagai penerima Beasiswa Stimulan Sultra Cerdas.',
+        }),
+      });
+
+      setShowAcceptConfirmModal(false);
+      handleCloseDetail();
+      loadApplicants();
+      showNotification('Pendaftar berhasil diterima sebagai penerima beasiswa (keputusan final)!', 'success', 'Status Berhasil Diubah');
+    } catch (err: any) {
+      showNotification(err.message || 'Gagal mengubah status pendaftaran.', 'error', 'Gagal Update Status');
+    } finally {
+      setSubmittingAccept(false);
+    }
+  };
+
   const handleViewDocument = async (userId: string, docId: string) => {
     if (previewUrls[docId]) {
       window.open(previewUrls[docId], '_blank');
@@ -298,14 +327,15 @@ export default function SeleksiPage() {
     }
   };
 
-  const loadApplicants = async (pageToLoad = page, limitToLoad = limit) => {
+  const loadApplicants = async (pageToLoad = page, limitToLoad = limit, searchOverride?: string) => {
     setLoading(true);
     setError(null);
     try {
       const params = new URLSearchParams();
       params.set('page', String(pageToLoad));
       params.set('limit', String(limitToLoad));
-      if (searchTerm.trim()) params.set('search', searchTerm.trim());
+      const effectiveSearch = searchOverride !== undefined ? searchOverride : searchTerm;
+      if (effectiveSearch.trim()) params.set('search', effectiveSearch.trim());
       if (jenjangFilter) params.set('jenjang', jenjangFilter);
       if (statusFilter) params.set('status', statusFilter);
 
@@ -322,6 +352,15 @@ export default function SeleksiPage() {
   };
 
   useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const q = params.get('search');
+      if (q && !searchTerm) {
+        setSearchTerm(q);
+        loadApplicants(1, limit, q);
+        return;
+      }
+    }
     loadApplicants(page, limit);
   }, [page, jenjangFilter, statusFilter, limit]);
 
@@ -354,14 +393,18 @@ export default function SeleksiPage() {
       if (!selectedApplicant || !applicantDetail) return;
       if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement)?.tagName)) return;
 
-      if (e.key === 'Escape' && !showRejectModal) {
-        handleCloseDetail();
+      if (e.key === 'Escape') {
+        if (showAcceptConfirmModal) {
+          setShowAcceptConfirmModal(false);
+        } else if (!showRejectModal) {
+          handleCloseDetail();
+        }
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedApplicant, applicantDetail, showRejectModal, previewUrls]);
+  }, [selectedApplicant, applicantDetail, showRejectModal, showAcceptConfirmModal, previewUrls]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -992,13 +1035,7 @@ export default function SeleksiPage() {
                     <button
                       type="button"
                       disabled={!isVerified}
-                      onClick={() =>
-                        updateStatus(
-                          'DITERIMA',
-                          'Selamat! Anda ditetapkan sebagai penerima Beasiswa Stimulan Sultra Cerdas.',
-                          'Pendaftar berhasil diterima sebagai penerima beasiswa (keputusan final)!'
-                        )
-                      }
+                      onClick={() => setShowAcceptConfirmModal(true)}
                       className={`px-4 py-2 font-extrabold rounded-xl transition-colors flex items-center gap-1.5 shadow-2xs text-xs ${
                         isAccepted
                           ? 'bg-emerald-700 text-white'
@@ -1124,6 +1161,93 @@ export default function SeleksiPage() {
                     ) : (
                       <>
                         <XCircle className="w-4 h-4" /> Konfirmasi Tolak Pendaftaran
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modal Konfirmasi Penerimaan Beasiswa (DITERIMA) */}
+        {showAcceptConfirmModal && selectedApplicant && (
+          <div className="fixed inset-0 z-[130] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-in fade-in">
+            <div className="bg-white rounded-3xl w-[94vw] max-w-md shadow-2xl overflow-hidden border border-slate-200 animate-in zoom-in-95 duration-150">
+              {/* Modal Header */}
+              <div className="bg-emerald-600 text-white p-5 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-white/15 rounded-xl">
+                    <Award className="w-5 h-5 text-emerald-50" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-extrabold">Konfirmasi Penerimaan Beasiswa</h3>
+                    <p className="text-xs text-emerald-100">Keputusan Penetapan Penerima</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  disabled={submittingAccept}
+                  onClick={() => setShowAcceptConfirmModal(false)}
+                  className="text-emerald-100 hover:text-white transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Modal Body */}
+              <div className="p-6 space-y-4">
+                <div className="text-center space-y-2">
+                  <h4 className="text-base sm:text-lg font-extrabold text-slate-900 leading-snug">
+                    Yakin akan mengubah status mahasiswa jadi di terima?
+                  </h4>
+                  <p className="text-xs text-slate-500">
+                    Pastikan seluruh berkas persyaratan mahasiswa berikut telah diperiksa dan dinyatakan valid.
+                  </p>
+                </div>
+
+                <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 text-xs space-y-1">
+                  <p className="font-extrabold text-slate-900 text-sm">
+                    {applicantDetail?.user?.namaLengkap || selectedApplicant.namaLengkap}
+                  </p>
+                  <p className="text-slate-600 font-mono">
+                    No. Reg: <strong>{selectedApplicant.registrationNo}</strong>
+                  </p>
+                  <p className="text-slate-600">
+                    Jenjang: <strong className="text-blue-900">{applicantDetail?.user?.jenjangTarget || selectedApplicant.jenjangTarget}</strong>
+                  </p>
+                </div>
+
+                <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-2.5 text-amber-900 text-xs leading-relaxed">
+                  <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                  <span>
+                    Status <strong>Diterima</strong> bersifat <strong>keputusan final</strong> penetapan penerima Beasiswa Stimulan Sultra Cerdas.
+                  </span>
+                </div>
+
+                {/* Footer Actions */}
+                <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-100">
+                  <button
+                    type="button"
+                    disabled={submittingAccept}
+                    onClick={() => setShowAcceptConfirmModal(false)}
+                    className="px-4 py-2.5 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors cursor-pointer"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="button"
+                    disabled={submittingAccept}
+                    onClick={handleConfirmAccept}
+                    className="px-5 py-2.5 text-xs font-extrabold text-white bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 disabled:cursor-not-allowed rounded-xl shadow-md transition-all flex items-center gap-1.5 cursor-pointer"
+                  >
+                    {submittingAccept ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" /> Memproses...
+                      </>
+                    ) : (
+                      <>
+                        <Award className="w-4 h-4" /> Ya, Terima Mahasiswa
                       </>
                     )}
                   </button>
