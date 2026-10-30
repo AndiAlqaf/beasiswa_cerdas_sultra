@@ -194,7 +194,9 @@ export default function SeleksiPage() {
   };
 
   const handleOpenRejectModal = () => {
-    setRejectReason('');
+    const currentStatus = applicantDetail?.application?.status || selectedApplicant?.status;
+    const existingNotes = applicantDetail?.application?.notes || selectedApplicant?.notes || '';
+    setRejectReason(currentStatus === 'DITOLAK' ? existingNotes : '');
     setShowRejectModal(true);
   };
 
@@ -769,6 +771,28 @@ export default function SeleksiPage() {
                           </div>
                         )}
 
+                        {/* Keterangan Penolakan Box (At Top) */}
+                        {(applicantDetail.application?.status || selectedApplicant.status) === 'DITOLAK' && (
+                          <div className="p-4 bg-rose-50 border-2 border-rose-200 rounded-2xl space-y-2">
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="flex items-center gap-2 text-rose-900 font-extrabold text-xs uppercase tracking-wider">
+                                <XCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                                <span>Keterangan / Alasan Penolakan Berkas</span>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={handleOpenRejectModal}
+                                className="px-2.5 py-1 text-[11px] font-bold text-rose-700 bg-white hover:bg-rose-100 border border-rose-200 rounded-lg transition-colors cursor-pointer"
+                              >
+                                Edit Alasan
+                              </button>
+                            </div>
+                            <div className="p-3 bg-white rounded-xl border border-rose-200 text-xs text-slate-900 leading-relaxed font-medium whitespace-pre-line">
+                              {applicantDetail.application?.notes || selectedApplicant?.notes || 'Belum ada keterangan penolakan yang diisi.'}
+                            </div>
+                          </div>
+                        )}
+
                         {/* Highlights Card: IPK & Perguruan Tinggi */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                           <div className="p-4 bg-amber-50/80 rounded-2xl border border-amber-200 flex items-center justify-between">
@@ -956,6 +980,32 @@ export default function SeleksiPage() {
                               Belum ada berkas fisik yang diunggah pendaftar ini.
                             </p>
                           )}
+
+                          {/* Kolom Keterangan Penolakan di Bagian Bawah Galeri Berkas */}
+                          {((applicantDetail.application?.status || selectedApplicant.status) === 'DITOLAK' ||
+                            (applicantDetail.application?.notes && applicantDetail.application.notes.includes('Catatan Verifikator Sebelumnya'))) && (
+                            <div
+                              id="rejection-notes-bottom"
+                              className="p-5 bg-rose-50/90 border-2 border-rose-200 rounded-2xl space-y-2.5 shadow-xs"
+                            >
+                              <div className="flex items-center justify-between gap-3 flex-wrap">
+                                <div className="flex items-center gap-2 text-rose-900 font-extrabold text-xs sm:text-sm uppercase tracking-wider">
+                                  <XCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                                  <span>Kolom Keterangan Penolakan (Crosscheck Verifikator)</span>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={handleOpenRejectModal}
+                                  className="px-3 py-1.5 text-xs font-bold text-rose-700 bg-white hover:bg-rose-100 border border-rose-300 rounded-xl transition-colors cursor-pointer shadow-2xs"
+                                >
+                                  ✏️ Ubah Keterangan Tolak
+                                </button>
+                              </div>
+                              <div className="p-3.5 bg-white rounded-xl border border-rose-200 text-xs sm:text-sm text-slate-900 leading-relaxed font-medium whitespace-pre-line">
+                                {applicantDetail.application?.notes || selectedApplicant?.notes || 'Belum ada keterangan penolakan yang diisi.'}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </div>
                     );
@@ -969,6 +1019,7 @@ export default function SeleksiPage() {
                 const isAccepted = currentStatus === 'DITERIMA';
                 const isVerified = currentStatus === 'LOLOS_VERIFIKASI';
                 const isRejected = currentStatus === 'DITOLAK';
+                const currentNotes = applicantDetail?.application?.notes || selectedApplicant?.notes || '';
 
                 const updateStatus = async (status: string, notes: string, successMsg: string) => {
                   if (!selectedApplicant) return;
@@ -987,7 +1038,23 @@ export default function SeleksiPage() {
                 };
 
                 return (
-                  <div className="p-3.5 sm:p-4 border-t border-slate-200 bg-white flex items-center justify-end gap-2.5 shrink-0 shadow-xs">
+                  <div className="p-3.5 sm:p-4 border-t border-slate-200 bg-white shrink-0 shadow-xs space-y-3">
+                    {isRejected && (
+                      <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl flex items-start justify-between gap-3">
+                        <div className="flex items-start gap-2.5 min-w-0 flex-1">
+                          <XCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                          <div className="min-w-0 flex-1">
+                            <p className="text-[11px] font-extrabold uppercase tracking-wider text-rose-800">
+                              Keterangan Penolakan yang Diisi:
+                            </p>
+                            <p className="text-xs text-rose-950 font-medium whitespace-pre-line leading-relaxed mt-0.5 max-h-20 overflow-y-auto">
+                              {currentNotes || 'Belum ada catatan alasan penolakan.'}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    <div className="flex items-center justify-end gap-2.5 flex-wrap">
                     <button
                       onClick={() => window.print()}
                       className="px-4 py-2 bg-slate-800 text-white font-normal rounded-xl hover:bg-slate-900 transition-colors flex items-center gap-2 mr-auto text-xs shadow-2xs"
@@ -1053,6 +1120,7 @@ export default function SeleksiPage() {
                     >
                       <Award className="w-4 h-4" /> {isAccepted ? '✓ Diterima' : 'Terima'}
                     </button>
+                    </div>
                   </div>
                 );
               })()}
