@@ -3,17 +3,34 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { fetchAPI } from '@/lib/api';
 import { getStoredScheduleConfig, getDynamicTimeline, ScheduleConfig } from '@/lib/schedule';
-import { FileText, FileBadge, Calendar, HardDrive, Upload, ExternalLink, AlertCircle, Loader2, CheckCircle2, RefreshCw, XCircle, Camera, Lock } from 'lucide-react';
+import {
+  FileText,
+  Calendar,
+  HardDrive,
+  Upload,
+  ExternalLink,
+  AlertCircle,
+  Loader2,
+  CheckCircle2,
+  XCircle,
+  Camera,
+  Lock,
+  Check,
+  AlertTriangle,
+  RefreshCw,
+} from 'lucide-react';
 import SelfieLivenessModal from '@/components/SelfieLivenessModal';
 
 interface DocumentInfo {
   id: string;
   docType: string;
   originalName: string;
+  storedName?: string;
   mimeType: string;
   fileSize: number;
   uploadedAt: string;
   isMissing?: boolean;
+  isSanggah?: boolean;
 }
 
 const isDocTypeMatch = (doc: DocumentInfo, targetKey: string) => {
@@ -47,9 +64,16 @@ export default function BerkasPage() {
   const [jenjang, setJenjang] = useState<string>('S1');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [uploadingKey, setUploadingKey] = useState<string | null>(null);
   const [toast, setToast] = useState<{ title: string; message: string; type: 'success' | 'error' } | null>(null);
   const [scheduleConfig, setScheduleConfig] = useState<ScheduleConfig>(getStoredScheduleConfig());
+
+  // Pending Upload Confirmation State
+  const [pendingUpload, setPendingUpload] = useState<{
+    docKey: string;
+    docLabel: string;
+    file: File;
+  } | null>(null);
+  const [isUploadingPending, setIsUploadingPending] = useState(false);
 
   // Camera Modal State for Selfie Liveness
   const [isCameraModalOpen, setIsCameraModalOpen] = useState(false);
@@ -100,32 +124,6 @@ export default function BerkasPage() {
     }
   };
 
-  const handleResubmit = async () => {
-    if (isLockedByRegistrationClose) {
-      setToast({
-        title: 'Pendaftaran Terkunci',
-        message: 'Masa pendaftaran dan batas perbaikan berkas telah resmi ditutup pada 18 Oktober 2026 pukul 23:59 WITA.',
-        type: 'error',
-      });
-      return;
-    }
-    setResubmitting(true);
-    try {
-      const res = await fetchAPI('/applicant/application/resubmit', { method: 'POST' });
-      if (!res.success) throw new Error(res.message || 'Gagal mengirim ulang pendaftaran.');
-      setToast({
-        title: 'Pendaftaran Terkirim Ulang',
-        message: res.message || 'Pendaftaran Anda berhasil dikirim ulang.',
-        type: 'success',
-      });
-      await loadDocuments();
-    } catch (err: any) {
-      setToast({ title: 'Gagal Mengirim Ulang', message: err.message || 'Terjadi kesalahan sistem.', type: 'error' });
-    } finally {
-      setResubmitting(false);
-    }
-  };
-
   useEffect(() => {
     loadDocuments();
     setScheduleConfig(getStoredScheduleConfig());
@@ -137,9 +135,11 @@ export default function BerkasPage() {
   }, []);
 
   const timeline = getDynamicTimeline(scheduleConfig);
-  const pendaftaranStep = timeline.find((s) => s.id === 'pendaftaran');
-  const isRegistrationClosed = pendaftaranStep ? pendaftaranStep.status === 'completed' : false;
-  const isLockedByRegistrationClose = applicationStatus === 'PERLU_UNGGAH_ULANG' && isRegistrationClosed;
+
+  // Masa Sanggah check
+  const sanggahStep = timeline.find((s) => s.id === 'sanggah');
+  const isSanggahPeriodOpen = sanggahStep ? sanggahStep.status === 'active' : false;
+  const sanggahDateRange = sanggahStep?.date || '5 - 8 November 2026';
 
   const formatSize = (bytes: number) => {
     if (!bytes || bytes === 0) return '0 B';
@@ -150,45 +150,96 @@ export default function BerkasPage() {
   };
 
   const handleTriggerUpload = (docKey: string) => {
-    if (isLockedByRegistrationClose) {
+    // 1. Cek apakah di luar masa sanggah
+    if (!isSanggahPeriodOpen) {
       setToast({
-        title: 'Berkas Terkunci',
-        message: 'Masa pendaftaran dan batas perbaikan berkas telah resmi ditutup pada 18 Oktober 2026 pukul 23:59 WITA.',
+        title: 'Masa Sanggah Belum Dibuka',
+        message: `Pengunggahan dan perbaikan berkas hanya dapat dilakukan pada Masa Sanggah (${sanggahDateRange}). Saat ini sistem berada di luar jadwal masa sanggah.`,
         type: 'error',
       });
       return;
     }
+
+    // 2. Cek apakah berkas sanggahan untuk kategori ini sudah pernah diunggah
+    const matchingDocs = documents.filter((d) => isDocTypeMatch(d, docKey));
+    const presentDocs = matchingDocs.filter((d) => !d.isMissing);
+    const alreadyHasSanggahan = presentDocs.some((d, idx) => {
+      if (d.isSanggah) return true;
+      if (d.storedName?.startsWith('sanggah_')) return true;
+      if (presentDocs.length > 1 && idx > 0) return true;
+      return false;
+    });
+
+    if (alreadyHasSanggahan) {
+      setToast({
+        title: 'Berkas Sanggahan Terkunci',
+        message: 'Berkas sanggahan untuk dokumen ini sudah berhasil diunggah dan terkunci permanen. Anda tidak dapat mengubah atau mengedit lagi.',
+        type: 'error',
+      });
+      return;
+    }
+
     if (fileInputRefs.current[docKey]) {
       fileInputRefs.current[docKey]?.click();
     }
   };
 
-  const handleFileChange = async (docKey: string, e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (docKey: string, e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Check size limit (max 10MB — must match backend MAX_FILE_SIZES)
-    if (file.size > 10 * 1024 * 1024) {
+    // 1. Validasi Masa Sanggah
+    if (!isSanggahPeriodOpen) {
       setToast({
-        title: 'Ukuran File Terlalu Besar',
-        message: `Ukuran file ${file.name} melebihi batas maksimum 10MB. Silakan kompres file Anda.`,
+        title: 'Masa Sanggah Ditutup',
+        message: `Pengunggahan berkas hanya dapat dilakukan pada Masa Sanggah (${sanggahDateRange}).`,
         type: 'error',
       });
       e.target.value = '';
       return;
     }
 
-    setUploadingKey(docKey);
+    // 2. Validasi Ukuran File (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      setToast({
+        title: 'Ukuran File Terlalu Besar',
+        message: `Ukuran file "${file.name}" melebihi batas maksimum 10MB. Silakan kompres file Anda terlebih dahulu.`,
+        type: 'error',
+      });
+      e.target.value = '';
+      return;
+    }
+
+    // 3. JANGAN langsung upload: Simpan ke pendingUpload untuk menampilkan dialog konfirmasi
+    const docItem = documentTypes.find((d) => d.key === docKey);
+    setPendingUpload({
+      docKey,
+      docLabel: docItem?.label || docKey,
+      file,
+    });
+
+    e.target.value = '';
+  };
+
+  const handleConfirmUpload = async () => {
+    if (!pendingUpload) return;
+    setIsUploadingPending(true);
+
     try {
       const token = localStorage.getItem('bssc_access_token');
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append('file', pendingUpload.file);
 
-      const res = await fetch(`/api/v1/applicant/upload/${docKey}`, {
+      const headers: Record<string, string> = {
+        'x-is-sanggah': 'true',
+      };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+      const mockTime = typeof window !== 'undefined' ? (window as any).__MOCK_TIME : undefined;
+      if (mockTime) headers['x-mock-time'] = mockTime;
+
+      const res = await fetch(`/api/v1/applicant/upload/${pendingUpload.docKey}?isSanggah=true`, {
         method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers,
         body: formData,
       });
 
@@ -198,11 +249,12 @@ export default function BerkasPage() {
       }
 
       setToast({
-        title: 'Berkas Berhasil Diperbarui!',
-        message: `Dokumen ${file.name} telah berhasil diunggah dan tersimpan di server.`,
+        title: 'Berkas Sanggahan Berhasil Diunggah & Terkunci!',
+        message: `Dokumen "${pendingUpload.file.name}" telah berhasil disimpan sebagai Berkas Sanggahan dan terkunci permanen.`,
         type: 'success',
       });
 
+      setPendingUpload(null);
       await loadDocuments();
     } catch (err: any) {
       setToast({
@@ -211,8 +263,7 @@ export default function BerkasPage() {
         type: 'error',
       });
     } finally {
-      setUploadingKey(null);
-      if (e.target) e.target.value = '';
+      setIsUploadingPending(false);
     }
   };
 
@@ -238,6 +289,32 @@ export default function BerkasPage() {
         message: err.message || 'File tidak dapat ditampilkan.',
         type: 'error',
       });
+    }
+  };
+
+  const handleResubmit = async () => {
+    if (!isSanggahPeriodOpen) {
+      setToast({
+        title: 'Di Luar Masa Sanggah',
+        message: `Pengiriman ulang pendaftaran hanya dapat dilakukan pada Masa Sanggah (${sanggahDateRange}).`,
+        type: 'error',
+      });
+      return;
+    }
+    setResubmitting(true);
+    try {
+      const res = await fetchAPI('/applicant/application/resubmit', { method: 'POST' });
+      if (!res.success) throw new Error(res.message || 'Gagal mengirim ulang pendaftaran.');
+      setToast({
+        title: 'Pendaftaran Terkirim Ulang',
+        message: res.message || 'Pendaftaran Anda berhasil dikirim ulang.',
+        type: 'success',
+      });
+      await loadDocuments();
+    } catch (err: any) {
+      setToast({ title: 'Gagal Mengirim Ulang', message: err.message || 'Terjadi kesalahan sistem.', type: 'error' });
+    } finally {
+      setResubmitting(false);
     }
   };
 
@@ -272,14 +349,60 @@ export default function BerkasPage() {
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Kelola Berkas Unggahan</h1>
           <p className="text-blue-100 text-xs sm:text-sm mt-1 max-w-xl leading-relaxed">
-            Anda dapat memperbarui atau mengganti berkas yang buram / belum sesuai di halaman ini kapan saja, terutama saat mengajukan <strong>sanggahan</strong>.
+            {isSanggahPeriodOpen
+              ? `Masa Sanggah sedang aktif (${sanggahDateRange}). Anda dapat memperbarui berkas perbaikan sanggahan. Berkas lama tetap tersimpan sebagai riwayat perbandingan.`
+              : `Pengunggahan dan perbaikan berkas hanya dapat dilakukan pada Masa Sanggah (${sanggahDateRange}). Saat ini portal berkas sedang dikunci.`}
           </p>
         </div>
       </div>
 
+      {/* Banner Status Masa Sanggah */}
+      {!isSanggahPeriodOpen ? (
+        <div className="bg-gradient-to-r from-amber-50 to-slate-50 border-2 border-amber-300 rounded-3xl p-6 shadow-sm flex items-start gap-4 animate-in fade-in">
+          <div className="p-3 bg-amber-600 text-white rounded-2xl shrink-0 shadow-sm">
+            <Lock className="w-6 h-6" />
+          </div>
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-200 text-amber-900 border border-amber-300">
+                Di Luar Masa Sanggah
+              </span>
+              <span className="text-xs text-amber-800 font-bold">Pengunggahan Berkas Ditutup</span>
+            </div>
+            <h3 className="text-base sm:text-lg font-extrabold text-slate-900">
+              Portal Pengunggahan & Perbaikan Berkas Sedang Dikunci
+            </h3>
+            <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-medium">
+              Pengunggahan maupun perubahan berkas pendaftaran hanya dapat dilakukan pada <strong>Masa Sanggah ({sanggahDateRange})</strong>. Di luar jadwal tersebut, sistem mengunci seluruh aksi pengunggahan dan perbaikan berkas untuk menjaga keabsahan data seleksi. Anda tetap dapat meninjau berkas yang telah tersimpan melalui tombol <strong>Lihat File</strong>.
+            </p>
+          </div>
+        </div>
+      ) : (
+        <div className="bg-gradient-to-r from-emerald-50 to-blue-50 border-2 border-emerald-300 rounded-3xl p-6 shadow-sm flex items-start gap-4 animate-in fade-in">
+          <div className="p-3 bg-emerald-600 text-white rounded-2xl shrink-0 shadow-sm">
+            <CheckCircle2 className="w-6 h-6" />
+          </div>
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-200 text-emerald-900 border border-emerald-300">
+                Masa Sanggah Aktif
+              </span>
+              <span className="text-xs text-emerald-800 font-bold">{sanggahDateRange}</span>
+            </div>
+            <h3 className="text-base sm:text-lg font-extrabold text-slate-900">
+              Pengunggahan Berkas Masa Sanggah Terbuka
+            </h3>
+            <p className="text-xs sm:text-sm text-slate-700 leading-relaxed font-medium">
+              Anda dapat mengunggah berkas sanggahan bagi dokumen yang memerlukan perbaikan. <strong>Penting:</strong> Setelah berkas sanggahan dipilih dan dikonfirmasi, dokumen akan <strong>langsung terkunci permanen</strong>. Berkas awal pendaftaran tetap tersimpan sebagai riwayat perbandingan.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Banner Khusus Status PERLU_UNGGAH_ULANG */}
       {applicationStatus === 'PERLU_UNGGAH_ULANG' && (() => {
         const hasValidKtm = documents.some((d) => isDocTypeMatch(d, 'ktm') && !d.isMissing);
-        if (isRegistrationClosed) {
+        if (!isSanggahPeriodOpen) {
           return (
             <div className="bg-slate-50 border-2 border-slate-300 rounded-3xl p-6 shadow-sm space-y-4">
               <div className="flex items-start gap-4">
@@ -288,22 +411,22 @@ export default function BerkasPage() {
                 </div>
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
-                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-rose-100 text-rose-800 border border-rose-200">
-                      Batas Waktu Habis
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-100 text-amber-800 border border-amber-300">
+                      Terkunci
                     </span>
-                    <span className="text-xs text-slate-500 font-semibold">Pendaftaran Terkunci</span>
+                    <span className="text-xs text-slate-500 font-semibold">Menunggu Masa Sanggah</span>
                   </div>
                   <h3 className="text-base sm:text-lg font-extrabold text-slate-900">
-                    Masa Pendaftaran & Perbaikan Berkas Telah Berakhir
+                    Perbaikan Berkas Belum Dapat Dikirimkan
                   </h3>
                   <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-medium">
-                    Batas akhir pendaftaran online dan perbaikan berkas telah resmi ditutup pada <strong>18 Oktober 2026 pukul 23:59 WITA</strong>. Berkas KTM Anda belum dilengkapi sebelum batas penutupan, sehingga seluruh berkas dan pendaftaran Anda telah dikunci oleh sistem.
+                    Pendaftaran Anda berstatus <strong>Perlu Unggah Ulang</strong>. Pengunggahan berkas perbaikan dan pengiriman ulang hanya dapat dilakukan pada saat <strong>Masa Sanggah ({sanggahDateRange})</strong> dibuka.
                   </p>
                 </div>
               </div>
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-3 border-t border-slate-200">
                 <p className="text-xs font-bold text-slate-500 italic">
-                  Status: Berkas Terkunci (Tidak dapat diunggah ulang / dikirim ulang)
+                  Status: Terkunci (Di Luar Masa Sanggah)
                 </p>
                 <button
                   type="button"
@@ -311,7 +434,7 @@ export default function BerkasPage() {
                   className="px-6 py-2.5 bg-slate-300 cursor-not-allowed text-slate-600 font-extrabold text-xs sm:text-sm rounded-xl flex items-center justify-center gap-2"
                 >
                   <Lock className="w-4 h-4" />
-                  Pendaftaran Terkunci
+                  Kirim Ulang Terkunci
                 </button>
               </div>
             </div>
@@ -328,7 +451,7 @@ export default function BerkasPage() {
                   Langkah 1: Unggah KTM / Surat Aktif Kuliah &nbsp;•&nbsp; Langkah 2: Kirim Ulang
                 </h3>
                 <p className="text-xs sm:text-sm text-slate-700 leading-relaxed font-medium">
-                  Berkas KTM/Surat Aktif Kuliah Anda tidak terbaca di sistem. Unggah ulang pada kartu <strong>KTM</strong> di bawah, lalu tekan tombol kirim ulang. Nomor registrasi Anda <strong>tidak berubah</strong>.
+                  Berkas KTM/Surat Aktif Kuliah Anda tidak terbaca di sistem. Unggah berkas sanggahan pada kartu <strong>KTM</strong> di bawah, lalu tekan tombol kirim ulang. Berkas sanggahan yang diunggah akan langsung terkunci permanen. Nomor registrasi Anda <strong>tidak berubah</strong>.
                 </p>
               </div>
             </div>
@@ -350,34 +473,30 @@ export default function BerkasPage() {
         );
       })()}
 
-      {/* Banner Peringatan Berkas Hilang */}
-      {!isLockedByRegistrationClose && missingDocuments && missingDocuments.length > 0 && (
-        <div className="bg-gradient-to-r from-rose-50 to-amber-50 border-2 border-rose-300 rounded-3xl p-6 shadow-md flex items-start gap-4 animate-in fade-in">
-          <div className="p-3 bg-rose-600 text-white rounded-2xl shadow-xs shrink-0">
-            <AlertCircle className="w-6 h-6 animate-pulse" />
-          </div>
-          <div className="space-y-1">
-            <h3 className="text-base sm:text-lg font-extrabold text-rose-950">
-              Perhatian: Beberapa Berkas Anda Perlu Diunggah Ulang
-            </h3>
-            <p className="text-xs sm:text-sm text-slate-700 leading-relaxed font-medium">
-              Dokumen dengan label <span className="font-extrabold text-rose-700 bg-rose-100 px-2 py-0.5 rounded">⚠️ File Perlu Diunggah Ulang</span> di bawah mengalami kendala sinkronisasi pada server. Mohon pilih dan unggah kembali berkas fisik yang sesuai.
-            </p>
-          </div>
-        </div>
-      )}
-
       {/* Grid Dokumen */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         {documentTypes.map((docTypeItem) => {
           const matchingDocs = documents.filter((d) => isDocTypeMatch(d, docTypeItem.key));
           const presentDocs = matchingDocs.filter((d) => !d.isMissing);
-          const uploadedDoc = presentDocs.length > 0 ? presentDocs[presentDocs.length - 1] : matchingDocs[matchingDocs.length - 1]; // Latest physically-present file
-          const hasMultipleVersions = presentDocs.length > 1;
-          const isUploading = uploadingKey === docTypeItem.key;
-          const isFileMissing = uploadedDoc ? !!uploadedDoc.isMissing : missingDocuments.some(mKey => isDocTypeMatch({ docType: mKey } as any, docTypeItem.key));
-          // Pasfoto / Selfie boleh ditake ulang kapan saja melalui kamera live ber-liveness detection (SOP anti-pemalsuan).
-          const isSelfieLocked = false;
+
+          // Cek apakah berkas merupakan sanggahan:
+          // 1. Ditandai d.isSanggah === true atau storedName mengandung prefix 'sanggah_'
+          // 2. ATAU jika memiliki lebih dari 1 file (presentDocs.length > 1), maka file setelah index 0 adalah sanggahan
+          const isDocSanggah = (d: DocumentInfo, idx: number) => {
+            if (d.isSanggah) return true;
+            if (d.storedName && d.storedName.startsWith('sanggah_')) return true;
+            if (presentDocs.length > 1 && idx > 0) return true;
+            return false;
+          };
+
+          const sanggahDocs = presentDocs.filter((d, idx) => isDocSanggah(d, idx));
+          const registrationDocs = presentDocs.filter((d, idx) => !isDocSanggah(d, idx));
+
+          const hasSanggahanUploaded = sanggahDocs.length > 0;
+          const latestSanggahDoc = hasSanggahanUploaded ? sanggahDocs[sanggahDocs.length - 1] : null;
+          const registrationDoc = registrationDocs.length > 0 ? registrationDocs[0] : null;
+
+          const isFileMissing = presentDocs.length === 0 && missingDocuments.some(mKey => isDocTypeMatch({ docType: mKey } as any, docTypeItem.key));
 
           return (
             <div
@@ -385,7 +504,9 @@ export default function BerkasPage() {
               className={`rounded-3xl p-6 transition-all flex flex-col justify-between border ${
                 isFileMissing
                   ? 'bg-rose-50/40 border-rose-300 shadow-sm ring-1 ring-rose-200'
-                  : uploadedDoc
+                  : hasSanggahanUploaded
+                  ? 'bg-amber-50/20 border-amber-300 shadow-sm ring-1 ring-amber-100'
+                  : registrationDoc
                   ? 'bg-white border-slate-200 shadow-sm hover:shadow-md'
                   : 'bg-slate-50/80 border-dashed border-slate-300'
               }`}
@@ -403,38 +524,54 @@ export default function BerkasPage() {
                 {/* Header Badge */}
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2">
-                    {isFileMissing ? (
+                    {hasSanggahanUploaded ? (
+                      <span className="text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full border bg-amber-100 text-amber-900 border-amber-300 flex items-center gap-1 shadow-2xs">
+                        <Check className="w-3 h-3 text-amber-700" /> Berkas Sanggahan Terkirim
+                      </span>
+                    ) : isFileMissing ? (
                       <span className="text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full border bg-rose-600 text-white border-rose-700 shadow-2xs animate-pulse">
-                        ⚠️ File Perlu Diunggah Ulang
+                        ⚠️ File Perlu Dilengkapi
+                      </span>
+                    ) : registrationDoc ? (
+                      <span className="text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full border bg-blue-100 text-blue-900 border-blue-200 flex items-center gap-1">
+                        <FileText className="w-3 h-3 text-blue-600" /> Berkas Pendaftaran
                       </span>
                     ) : (
                       <span className={`text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${
-                        uploadedDoc
-                          ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
-                          : docTypeItem.required
+                        docTypeItem.required
                           ? 'bg-amber-100 text-amber-800 border-amber-200'
                           : 'bg-slate-200 text-slate-600 border-slate-300'
                       }`}>
-                        {uploadedDoc ? '✓ Tersimpan' : docTypeItem.required ? 'Wajib Unggah' : 'Opsional'}
+                        {docTypeItem.required ? 'Wajib Unggah' : 'Opsional'}
                       </span>
                     )}
-                    {hasMultipleVersions && (
-                      <span className="text-[10px] font-extrabold uppercase bg-amber-100 text-amber-900 border border-amber-300 px-2 py-0.5 rounded-full">
-                        🆕 Sanggahan Baru (#{matchingDocs.length})
-                      </span>
-                    )}
-                    {uploadedDoc && (
+
+                    {(latestSanggahDoc || registrationDoc) && (
                       <span className="text-[10px] font-mono uppercase bg-slate-100 text-slate-600 px-2 py-0.5 rounded">
-                        {uploadedDoc.mimeType.split('/')[1] || 'FILE'}
+                        {(latestSanggahDoc || registrationDoc)!.mimeType.split('/')[1] || 'FILE'}
                       </span>
                     )}
                   </div>
+
+                  {hasSanggahanUploaded ? (
+                    <span className="text-[10px] text-slate-400 font-semibold flex items-center gap-1">
+                      <Lock className="w-3 h-3 text-slate-400" /> Terkunci Permanen
+                    </span>
+                  ) : !isSanggahPeriodOpen && registrationDoc ? (
+                    <span className="text-[10px] text-slate-400 font-semibold flex items-center gap-1">
+                      <Lock className="w-3 h-3 text-slate-400" /> Terkunci
+                    </span>
+                  ) : isSanggahPeriodOpen && registrationDoc ? (
+                    <span className="text-[10px] text-amber-800 font-bold bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
+                      Bisa Disanggah
+                    </span>
+                  ) : null}
                 </div>
 
                 {isFileMissing && (
                   <div className="p-3 bg-rose-100/80 border border-rose-300 rounded-2xl flex items-center gap-2 text-rose-900 text-xs font-bold mb-3 shadow-2xs">
                     <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
-                    <span>File fisik dokumen ini belum terbaca di server. Silakan pilih & unggah ulang file ini.</span>
+                    <span>Berkas ini belum dilampirkan atau tidak terbaca di server. Silakan unggah berkas sanggahan.</span>
                   </div>
                 )}
 
@@ -442,134 +579,279 @@ export default function BerkasPage() {
                 <h3 className="font-bold text-slate-900 text-base mb-1">{docTypeItem.label}</h3>
                 <p className="text-xs text-slate-500 leading-relaxed mb-4">{docTypeItem.desc}</p>
 
-                {/* Uploaded File Details (If Available) */}
-                {uploadedDoc ? (
+                {/* Tampilan Berkas */}
+                {hasSanggahanUploaded && latestSanggahDoc ? (
                   <div className="space-y-2 mb-4">
-                    <div className="bg-slate-50 rounded-2xl p-3.5 border border-slate-200 space-y-2">
+                    {/* 1. Berkas Sanggahan (Terkini) */}
+                    <div className="bg-amber-50/70 rounded-2xl p-3.5 border-2 border-amber-300 space-y-2">
                       <div className="flex items-center justify-between">
-                        <p className="text-xs font-bold text-slate-800 truncate" title={uploadedDoc.originalName}>
-                          📄 {uploadedDoc.originalName}
-                        </p>
-                        {hasMultipleVersions && (
-                          <span className="text-[9px] font-bold uppercase bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-md">
-                            Unggahan Terbaru
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <span className="text-[10px] font-black uppercase bg-amber-200 text-amber-950 px-2 py-0.5 rounded-md shrink-0">
+                            🆕 Berkas Sanggahan
                           </span>
-                        )}
+                          <p className="text-xs font-extrabold text-slate-900 truncate" title={latestSanggahDoc.originalName}>
+                            📄 {latestSanggahDoc.originalName}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleViewDocument(latestSanggahDoc.id)}
+                          className="text-xs font-extrabold text-blue-700 hover:text-blue-900 underline shrink-0 ml-2"
+                        >
+                          Lihat
+                        </button>
                       </div>
-                      <div className="flex items-center gap-4 text-[11px] text-slate-500 font-medium">
+                      <div className="flex items-center gap-3 text-[11px] text-slate-600 font-medium">
                         <span className="flex items-center gap-1">
                           <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                          {new Date(uploadedDoc.uploadedAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                          {new Date(latestSanggahDoc.uploadedAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
                         </span>
                         <span className="flex items-center gap-1">
                           <HardDrive className="w-3.5 h-3.5 text-slate-400" />
-                          {formatSize(uploadedDoc.fileSize)}
+                          {formatSize(latestSanggahDoc.fileSize)}
                         </span>
                       </div>
                     </div>
 
-                    {hasMultipleVersions && (
-                      <div className="p-2.5 bg-amber-50/80 rounded-xl border border-amber-200 text-[11px] text-amber-900">
-                        <p className="font-bold mb-1">Riwayat Berkas Sanggahan ({matchingDocs.length} File):</p>
-                        <div className="space-y-1">
-                          {matchingDocs.map((mDoc, idx) => (
-                            <div key={mDoc.id} className="flex items-center justify-between text-[10px]">
-                              <span className="truncate max-w-[200px]">
-                                {idx === matchingDocs.length - 1 ? '🆕' : '📁'} #{idx + 1}: {mDoc.originalName}
-                              </span>
-                              <button
-                                type="button"
-                                onClick={() => handleViewDocument(mDoc.id)}
-                                className="text-blue-700 font-bold hover:underline"
-                              >
-                                Lihat
-                              </button>
-                            </div>
-                          ))}
+                    {/* 2. Berkas Lama Pendaftaran (jika ada) */}
+                    {registrationDoc ? (
+                      <div className="bg-slate-50 rounded-2xl p-3 border border-slate-200 space-y-1.5 opacity-90">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <span className="text-[10px] font-bold uppercase bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded shrink-0">
+                              📁 Berkas Lama
+                            </span>
+                            <p className="text-xs font-semibold text-slate-700 truncate" title={registrationDoc.originalName}>
+                              {registrationDoc.originalName}
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleViewDocument(registrationDoc.id)}
+                            className="text-xs font-bold text-slate-600 hover:text-slate-900 underline shrink-0 ml-2"
+                          >
+                            Lihat
+                          </button>
                         </div>
+                        <div className="flex items-center gap-3 text-[10px] text-slate-500 font-medium">
+                          <span>{new Date(registrationDoc.uploadedAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                          <span>•</span>
+                          <span>{formatSize(registrationDoc.fileSize)}</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-200 text-[11px] text-slate-500 italic">
+                        ℹ️ Dokumen awal saat pendaftaran belum dilampirkan. Berkas ini telah dilengkapi pada Masa Sanggah.
                       </div>
                     )}
                   </div>
+                ) : registrationDoc ? (
+                  /* Hanya ada Berkas Pendaftaran Awal (belum pernah mengajukan sanggahan) */
+                  <div className="space-y-2 mb-4">
+                    <div className="bg-slate-50 rounded-2xl p-3.5 border border-slate-200 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs font-bold text-slate-800 truncate" title={registrationDoc.originalName}>
+                          📄 {registrationDoc.originalName}
+                        </p>
+                        <span className="text-[9px] font-bold uppercase bg-blue-100 text-blue-800 px-2 py-0.5 rounded-md">
+                          Dari Pendaftaran
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-4 text-[11px] text-slate-500 font-medium">
+                        <span className="flex items-center gap-1">
+                          <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                          {new Date(registrationDoc.uploadedAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <HardDrive className="w-3.5 h-3.5 text-slate-400" />
+                          {formatSize(registrationDoc.fileSize)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
                 ) : (
                   <div className="p-4 bg-amber-50/50 border border-amber-200/60 rounded-2xl text-[11px] text-amber-800 leading-relaxed mb-4">
-                    Belum ada dokumen yang diunggah untuk kategori ini.
+                    Belum ada berkas yang diunggah untuk kategori ini. Silakan unggah berkas perbaikan Anda pada Masa Sanggah ini.
                   </div>
                 )}
               </div>
 
               {/* Action Buttons */}
               <div className="flex items-center gap-2 pt-3 border-t border-slate-100 mt-auto">
-                {uploadedDoc && (
-                  <button
-                    type="button"
-                    onClick={() => handleViewDocument(uploadedDoc.id)}
-                    className="flex-1 py-2 px-3 text-xs font-bold bg-blue-50 hover:bg-blue-100 text-blue-800 rounded-xl transition-colors flex items-center justify-center gap-1.5"
-                  >
-                    <ExternalLink className="w-3.5 h-3.5" /> Lihat File
-                  </button>
-                )}
+                {hasSanggahanUploaded && latestSanggahDoc ? (
+                  /* KASUS 1: Berkas Sanggahan sudah terunggah -> LANGSUNG TERKUNCI PERMANEN */
+                  <div className="w-full flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleViewDocument(latestSanggahDoc.id)}
+                      className="flex-1 py-2.5 px-3 text-xs font-bold bg-amber-50 hover:bg-amber-100 text-amber-900 rounded-xl transition-colors flex items-center justify-center gap-1.5 border border-amber-300 shadow-2xs"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" /> Lihat Berkas Sanggahan
+                    </button>
+                    <div className="px-3 py-2 text-[11px] font-bold text-slate-500 bg-slate-100 rounded-xl border border-slate-200 flex items-center gap-1 shrink-0">
+                      <Lock className="w-3.5 h-3.5 text-slate-400" /> Terkunci
+                    </div>
+                  </div>
+                ) : !isSanggahPeriodOpen ? (
+                  /* KASUS 2: DI LUAR MASA SANGGAH -> SEMUA AKSI EDIT/UNGGAH TERKUNCI */
+                  <div className="w-full flex items-center gap-2">
+                    {registrationDoc ? (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => handleViewDocument(registrationDoc.id)}
+                          className="flex-1 py-2.5 px-3 text-xs font-bold bg-blue-50 hover:bg-blue-100 text-blue-800 rounded-xl transition-colors flex items-center justify-center gap-1.5 border border-blue-200 shadow-2xs"
+                        >
+                          <ExternalLink className="w-3.5 h-3.5" /> Lihat File
+                        </button>
+                        <div className="px-3 py-2 text-[11px] font-bold text-slate-400 bg-slate-100 rounded-xl border border-slate-200 flex items-center gap-1 shrink-0">
+                          <Lock className="w-3.5 h-3.5 text-slate-400" /> Terkunci
+                        </div>
+                      </>
+                    ) : (
+                      <button
+                        type="button"
+                        disabled
+                        className="w-full py-2.5 px-3 text-xs font-bold rounded-xl bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed flex items-center justify-center gap-1.5"
+                      >
+                        <Lock className="w-3.5 h-3.5" /> Terkunci (Di Luar Masa Sanggah)
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  /* KASUS 3: MASA SANGGAH AKTIF & BELUM UNGGAH SANGGAHAN -> DIBUKA UNTUK UNGGAH SANGGAHAN! */
+                  <div className="w-full flex items-center gap-2">
+                    {registrationDoc && (
+                      <button
+                        type="button"
+                        onClick={() => handleViewDocument(registrationDoc.id)}
+                        className="flex-1 py-2.5 px-3 text-xs font-bold bg-blue-50 hover:bg-blue-100 text-blue-800 rounded-xl transition-colors flex items-center justify-center gap-1.5 border border-blue-200 shadow-2xs"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" /> Lihat File
+                      </button>
+                    )}
 
-                <button
-                  type="button"
-                  disabled={isUploading || isLockedByRegistrationClose}
-                  onClick={() => {
-                    if (isLockedByRegistrationClose) return;
-                    if (docTypeItem.key === 'selfie') {
-                      setIsCameraModalOpen(true);
-                    } else {
-                      handleTriggerUpload(docTypeItem.key);
-                    }
-                  }}
-                  className={`flex-1 py-2 px-3 text-xs font-bold rounded-xl transition-all shadow-sm flex items-center justify-center gap-1.5 ${
-                    isLockedByRegistrationClose
-                      ? 'bg-slate-200 text-slate-500 cursor-not-allowed border border-slate-300'
-                      : docTypeItem.key === 'selfie'
-                      ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/20'
-                      : isUploading
-                      ? 'bg-slate-400 cursor-not-allowed text-white'
-                      : uploadedDoc
-                      ? 'bg-slate-800 hover:bg-slate-900 text-white'
-                      : 'bg-blue-900 hover:bg-blue-950 text-white'
-                  }`}
-                >
-                  {isLockedByRegistrationClose ? (
-                    <>
-                      <Lock className="w-3.5 h-3.5" /> Terkunci
-                    </>
-                  ) : isUploading ? (
-                    <>
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" /> Mengunggah...
-                    </>
-                  ) : docTypeItem.key === 'selfie' ? (
-                    <>
-                      <Camera className="w-3.5 h-3.5" /> {uploadedDoc ? 'Ambil Ulang Foto via Kamera' : 'Ambil Foto via Kamera'}
-                    </>
-                  ) : uploadedDoc ? (
-                    <>
-                      <RefreshCw className="w-3.5 h-3.5" /> Ganti / Unggah Ulang
-                    </>
-                  ) : (
-                    <>
-                      <Upload className="w-3.5 h-3.5" /> Unggah Berkas
-                    </>
-                  )}
-                </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (docTypeItem.key === 'selfie') {
+                          setIsCameraModalOpen(true);
+                        } else {
+                          handleTriggerUpload(docTypeItem.key);
+                        }
+                      }}
+                      className={`flex-1 py-2.5 px-3 text-xs font-bold rounded-xl transition-all shadow-sm flex items-center justify-center gap-1.5 ${
+                        docTypeItem.key === 'selfie'
+                          ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/20'
+                          : registrationDoc
+                          ? 'bg-amber-600 hover:bg-amber-700 text-white shadow-amber-600/20'
+                          : 'bg-blue-900 hover:bg-blue-950 text-white shadow-blue-900/20'
+                      }`}
+                    >
+                      {docTypeItem.key === 'selfie' ? (
+                        <>
+                          <Camera className="w-3.5 h-3.5" /> {registrationDoc ? 'Ambil Foto Ulang' : 'Ambil Foto via Kamera'}
+                        </>
+                      ) : registrationDoc ? (
+                        <>
+                          <RefreshCw className="w-3.5 h-3.5" /> Unggah Sanggahan
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="w-3.5 h-3.5" /> Unggah Berkas
+                        </>
+                      )}
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           );
         })}
       </div>
 
+      {/* Modal Konfirmasi Unggah Berkas */}
+      {pendingUpload && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-in fade-in">
+          <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden border border-slate-100 p-6 sm:p-7 animate-in zoom-in-95 space-y-5">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-6 h-6" />
+              </div>
+              <div>
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">
+                  Konfirmasi Berkas Sanggahan
+                </span>
+                <h3 className="text-lg font-extrabold text-slate-900 leading-tight mt-0.5">
+                  Konfirmasi Unggah Berkas
+                </h3>
+              </div>
+            </div>
 
+            <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-2">
+              <div className="text-xs text-slate-500 font-medium">Kategori Dokumen:</div>
+              <div className="text-xs font-bold text-slate-900">{pendingUpload.docLabel}</div>
+              <div className="pt-2 border-t border-slate-200 flex items-start gap-2">
+                <FileText className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-bold text-slate-800 break-all">
+                    {pendingUpload.file.name}
+                  </p>
+                  <p className="text-[11px] text-slate-500 mt-0.5">
+                    Ukuran: {formatSize(pendingUpload.file.size)}
+                  </p>
+                </div>
+              </div>
+            </div>
 
-      {/* Modal Pengambilan Foto Langsung via Kamera (Liveness Detection: Hadap Kanan, Kiri, Senyum) */}
+            <div className="bg-rose-50 border border-rose-200 rounded-2xl p-3.5 flex items-start gap-2.5 text-rose-800">
+              <Lock className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+              <p className="text-xs leading-relaxed font-semibold">
+                <strong>Perhatian:</strong> Berkas ini akan tersimpan sebagai <strong>Berkas Sanggahan</strong> dan akan <strong>langsung terkunci permanen</strong> (tidak dapat diubah atau diedit lagi).
+              </p>
+            </div>
+
+            <p className="text-xs sm:text-sm text-slate-700 font-medium leading-relaxed">
+              Yakin mengunggah <strong>&quot;{pendingUpload.file.name}&quot;</strong>?
+            </p>
+
+            <div className="flex items-center gap-3 pt-2">
+              <button
+                type="button"
+                disabled={isUploadingPending}
+                onClick={() => setPendingUpload(null)}
+                className="flex-1 py-3 px-4 border border-slate-300 hover:bg-slate-100 text-slate-700 font-extrabold text-xs sm:text-sm rounded-xl transition-all disabled:opacity-50"
+              >
+                Tidak
+              </button>
+              <button
+                type="button"
+                disabled={isUploadingPending}
+                onClick={handleConfirmUpload}
+                className="flex-1 py-3 px-4 bg-blue-900 hover:bg-blue-950 text-white font-extrabold text-xs sm:text-sm rounded-xl transition-all shadow-md flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {isUploadingPending ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Mengunggah...
+                  </>
+                ) : (
+                  'Ya, Unggah'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Pengambilan Foto Langsung via Kamera */}
       <SelfieLivenessModal
         isOpen={isCameraModalOpen}
         onClose={() => setIsCameraModalOpen(false)}
         onSuccess={() => {
           setToast({
-            title: 'Foto Berhasil Diperbarui!',
-            message: 'Foto selfie / pasfoto Anda telah berhasil diverifikasi liveness dan tersimpan ke sistem.',
+            title: 'Foto Berhasil Diperbarui & Terkunci!',
+            message: 'Foto selfie / pasfoto Anda telah berhasil diverifikasi liveness dan tersimpan permanen sebagai berkas sanggahan.',
             type: 'success',
           });
           loadDocuments();

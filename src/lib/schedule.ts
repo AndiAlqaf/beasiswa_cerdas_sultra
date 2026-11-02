@@ -64,6 +64,7 @@ export interface TimelineStep {
 
 if (typeof window !== 'undefined') {
   localStorage.removeItem('bssc_mock_status');
+  localStorage.removeItem('bssc_mock_time');
   (window as any).setPhase = async (phase: string) => {
     const config = getStoredScheduleConfig();
     let mockTime = '';

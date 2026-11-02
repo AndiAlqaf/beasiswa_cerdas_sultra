@@ -40,6 +40,7 @@ export default function SelfieLivenessModal({
 
   const [livenessStatus, setLivenessStatus] = useState<LivenessStatus>('searching');
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
+  const [showConfirmUpload, setShowConfirmUpload] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
 
@@ -309,6 +310,7 @@ export default function SelfieLivenessModal({
   // 8. Retake Action
   const handleRetake = () => {
     setCapturedImage(null);
+    setShowConfirmUpload(false);
     setUploadError(null);
     startCamera();
   };
@@ -326,15 +328,18 @@ export default function SelfieLivenessModal({
         typeof window !== 'undefined'
           ? localStorage.getItem('bssc_access_token')
           : null;
+      const mockTime = typeof window !== 'undefined' ? (window as any).__MOCK_TIME : undefined;
 
       const formData = new FormData();
       formData.append('file', blob, 'selfie_kamera.jpg');
 
+      const headers: Record<string, string> = {};
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+      if (mockTime) headers['x-mock-time'] = mockTime;
+
       const uploadRes = await fetch('/api/v1/applicant/upload/selfie', {
         method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers,
         body: formData,
       });
 
@@ -343,11 +348,13 @@ export default function SelfieLivenessModal({
         throw new Error(data.message || 'Gagal menyimpan foto selfie.');
       }
 
+      setShowConfirmUpload(false);
       onSuccess();
       onClose();
     } catch (err: any) {
       console.error('Upload selfie error:', err);
       setUploadError(err.message || 'Terjadi kesalahan saat menyimpan foto.');
+      setShowConfirmUpload(false);
     } finally {
       setIsUploading(false);
     }
@@ -497,7 +504,7 @@ export default function SelfieLivenessModal({
                 </button>
                 <button
                   type="button"
-                  onClick={handleUploadPhoto}
+                  onClick={() => setShowConfirmUpload(true)}
                   disabled={isUploading}
                   className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs sm:text-sm font-semibold shadow-lg transition-all flex items-center gap-2 disabled:opacity-50"
                 >
@@ -512,6 +519,42 @@ export default function SelfieLivenessModal({
                   )}
                 </button>
               </div>
+
+              {/* Confirmation Popup Before Uploading Selfie */}
+              {showConfirmUpload && (
+                <div className="absolute inset-0 z-30 bg-slate-900/85 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in">
+                  <div className="bg-white rounded-2xl p-5 max-w-xs w-full text-center space-y-3 shadow-2xl animate-in zoom-in-95">
+                    <div className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-600 mx-auto flex items-center justify-center">
+                      <AlertTriangle className="w-6 h-6" />
+                    </div>
+                    <h4 className="font-extrabold text-slate-900 text-sm">Konfirmasi Simpan Foto</h4>
+                    <p className="text-xs text-slate-600 leading-relaxed">
+                      Yakin mengunggah foto selfie ini?
+                    </p>
+                    <div className="bg-rose-50 border border-rose-200 rounded-xl p-2.5 text-[11px] text-rose-800 font-semibold text-left">
+                      ⚠️ Setelah disimpan, foto selfie akan <strong>langsung terkunci permanen</strong> dan tidak dapat diubah atau diedit lagi.
+                    </div>
+                    <div className="flex gap-2 pt-2">
+                      <button
+                        type="button"
+                        disabled={isUploading}
+                        onClick={() => setShowConfirmUpload(false)}
+                        className="flex-1 py-2 text-xs font-bold border border-slate-300 rounded-xl hover:bg-slate-100 text-slate-700 transition-colors"
+                      >
+                        Batal
+                      </button>
+                      <button
+                        type="button"
+                        disabled={isUploading}
+                        onClick={handleUploadPhoto}
+                        className="flex-1 py-2 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow flex items-center justify-center gap-1.5 transition-colors"
+                      >
+                        {isUploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Ya, Simpan'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

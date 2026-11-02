@@ -13,10 +13,25 @@ const { DOC_ALIAS_GROUPS, normalizeDocType, getAliasGroup } = require('../config
 /**
  * Batas akhir pendaftaran online & perbaikan berkas: 18 Oktober 2026 pukul 23:59:59 WITA (UTC+8)
  */
-function isRegistrationDeadlinePassed() {
+function isRegistrationDeadlinePassed(req) {
+  const mockHeader = req && (req.headers['x-mock-time'] || req.headers['x-bssc-mock-time']);
+  const now = mockHeader ? new Date(mockHeader).getTime() : Date.now();
   const REGISTRATION_DEADLINE_MS = new Date('2026-10-18T23:59:59+08:00').getTime();
-  return Date.now() > REGISTRATION_DEADLINE_MS;
+  return now > REGISTRATION_DEADLINE_MS;
 }
+
+/**
+ * Cek apakah saat ini berada dalam Masa Sanggah:
+ * Jadwal: 05 November 2026 00:00:00 WITA (UTC+8) s.d. 08 November 2026 23:59:59 WITA (UTC+8)
+ */
+function isMasaSanggahActive(req) {
+  const mockHeader = req && (req.headers['x-mock-time'] || req.headers['x-bssc-mock-time']);
+  const now = mockHeader ? new Date(mockHeader).getTime() : Date.now();
+  const SANGGAH_START_MS = new Date('2026-11-05T00:00:00+08:00').getTime();
+  const SANGGAH_END_MS = new Date('2026-11-08T23:59:59+08:00').getTime();
+  return now >= SANGGAH_START_MS && now <= SANGGAH_END_MS;
+}
+
 
 
 /**
@@ -65,16 +80,19 @@ async function getProfile(req, res) {
       if (!exists) {
         missingDocuments.push(doc.doc_type);
       }
+      const isSanggahDoc = !!(doc.stored_name && doc.stored_name.startsWith('sanggah_'));
       docList.push({
         id: doc.id,
         docType: doc.doc_type,
         doc_type: doc.doc_type,
         canonicalType: normalizeDocType(doc.doc_type),
         originalName: doc.original_name,
+        storedName: doc.stored_name,
         mimeType: doc.mime_type,
         fileSize: doc.file_size,
         uploadedAt: doc.uploaded_at,
         isMissing: !exists,
+        isSanggah: isSanggahDoc,
       });
     }
 
@@ -366,41 +384,71 @@ function uploadDocument(docType) {
         return res.status(400).json({ success: false, message: 'File tidak ditemukan. Silakan pilih file untuk diunggah.' });
       }
 
-      // Check if applicant is in appeal / sanggahan state or status is DITOLAK
+      // Deteksi apakah upload ini merupakan upload sanggahan
+      const isSanggahParam = req.query.isSanggah === 'true' || req.headers['x-is-sanggah'] === 'true';
+      const isFromBerkasPage = req.headers['referer']?.includes('/dashboard/berkas');
+      const isSanggahUpload = isSanggahParam || (isFromBerkasPage && isMasaSanggahActive(req));
+
+      // 1. Validasi Masa Sanggah:
+      // Di luar masa sanggah, pengunggahan berkas sanggahan di /dashboard/berkas ditolak
+      if (isRegistrationDeadlinePassed(req) && !isMasaSanggahActive(req)) {
+        const isRegistrationPage = req.headers['referer']?.includes('/register') || req.headers['referer']?.includes('/dashboard/daftar');
+        if (!isRegistrationPage) {
+          if (req.file && req.file.path && fs.existsSync(req.file.path)) {
+            try { fs.unlinkSync(req.file.path); } catch (e) {}
+          }
+          return res.status(403).json({
+            success: false,
+            message: 'Pengunggahan atau perbaikan berkas hanya dapat dilakukan pada Masa Sanggah (05 - 08 November 2026). Saat ini sistem sedang berada di luar jadwal masa sanggah.',
+          });
+        }
+      }
+
       const [appRows] = await pool.execute('SELECT status, notes FROM applications WHERE user_id = ?', [userId]);
       const appStatus = appRows.length > 0 ? appRows[0].status : null;
       const appNotes = appRows.length > 0 ? (appRows[0].notes || '') : '';
-
-      // Kunci unggah berkas jika status PERLU_UNGGAH_ULANG dan masa pendaftaran sudah berakhir
-      if (appStatus === 'PERLU_UNGGAH_ULANG' && isRegistrationDeadlinePassed()) {
-        if (req.file && req.file.path && fs.existsSync(req.file.path)) {
-          try { fs.unlinkSync(req.file.path); } catch (e) {}
-        }
-        return res.status(403).json({
-          success: false,
-          message: 'Masa pendaftaran online dan batas perbaikan berkas telah resmi ditutup pada 18 Oktober 2026 pukul 23:59 WITA. Berkas pendaftaran telah dikunci.',
-        });
-      }
 
       const isAppealState = appStatus === 'DITOLAK' ||
                             appNotes.toLowerCase().includes('sanggah') ||
                             appNotes.includes('[SANGGAHAN');
 
-      // Same logical document can be stored under different doc_type aliases (legacy form keys vs. berkas page keys)
-      // Normalize to canonical doc_type so that database storage is 100% consistent and unambiguous.
       const canonicalDocType = normalizeDocType(docType) || docType;
       const aliasGroup = getAliasGroup(canonicalDocType);
       const aliasPlaceholders = aliasGroup.map(() => '?').join(',');
 
-      // Check if any existing document of this type (or alias) is missing physically from disk
       const [oldDocs] = await pool.execute(
-        `SELECT id, file_path FROM documents WHERE user_id = ? AND doc_type IN (${aliasPlaceholders})`,
+        `SELECT id, file_path, original_name, stored_name, uploaded_at FROM documents WHERE user_id = ? AND doc_type IN (${aliasPlaceholders})`,
         [userId, ...aliasGroup]
       );
+
+      // 2. Kunci permanen jika berkas sanggahan sudah pernah diunggah untuk kategori ini
+      const alreadyHasSanggahan = oldDocs.some(d => d.stored_name && d.stored_name.startsWith('sanggah_'));
+      if (isSanggahUpload && (alreadyHasSanggahan || oldDocs.length >= 2)) {
+        if (req.file && req.file.path && fs.existsSync(req.file.path)) {
+          try { fs.unlinkSync(req.file.path); } catch (e) {}
+        }
+        return res.status(403).json({
+          success: false,
+          message: 'Berkas sanggahan untuk kategori dokumen ini telah berhasil diunggah sebelumnya dan telah terkunci permanen. Anda tidak dapat mengubah atau mengedit lagi.',
+        });
+      }
+        return res.status(403).json({
+          success: false,
+          message: 'Berkas sanggahan untuk kategori dokumen ini telah berhasil diunggah sebelumnya dan telah terkunci permanen. Anda tidak dapat mengubah atau mengedit lagi.',
+        });
+      }
+
       const hasMissingPhysicalFile = oldDocs.length > 0 && oldDocs.some(d => !d.file_path || !fs.existsSync(d.file_path));
 
-      if (!isAppealState || hasMissingPhysicalFile) {
-        // Replace and cleanup broken/old document record of same type
+      // Saat Masa Sanggah, simpan berkas baru TANPA menghapus berkas lama
+      if (hasMissingPhysicalFile) {
+        for (const oldDoc of oldDocs) {
+          if (!oldDoc.file_path || !fs.existsSync(oldDoc.file_path)) {
+            await pool.execute('DELETE FROM documents WHERE id = ?', [oldDoc.id]);
+          }
+        }
+      } else if (!isMasaSanggahActive(req) && !isAppealState) {
+        // Jika di luar masa sanggah dan bukan banding (misal saat perbaikan draft awal), ganti berkas lama
         for (const oldDoc of oldDocs) {
           if (oldDoc.file_path && fs.existsSync(oldDoc.file_path)) {
             try { fs.unlinkSync(oldDoc.file_path); } catch (e) {}
@@ -410,15 +458,27 @@ function uploadDocument(docType) {
       }
 
       // Save document record using canonical doc_type
+      const isSanggahUpload = isMasaSanggahActive(req) || isRegistrationDeadlinePassed(req);
+      const storedFileName = isSanggahUpload && !req.file.filename.startsWith('sanggah_')
+        ? `sanggah_${req.file.filename}`
+        : req.file.filename;
+
       const docId = uuidv4();
       await pool.execute(
         `INSERT INTO documents (id, user_id, doc_type, original_name, stored_name, mime_type, file_size, file_path)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-        [docId, userId, canonicalDocType, req.file.originalname, req.file.filename, req.file.mimetype, req.file.size, req.file.path]
+        [docId, userId, canonicalDocType, req.file.originalname, storedFileName, req.file.mimetype, req.file.size, req.file.path]
       );
 
       if (canonicalDocType === 'selfie') {
         await pool.execute('UPDATE profiles SET selfie_path = ? WHERE user_id = ?', [req.file.path, userId]);
+      }
+
+      if (isMasaSanggahActive(req) && appRows.length > 0) {
+        if (!appNotes.includes('[SANGGAHAN')) {
+          const updatedNotes = appNotes ? (appNotes + ' [SANGGAHAN PERBAIKAN BERKAS DIAJUKAN]') : '[SANGGAHAN PERBAIKAN BERKAS DIAJUKAN]';
+          await pool.execute('UPDATE applications SET notes = ? WHERE user_id = ?', [updatedNotes, userId]);
+        }
       }
 
       auditLog({
@@ -483,7 +543,7 @@ async function submitApplication(req, res) {
     const userId = req.user.id;
     const pool = getPool();
 
-    if (isRegistrationDeadlinePassed()) {
+    if (isRegistrationDeadlinePassed(req)) {
       return res.status(403).json({
         success: false,
         message: 'Masa pendaftaran online telah resmi ditutup pada 18 Oktober 2026 pukul 23:59 WITA. Pengajuan formulir baru tidak dapat dilakukan.',
@@ -553,7 +613,7 @@ async function resubmitApplication(req, res) {
       return res.status(400).json({ success: false, message: 'Pendaftaran Anda tidak memerlukan pengiriman ulang.' });
     }
 
-    if (isRegistrationDeadlinePassed()) {
+    if (isRegistrationDeadlinePassed(req)) {
       return res.status(403).json({
         success: false,
         message: 'Batas waktu perbaikan dan pengiriman ulang berkas telah berakhir seiring ditutupnya masa pendaftaran online (18 Oktober 2026 pukul 23:59 WITA). Berkas pendaftaran telah dikunci.',
