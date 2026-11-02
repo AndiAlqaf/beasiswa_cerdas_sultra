@@ -72,6 +72,7 @@ export default function CheckStatusPage() {
         const sanggahStep = timeline.find((s) => s.id === 'sanggah');
         const isSanggahOpen = sanggahStep ? sanggahStep.status === 'active' : false;
         const isSanggahCompleted = sanggahStep ? sanggahStep.status === 'completed' : false;
+        const sanggahDateText = sanggahStep?.date || '5 - 8 November 2026';
 
         setSearchedApp({
           registrationNo: res.data.registrationNo,
@@ -82,6 +83,7 @@ export default function CheckStatusPage() {
           notes: effectiveNotes,
           isSanggahOpen,
           isSanggahCompleted,
+          sanggahDateText,
           isPenetapanOpen: isPenetapanPeriodOpen,
         });
       } else {
@@ -181,6 +183,53 @@ export default function CheckStatusPage() {
 
                   <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-6 gap-2">
                     {statusSteps.map((step, idx) => {
+                      const isRejected = searchedApp.status === 'DITOLAK';
+
+                      // Khusus pendaftar yang belum lolos (DITOLAK):
+                      // Tahap 1, 2, 3 tetap dicentang (✓), sedangkan tahap 4 disilang (✕)
+                      if (isRejected) {
+                        if (idx < 3) {
+                          // 1: Permohonan Terkirim, 2: Verifikasi Berkas, 3: Seleksi Administrasi -> Tetap Dicentang
+                          return (
+                            <div
+                              key={step.key}
+                              className="p-3 rounded-xl border text-center space-y-2 transition-all bg-emerald-50 border-emerald-200 text-emerald-950 shadow-2xs"
+                            >
+                              <div className="w-6 h-6 rounded-full mx-auto flex items-center justify-center font-bold text-xs bg-emerald-600 text-white shadow-2xs">
+                                ✓
+                              </div>
+                              <p className="text-[11px] font-bold leading-tight">{step.title}</p>
+                            </div>
+                          );
+                        }
+                        if (idx === 3) {
+                          // 4: Lolos Verifikasi Berkas -> Disilang
+                          return (
+                            <div
+                              key={step.key}
+                              className="p-3 rounded-xl border text-center space-y-2 transition-all bg-rose-50 border-rose-300 text-rose-950 shadow-xs ring-1 ring-rose-200"
+                            >
+                              <div className="w-6 h-6 rounded-full mx-auto flex items-center justify-center font-extrabold text-xs bg-rose-600 text-white shadow-2xs">
+                                ✕
+                              </div>
+                              <p className="text-[11px] font-bold leading-tight text-rose-950">{step.title}</p>
+                            </div>
+                          );
+                        }
+                        // 5: Penetapan Penerima, 6: Pencairan Termin I -> Inactive
+                        return (
+                          <div
+                            key={step.key}
+                            className="p-3 rounded-xl border text-center space-y-2 transition-all bg-slate-50 border-slate-200 text-slate-400 opacity-60"
+                          >
+                            <div className="w-6 h-6 rounded-full mx-auto flex items-center justify-center font-bold text-xs bg-slate-200 text-slate-500">
+                              {idx + 1}
+                            </div>
+                            <p className="text-[11px] font-bold leading-tight">{step.title}</p>
+                          </div>
+                        );
+                      }
+
                       const currentIdx = getStepIndex(searchedApp.status);
                       const isComplete = idx <= currentIdx;
                       const isCurrent = idx === currentIdx;
@@ -195,7 +244,13 @@ export default function CheckStatusPage() {
                                 : 'bg-slate-50 border-slate-200 text-slate-400 opacity-60'
                             }`}
                         >
-                          <div className="w-6 h-6 rounded-full mx-auto flex items-center justify-center font-bold text-xs bg-white/20">
+                          <div className={`w-6 h-6 rounded-full mx-auto flex items-center justify-center font-bold text-xs ${
+                            isCurrent
+                              ? 'bg-white/20 text-white'
+                              : isComplete
+                                ? 'bg-emerald-600 text-white'
+                                : 'bg-slate-200 text-slate-500'
+                          }`}>
                             {isComplete ? '✓' : idx + 1}
                           </div>
                           <p className="text-[11px] font-bold leading-tight">{step.title}</p>
@@ -206,7 +261,7 @@ export default function CheckStatusPage() {
                 </div>
 
                 {/* Official Status Notes */}
-                <div className={`p-5 rounded-2xl border space-y-3 ${searchedApp.status === 'DITOLAK'
+                <div className={`p-5 rounded-2xl border space-y-3.5 ${searchedApp.status === 'DITOLAK'
                     ? 'bg-rose-50 border-rose-200 text-rose-950'
                     : 'bg-slate-50 border-slate-200 text-slate-900'
                   }`}>
@@ -214,27 +269,41 @@ export default function CheckStatusPage() {
                     <ShieldCheck className={`w-4 h-4 ${searchedApp.status === 'DITOLAK' ? 'text-rose-600' : 'text-blue-900'}`} />
                     Catatan Resmi Tim Verifikator:
                   </div>
-                  <p className="text-xs leading-relaxed font-medium whitespace-pre-line">{searchedApp.notes || 'Berkas belum memenuhi kualifikasi seleksi administrasi.'}</p>
+                  <p className="text-xs leading-relaxed font-medium whitespace-pre-line pl-6">
+                    {searchedApp.notes || 'Berkas belum memenuhi kualifikasi seleksi administrasi.'}
+                  </p>
 
-                  {searchedApp.status === 'DITOLAK' && searchedApp.isSanggahOpen && (
-                    <div className="pt-3 border-t border-rose-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                      <p className="text-[11px] text-rose-800 font-semibold">
-                        Ingin mengajukan sanggahan &amp; memperbarui berkas yang ditolak?
-                      </p>
-                      <Link
-                        href="/login"
-                        className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl transition-colors shadow-sm shrink-0"
-                      >
-                        Masuk Portal Mahasiswa &amp; Kirim Sanggahan →
-                      </Link>
-                    </div>
-                  )}
-
-                  {searchedApp.status === 'DITOLAK' && searchedApp.isSanggahCompleted && (
-                    <div className="pt-3 border-t border-rose-200">
-                      <p className="text-[11px] text-slate-600 font-semibold">
-                        Masa sanggah telah berakhir. Keputusan penetapan penerima beasiswa bersifat final.
-                      </p>
+                  {/* Catatan Masa Sanggah bagi yang tidak lolos */}
+                  {searchedApp.status === 'DITOLAK' && (
+                    <div className="pt-3.5 border-t border-rose-200/90">
+                      <div className="p-4 bg-white/90 rounded-2xl border border-rose-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-2xs">
+                        <div className="flex items-start gap-2.5 min-w-0 flex-1">
+                          <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                          <div className="space-y-0.5 text-xs">
+                            <p className="font-extrabold text-rose-900 uppercase tracking-wide text-[11px]">
+                              Informasi Pengajuan Sanggahan:
+                            </p>
+                            <p className="text-rose-900 font-medium leading-relaxed">
+                              {searchedApp.isSanggahCompleted ? (
+                                <>Masa sanggah telah berakhir ({searchedApp.sanggahDateText || '5 - 8 November 2026'}). Keputusan verifikasi bersifat final.</>
+                              ) : searchedApp.isSanggahOpen ? (
+                                <>Masa sanggah <strong>sedang dibuka</strong> ({searchedApp.sanggahDateText || '5 - 8 November 2026'}). Silakan <strong>masuk ke dashboard</strong> sekarang untuk melakukan pengajuan sanggahan dan memperbarui berkas yang perlu diperbaiki.</>
+                              ) : (
+                                <>Silakan <strong>masuk ke dashboard pada masa sanggah ({searchedApp.sanggahDateText || '5 - 8 November 2026'})</strong> untuk melakukan pengajuan sanggahan.</>
+                              )}
+                            </p>
+                          </div>
+                        </div>
+                        {!searchedApp.isSanggahCompleted && (
+                          <Link
+                            href="/login"
+                            className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl transition-colors shadow-2xs shrink-0 flex items-center gap-1.5"
+                          >
+                            <span>Masuk ke Dashboard</span>
+                            <ArrowRight className="w-3.5 h-3.5" />
+                          </Link>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>
