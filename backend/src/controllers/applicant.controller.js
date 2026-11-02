@@ -387,7 +387,7 @@ function uploadDocument(docType) {
       // Deteksi apakah upload ini merupakan upload sanggahan
       const isSanggahParam = req.query.isSanggah === 'true' || req.headers['x-is-sanggah'] === 'true';
       const isFromBerkasPage = req.headers['referer']?.includes('/dashboard/berkas');
-      const isSanggahUpload = isSanggahParam || (isFromBerkasPage && isMasaSanggahActive(req));
+      const isSanggahUpload = isSanggahParam || (isFromBerkasPage && isMasaSanggahActive(req)) || isMasaSanggahActive(req) || isRegistrationDeadlinePassed(req);
 
       // 1. Validasi Masa Sanggah:
       // Di luar masa sanggah, pengunggahan berkas sanggahan di /dashboard/berkas ditolak
@@ -432,11 +432,6 @@ function uploadDocument(docType) {
           message: 'Berkas sanggahan untuk kategori dokumen ini telah berhasil diunggah sebelumnya dan telah terkunci permanen. Anda tidak dapat mengubah atau mengedit lagi.',
         });
       }
-        return res.status(403).json({
-          success: false,
-          message: 'Berkas sanggahan untuk kategori dokumen ini telah berhasil diunggah sebelumnya dan telah terkunci permanen. Anda tidak dapat mengubah atau mengedit lagi.',
-        });
-      }
 
       const hasMissingPhysicalFile = oldDocs.length > 0 && oldDocs.some(d => !d.file_path || !fs.existsSync(d.file_path));
 
@@ -458,7 +453,6 @@ function uploadDocument(docType) {
       }
 
       // Save document record using canonical doc_type
-      const isSanggahUpload = isMasaSanggahActive(req) || isRegistrationDeadlinePassed(req);
       const storedFileName = isSanggahUpload && !req.file.filename.startsWith('sanggah_')
         ? `sanggah_${req.file.filename}`
         : req.file.filename;
