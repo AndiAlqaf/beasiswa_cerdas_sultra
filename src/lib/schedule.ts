@@ -73,7 +73,7 @@ if (typeof window !== 'undefined') {
       case 'pengumuman': mockTime = `${config.announcementDate} 17:00:00`; break;
       case 'sanggah': mockTime = config.sanggahStart; break;
       case 'hasil-sanggah': 
-      case 'pengumuman-sanggah': mockTime = `${config.pengumumanSanggahDate} 17:00:00`; break;
+      case 'pengumuman-sanggah': mockTime = `${config.pengumumanSanggahDate} 23:59:00`; break;
       case 'penetapan':
       case 'penetapan-resmi':
       case 'penetapan-penerima': mockTime = `${config.penetapanDate || '2026-11-16'} 10:00:00`; break;
@@ -131,14 +131,24 @@ export function getDynamicTimeline(
 
   const now = customNow ? parseDate(customNow) : (mockNow ? parseDate(mockNow) : new Date());
 
-  const getStatus = (startStr: string, endStr: string, isAnnouncement: boolean = false): 'completed' | 'active' | 'upcoming' => {
+  const getStatus = (
+    startStr: string, 
+    endStr: string, 
+    announcementType?: 'awal' | 'sanggah' | boolean
+  ): 'completed' | 'active' | 'upcoming' => {
     const start = parseDate(startStr);
-    if (isAnnouncement) {
-      // Pengumuman dirilis pada pukul 17:00 WITA (UTC+8) di tanggal pengumuman (dimajukan secara fungsional)
+    if (announcementType === 'awal' || announcementType === true) {
+      // Pengumuman Hasil Seleksi Awal dirilis pukul 17:00 WITA (UTC+8) di tanggal pengumuman (dimajukan)
       const userOffsetMinutes = start.getTimezoneOffset();
       const witaOffsetMinutes = -480; // WITA (UTC+8)
       const diffMinutes = userOffsetMinutes - witaOffsetMinutes;
       start.setHours(17, 0 - diffMinutes, 0, 0);
+    } else if (announcementType === 'sanggah') {
+      // Pengumuman Hasil Sanggah TETAP dirilis pada pukul 23:59:00 WITA (UTC+8)
+      const userOffsetMinutes = start.getTimezoneOffset();
+      const witaOffsetMinutes = -480; // WITA (UTC+8)
+      const diffMinutes = userOffsetMinutes - witaOffsetMinutes;
+      start.setHours(23, 59 - diffMinutes, 0, 0);
     } else {
       start.setHours(0, 0, 0, 0);
     }
@@ -219,7 +229,7 @@ export function getDynamicTimeline(
       date: formatDateRange(config.announcementDate, config.announcementEnd || config.announcementDate),
       startDate: config.announcementDate,
       endDate: config.announcementEnd || config.announcementDate,
-      status: getStatus(config.announcementDate, config.announcementEnd || config.announcementDate, true)
+      status: getStatus(config.announcementDate, config.announcementEnd || config.announcementDate, 'awal')
     },
     {
       id: 'sanggah',
@@ -237,7 +247,7 @@ export function getDynamicTimeline(
       date: formatDateRange(config.pengumumanSanggahDate || '2026-11-09', '2026-11-11'),
       startDate: config.pengumumanSanggahDate || '2026-11-09',
       endDate: '2026-11-11',
-      status: getStatus(config.pengumumanSanggahDate || '2026-11-09', '2026-11-11', true)
+      status: getStatus(config.pengumumanSanggahDate || '2026-11-09', '2026-11-11', 'sanggah')
     },
     {
       id: 'penetapan',
