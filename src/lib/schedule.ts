@@ -70,10 +70,10 @@ if (typeof window !== 'undefined') {
     let mockTime = '';
     const p = (phase || '').toLowerCase();
     switch(p) {
-      case 'pengumuman': mockTime = `${config.announcementDate} 23:59:00`; break;
+      case 'pengumuman': mockTime = `${config.announcementDate} 17:00:00`; break;
       case 'sanggah': mockTime = config.sanggahStart; break;
       case 'hasil-sanggah': 
-      case 'pengumuman-sanggah': mockTime = `${config.pengumumanSanggahDate} 23:59:00`; break;
+      case 'pengumuman-sanggah': mockTime = `${config.pengumumanSanggahDate} 17:00:00`; break;
       case 'penetapan':
       case 'penetapan-resmi':
       case 'penetapan-penerima': mockTime = `${config.penetapanDate || '2026-11-16'} 10:00:00`; break;
@@ -134,8 +134,11 @@ export function getDynamicTimeline(
   const getStatus = (startStr: string, endStr: string, isAnnouncement: boolean = false): 'completed' | 'active' | 'upcoming' => {
     const start = parseDate(startStr);
     if (isAnnouncement) {
-      // Pengumuman dirilis pada pukul 23:59 di tanggal pengumuman (1 menit sebelum pergantian hari)
-      start.setHours(23, 59, 0, 0);
+      // Pengumuman dirilis pada pukul 17:00 WITA (UTC+8) di tanggal pengumuman (dimajukan secara fungsional)
+      const userOffsetMinutes = start.getTimezoneOffset();
+      const witaOffsetMinutes = -480; // WITA (UTC+8)
+      const diffMinutes = userOffsetMinutes - witaOffsetMinutes;
+      start.setHours(17, 0 - diffMinutes, 0, 0);
     } else {
       start.setHours(0, 0, 0, 0);
     }
