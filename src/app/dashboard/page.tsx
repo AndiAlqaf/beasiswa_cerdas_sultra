@@ -83,27 +83,33 @@ export default function DashboardPage() {
 
   const handleSendAppeal = async () => {
     const trimmedNotes = appealText.trim();
-    if (!trimmedNotes && !buktiFile) {
-      setToast({ title: 'Perhatian', message: 'Harap isi penjelasan sanggahan Anda atau lampirkan berkas bukti pendukung.', type: 'error' });
+    if (!trimmedNotes) {
+      setToast({
+        title: 'Perhatian',
+        message: 'Harap isi penjelasan / alasan sanggahan Anda terlebih dahulu.',
+        type: 'error',
+      });
       return;
     }
-    const noteToSend = trimmedNotes || 'Pengajuan sanggahan beserta berkas bukti mischecking / kendala saat pengisian.';
     setSubmittingAppeal(true);
     try {
       const token = localStorage.getItem('bssc_access_token');
       const formData = new FormData();
-      formData.append('appealNotes', noteToSend);
-      formData.append('notes', noteToSend);
+      formData.append('appealNotes', trimmedNotes);
+      formData.append('notes', trimmedNotes);
       if (buktiFile) {
         formData.append('file', buktiFile);
       }
 
-      const headers: Record<string, string> = {};
+      const headers: Record<string, string> = {
+        'x-appeal-notes': encodeURIComponent(trimmedNotes),
+      };
       if (token) headers['Authorization'] = `Bearer ${token}`;
       const mockTime = typeof window !== 'undefined' ? (window as any).__MOCK_TIME : undefined;
       if (mockTime) headers['x-mock-time'] = mockTime;
 
-      const url = `/api/v1/applicant/application/appeal?appealNotes=${encodeURIComponent(noteToSend)}`;
+      // URL query string fallback to guarantee notes arrive even if proxy strips form-data fields
+      const url = `/api/v1/applicant/application/appeal?appealNotes=${encodeURIComponent(trimmedNotes)}`;
       const res = await fetch(url, {
         method: 'POST',
         headers,
@@ -803,7 +809,7 @@ export default function DashboardPage() {
           {/* Kolom Narasi Sanggahan */}
           <div className="space-y-2">
             <label className="block text-xs font-bold text-slate-800">
-              Penjelasan / Alasan Sanggahan Anda <span className="text-slate-400 font-normal">(Opsional jika sudah memilih berkas bukti di bawah)</span>
+              Penjelasan / Alasan Sanggahan Anda <span className="text-rose-600">*</span>
             </label>
             <textarea
               rows={4}
@@ -904,7 +910,7 @@ export default function DashboardPage() {
             </p>
             <button
               type="button"
-              disabled={submittingAppeal || (!appealText.trim() && !buktiFile)}
+              disabled={submittingAppeal || !appealText.trim()}
               onClick={handleSendAppeal}
               className="w-full sm:w-auto px-7 py-3.5 bg-rose-600 hover:bg-rose-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-black text-xs sm:text-sm rounded-2xl shadow-lg shadow-rose-200 transition-all flex items-center justify-center gap-2 cursor-pointer"
             >

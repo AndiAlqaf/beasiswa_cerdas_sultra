@@ -667,11 +667,28 @@ async function submitAppeal(req, res) {
     const pool = getPool();
     const fs = require('fs');
 
-    const rawNotes = (req.body?.appealNotes || req.body?.notes || req.query?.appealNotes || req.query?.notes || '').trim();
-    const appealNotes = rawNotes || (req.file ? 'Pengajuan sanggahan beserta berkas bukti mischecking / kendala saat pengisian.' : '');
+    let headerNotes = '';
+    if (req.headers['x-appeal-notes']) {
+      try {
+        headerNotes = decodeURIComponent(req.headers['x-appeal-notes']);
+      } catch {
+        headerNotes = req.headers['x-appeal-notes'];
+      }
+    }
+
+    const rawNotes = (
+      req.body?.appealNotes ||
+      req.body?.notes ||
+      req.query?.appealNotes ||
+      req.query?.notes ||
+      headerNotes ||
+      ''
+    ).trim();
+
+    const appealNotes = rawNotes;
 
     if (!appealNotes) {
-      return res.status(400).json({ success: false, message: 'Harap isi penjelasan sanggahan Anda atau lampirkan berkas bukti pendukung.' });
+      return res.status(400).json({ success: false, message: 'Harap isi penjelasan / alasan sanggahan Anda.' });
     }
 
     const [appRows] = await pool.execute(
