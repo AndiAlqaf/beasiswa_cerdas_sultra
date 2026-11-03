@@ -664,12 +664,14 @@ async function resubmitApplication(req, res) {
 async function submitAppeal(req, res) {
   try {
     const userId = req.user.id;
-    const { appealNotes } = req.body;
     const pool = getPool();
     const fs = require('fs');
 
-    if (!appealNotes || !appealNotes.trim()) {
-      return res.status(400).json({ success: false, message: 'Harap isi penjelasan / alasan sanggahan Anda.' });
+    const rawNotes = (req.body?.appealNotes || req.body?.notes || req.query?.appealNotes || req.query?.notes || '').trim();
+    const appealNotes = rawNotes || (req.file ? 'Pengajuan sanggahan beserta berkas bukti mischecking / kendala saat pengisian.' : '');
+
+    if (!appealNotes) {
+      return res.status(400).json({ success: false, message: 'Harap isi penjelasan sanggahan Anda atau lampirkan berkas bukti pendukung.' });
     }
 
     const [appRows] = await pool.execute(

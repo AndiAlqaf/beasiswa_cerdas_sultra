@@ -82,15 +82,18 @@ export default function DashboardPage() {
   };
 
   const handleSendAppeal = async () => {
-    if (!appealText.trim()) {
-      setToast({ title: 'Perhatian', message: 'Harap isi penjelasan sanggahan Anda terlebih dahulu.', type: 'error' });
+    const trimmedNotes = appealText.trim();
+    if (!trimmedNotes && !buktiFile) {
+      setToast({ title: 'Perhatian', message: 'Harap isi penjelasan sanggahan Anda atau lampirkan berkas bukti pendukung.', type: 'error' });
       return;
     }
+    const noteToSend = trimmedNotes || 'Pengajuan sanggahan beserta berkas bukti mischecking / kendala saat pengisian.';
     setSubmittingAppeal(true);
     try {
       const token = localStorage.getItem('bssc_access_token');
       const formData = new FormData();
-      formData.append('appealNotes', appealText.trim());
+      formData.append('appealNotes', noteToSend);
+      formData.append('notes', noteToSend);
       if (buktiFile) {
         formData.append('file', buktiFile);
       }
@@ -100,7 +103,8 @@ export default function DashboardPage() {
       const mockTime = typeof window !== 'undefined' ? (window as any).__MOCK_TIME : undefined;
       if (mockTime) headers['x-mock-time'] = mockTime;
 
-      const res = await fetch('/api/v1/applicant/application/appeal', {
+      const url = `/api/v1/applicant/application/appeal?appealNotes=${encodeURIComponent(noteToSend)}`;
+      const res = await fetch(url, {
         method: 'POST',
         headers,
         body: formData,
@@ -799,7 +803,7 @@ export default function DashboardPage() {
           {/* Kolom Narasi Sanggahan */}
           <div className="space-y-2">
             <label className="block text-xs font-bold text-slate-800">
-              Penjelasan / Alasan Sanggahan Anda *
+              Penjelasan / Alasan Sanggahan Anda <span className="text-slate-400 font-normal">(Opsional jika sudah memilih berkas bukti di bawah)</span>
             </label>
             <textarea
               rows={4}
@@ -900,7 +904,7 @@ export default function DashboardPage() {
             </p>
             <button
               type="button"
-              disabled={submittingAppeal || !appealText.trim()}
+              disabled={submittingAppeal || (!appealText.trim() && !buktiFile)}
               onClick={handleSendAppeal}
               className="w-full sm:w-auto px-7 py-3.5 bg-rose-600 hover:bg-rose-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-black text-xs sm:text-sm rounded-2xl shadow-lg shadow-rose-200 transition-all flex items-center justify-center gap-2 cursor-pointer"
             >

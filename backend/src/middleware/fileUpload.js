@@ -153,6 +153,10 @@ function createUploadMiddleware(docType) {
   }).any();
 
   return (req, res, next) => {
+    const contentType = req.headers['content-type'] || '';
+    if (contentType.includes('application/json')) {
+      return next();
+    }
     upload(req, res, (err) => {
       if (err) {
         if (err instanceof multer.MulterError) {
