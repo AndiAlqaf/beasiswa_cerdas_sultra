@@ -928,8 +928,8 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* TAMPILAN SANGGAHAN DALAM PROSES (Jika sudah mengajukan sanggahan) */}
-      {isSanggahan && (
+      {/* TAMPILAN SANGGAHAN DALAM PROSES (Jika sudah mengajukan sanggahan dan sedang diperiksa) */}
+      {isSanggahan && effectiveStatus === 'VERIFIKASI_BERKAS' && (
         <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-3xl border-2 border-amber-300 p-6 sm:p-8 shadow-md space-y-4 animate-in fade-in">
           <div className="flex items-center gap-3 border-b border-amber-200 pb-4">
             <div className="p-3 bg-amber-600 text-white rounded-2xl shadow-sm">

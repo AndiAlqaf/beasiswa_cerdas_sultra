@@ -62,7 +62,7 @@ function applySecurityMiddleware(app) {
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-ID'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-ID', 'x-appeal-notes', 'x-mock-time', 'x-is-sanggah'],
     exposedHeaders: ['X-Request-ID'],
     maxAge: 600, // Preflight cache 10 minutes
   }));

@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { CheckCircle2, Award, XCircle, Clock, FileText, ExternalLink, Search, X, Loader2, AlertCircle, Printer, RefreshCw, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ZoomIn, ZoomOut, RotateCw, Eye, ChevronDown, ChevronUp } from 'lucide-react';
 import { fetchAPI } from '@/lib/api';
+import { getStoredScheduleConfig } from '@/lib/schedule';
 
 const getDocTitle = (key: string) => {
   if (!key) return '-';
@@ -137,6 +138,24 @@ export default function SeleksiPage() {
   const [imgZoom, setImgZoom] = useState<number>(100);
   const [imgRotation, setImgRotation] = useState<number>(0);
   const [isFormDetailsOpen, setIsFormDetailsOpen] = useState<boolean>(false);
+  const [isBuktiSanggahOpen, setIsBuktiSanggahOpen] = useState<boolean>(false);
+
+  const isAfterMasaSanggah = () => {
+    try {
+      const config = getStoredScheduleConfig();
+      let mockNow: string | undefined;
+      if (typeof window !== 'undefined') {
+        mockNow = (window as any).__MOCK_TIME;
+      }
+      const now = mockNow ? new Date(mockNow) : new Date();
+      if (config?.sanggahEnd) {
+        const end = new Date(config.sanggahEnd);
+        end.setHours(23, 59, 59, 999);
+        return now > end;
+      }
+    } catch {}
+    return false;
+  };
 
   // Custom Toast/Notification Modal State
   const [toast, setToast] = useState<{
@@ -247,6 +266,7 @@ export default function SeleksiPage() {
     setShowAcceptConfirmModal(false);
     setSelectedApplicant(null);
     setApplicantDetail(null);
+    setIsBuktiSanggahOpen(false);
     Object.values(previewUrls).forEach(url => {
       try {
         window.URL.revokeObjectURL(url);
@@ -381,6 +401,7 @@ export default function SeleksiPage() {
     setLoadingDetail(true);
     setApplicantDetail(null);
     setPreviewUrls({});
+    setIsBuktiSanggahOpen(false);
     try {
       const targetUserId = applicant.userId || applicant.id;
       const res = await fetchAPI(`/admin/applicants/${targetUserId}`);
@@ -781,16 +802,86 @@ export default function SeleksiPage() {
                                 {buktiDoc && (
                                   <button
                                     type="button"
-                                    onClick={() => handleViewDocument(targetUserId, buktiDoc.id)}
-                                    className="px-3 py-1.5 bg-amber-200 hover:bg-amber-300 text-amber-950 font-black text-xs rounded-xl border border-amber-400 transition-colors flex items-center gap-1.5 shadow-2xs cursor-pointer"
+                                    onClick={() => {
+                                      setIsBuktiSanggahOpen(prev => !prev);
+                                      if (!previewUrls[buktiDoc.id]) {
+                                        loadDocumentPreview(targetUserId, buktiDoc.id);
+                                      }
+                                    }}
+                                    className="px-3.5 py-1.5 bg-amber-200 hover:bg-amber-300 text-amber-950 font-black text-xs rounded-xl border border-amber-400 transition-colors flex items-center gap-1.5 shadow-2xs cursor-pointer"
                                   >
-                                    <ExternalLink className="w-3.5 h-3.5" /> Buka Berkas Bukti Sanggahan
+                                    <FileText className="w-3.5 h-3.5 text-amber-900" />
+                                    <span>{isBuktiSanggahOpen ? 'Tutup Berkas Bukti' : 'Lihat Berkas Bukti Sanggahan'}</span>
+                                    {isBuktiSanggahOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                                   </button>
                                 )}
                               </div>
                               <div className="p-3 bg-white rounded-xl border border-amber-200 text-xs text-slate-900 leading-relaxed font-medium whitespace-pre-line">
                                 {applicantDetail.application.notes}
                               </div>
+
+                              {/* Dropdown / Accordion Berkas Bukti Sanggahan */}
+                              {isBuktiSanggahOpen && buktiDoc && (
+                                <div className="p-3 sm:p-4 bg-white rounded-xl border-2 border-amber-300 shadow-sm space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
+                                  <div className="flex items-center justify-between gap-2 border-b border-amber-100 pb-2.5">
+                                    <div className="flex items-center gap-2 min-w-0">
+                                      <span className="p-1.5 bg-amber-100 text-amber-900 rounded-lg">
+                                        <FileText className="w-4 h-4" />
+                                      </span>
+                                      <div className="min-w-0">
+                                        <p className="text-xs font-bold text-slate-900 truncate">{buktiDoc.originalName}</p>
+                                        <p className="text-[10px] text-slate-500 font-mono">
+                                          {buktiDoc.fileSize ? `${Math.round(buktiDoc.fileSize / 1024)} KB` : 'Berkas Bukti'} • {buktiDoc.mimeType || 'PDF / Gambar'}
+                                        </p>
+                                      </div>
+                                    </div>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleViewDocument(targetUserId, buktiDoc.id)}
+                                      className="px-2.5 py-1 text-[11px] font-bold text-amber-900 hover:bg-amber-50 border border-amber-200 rounded-lg transition-colors flex items-center gap-1 shrink-0"
+                                      title="Buka Dokumen di Tab Baru"
+                                    >
+                                      <ExternalLink className="w-3 h-3" />
+                                      <span>Buka Tab Baru</span>
+                                    </button>
+                                  </div>
+
+                                  <div className="bg-slate-50 rounded-xl overflow-hidden border border-slate-200 min-h-[300px] flex items-center justify-center p-2">
+                                    {!previewUrls[buktiDoc.id] ? (
+                                      <div className="py-12 text-center text-slate-500 space-y-2">
+                                        <Loader2 className="w-6 h-6 animate-spin mx-auto text-amber-700" />
+                                        <p className="text-xs font-medium">Memuat pratinjau berkas bukti...</p>
+                                      </div>
+                                    ) : isPdfDoc(buktiDoc) ? (
+                                      <iframe
+                                        src={previewUrls[buktiDoc.id]}
+                                        className="w-full h-[550px] sm:h-[650px] border border-slate-200 rounded-lg bg-white shadow-inner"
+                                        title={buktiDoc.originalName}
+                                      />
+                                    ) : isImageDoc(buktiDoc) ? (
+                                      <div className="w-full py-2 flex items-center justify-center">
+                                        <img
+                                          src={previewUrls[buktiDoc.id]}
+                                          alt={buktiDoc.originalName}
+                                          className="max-w-full max-h-[600px] object-contain rounded-lg shadow-md border border-slate-200 bg-white"
+                                        />
+                                      </div>
+                                    ) : (
+                                      <div className="p-6 text-center space-y-2">
+                                        <FileText className="w-10 h-10 text-slate-400 mx-auto" />
+                                        <p className="text-xs text-slate-600 font-semibold">{buktiDoc.originalName}</p>
+                                        <button
+                                          type="button"
+                                          onClick={() => handleViewDocument(targetUserId, buktiDoc.id)}
+                                          className="px-3.5 py-1.5 bg-amber-600 text-white rounded-xl text-xs font-bold hover:bg-amber-700 transition-colors inline-flex items-center gap-1.5"
+                                        >
+                                          <ExternalLink className="w-3 h-3" /> Unduh / Buka Dokumen
+                                        </button>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
                             </div>
                           );
                         })()}
@@ -1178,12 +1269,21 @@ export default function SeleksiPage() {
 
               {/* Modal Body */}
               <div className="p-5 sm:p-6 space-y-4">
-                <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-2.5 text-amber-900 text-xs leading-relaxed">
-                  <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                  <span>
-                    Alasan penolakan ini akan <strong>ditampilkan di akun mahasiswa</strong> agar mahasiswa yang ditolak dapat mengajukan <strong>sanggahan / perbaikan berkas</strong> pada masa sanggah.
-                  </span>
-                </div>
+                {applicantDetail?.application?.notes?.includes('[SANGGAHAN') || isAfterMasaSanggah() ? (
+                  <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl flex items-start gap-2.5 text-rose-950 text-xs leading-relaxed">
+                    <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                    <span>
+                      Alasan penolakan ini akan <strong>ditampilkan di akun mahasiswa</strong> sebagai hasil evaluasi resmi sanggahan. Keputusan hasil sanggah bersifat <strong>final</strong> dan pendaftar <strong>tidak dapat mengajukan sanggahan kembali</strong> karena masa sanggah telah selesai / sanggahan ditolak.
+                    </span>
+                  </div>
+                ) : (
+                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-2.5 text-amber-900 text-xs leading-relaxed">
+                    <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                    <span>
+                      Alasan penolakan ini akan <strong>ditampilkan di akun mahasiswa</strong> agar mahasiswa yang bersangkutan dapat mengetahui kendala berkas dan mengajukan sanggahan pada masa sanggah.
+                    </span>
+                  </div>
+                )}
 
                 {/* Template Quick Chips */}
                 <div>
