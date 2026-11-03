@@ -828,7 +828,7 @@ export default function DashboardPage() {
                     Lampirkan tangkapan layar (screenshot), dokumen resmi pendukung, atau surat keterangan yang membuktikan adanya mischecking verifikator atau kendala teknis saat pengisian formulir.
                   </p>
                   <p className="text-[11px] text-slate-500 font-mono mt-1">
-                    Format: PDF, JPG, PNG (Maks. 5MB)
+                    Format: PDF, JPG, PNG (Maks. 10MB)
                   </p>
                 </div>
               </div>
@@ -843,10 +843,10 @@ export default function DashboardPage() {
               onChange={(e) => {
                 const file = e.target.files?.[0];
                 if (!file) return;
-                if (file.size > 5 * 1024 * 1024) {
+                if (file.size > 10 * 1024 * 1024) {
                   setToast({
                     title: 'Ukuran File Terlalu Besar',
-                    message: 'Ukuran berkas bukti maksimal 5MB. Silakan kompres file Anda terlebih dahulu.',
+                    message: 'Ukuran berkas bukti maksimal 10MB. Silakan kompres file Anda terlebih dahulu.',
                     type: 'error',
                   });
                   e.target.value = '';

@@ -56,6 +56,7 @@ module.exports = {
   // Max file sizes per type (bytes) — 10MB default max
   MAX_FILE_SIZES: {
     selfie: 10 * 1024 * 1024,
+    bukti_sanggah: 10 * 1024 * 1024,
     filePasfoto: 10 * 1024 * 1024,
     pasfoto: 10 * 1024 * 1024,
     ktm: 10 * 1024 * 1024,
