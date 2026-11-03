@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { CheckCircle2, Clock, FileText, Calendar, ChevronRight, AlertCircle, Award, XCircle, ArrowRight, Send, Loader2, RefreshCw, Landmark, Save, CreditCard, ExternalLink, ShieldCheck, Lock } from 'lucide-react';
+import React, { useEffect, useState, useRef } from 'react';
+import { CheckCircle2, Clock, FileText, Calendar, ChevronRight, AlertCircle, Award, XCircle, ArrowRight, Send, Loader2, RefreshCw, Landmark, Save, CreditCard, ExternalLink, ShieldCheck, Lock, UploadCloud, FileUp } from 'lucide-react';
 import Link from 'next/link';
 import { getUser, fetchAPI } from '@/lib/api';
 import { getStoredScheduleConfig, getDynamicTimeline, ScheduleConfig } from '@/lib/schedule';
@@ -16,6 +16,8 @@ export default function DashboardPage() {
 
   // Sanggahan State
   const [appealText, setAppealText] = useState('');
+  const [buktiFile, setBuktiFile] = useState<File | null>(null);
+  const buktiInputRef = useRef<HTMLInputElement>(null);
   const [submittingAppeal, setSubmittingAppeal] = useState(false);
   const [toast, setToast] = useState<{ title: string; message: string; type: 'success' | 'error' } | null>(null);
 
@@ -86,25 +88,45 @@ export default function DashboardPage() {
     }
     setSubmittingAppeal(true);
     try {
-      const res = await fetchAPI('/applicant/application/appeal', {
+      const token = localStorage.getItem('bssc_access_token');
+      const formData = new FormData();
+      formData.append('appealNotes', appealText.trim());
+      if (buktiFile) {
+        formData.append('file', buktiFile);
+      }
+
+      const headers: Record<string, string> = {};
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+      const mockTime = typeof window !== 'undefined' ? (window as any).__MOCK_TIME : undefined;
+      if (mockTime) headers['x-mock-time'] = mockTime;
+
+      const res = await fetch('/api/v1/applicant/application/appeal', {
         method: 'POST',
-        body: JSON.stringify({ appealNotes: appealText.trim() }),
+        headers,
+        body: formData,
       });
-      if (res.success) {
+      const data = await res.json();
+      if (res.ok && data.success) {
         setToast({
           title: 'Sanggahan Terkirim!',
-          message: 'Sanggahan Anda berhasil diajukan. Berkas Anda akan diverifikasi ulang oleh tim verifikator.',
+          message: 'Sanggahan beserta berkas bukti berhasil diajukan. Status pendaftaran Anda kini kembali menjadi VERIFIKASI BERKAS untuk ditinjau oleh tim verifikator.',
           type: 'success',
         });
         setApplication((prev: any) => ({
           ...prev,
-          ...res.data,
+          ...data.data,
           status: 'VERIFIKASI_BERKAS',
-          notes: res.data?.notes || prev.notes,
+          notes: data.data?.notes || prev.notes,
         }));
         setAppealText('');
+        setBuktiFile(null);
+        // Reload documents so bukti_sanggah is reflected in state
+        const profileRes = await fetchAPI('/applicant/profile').catch(() => null);
+        if (profileRes?.success && profileRes?.data) {
+          setDocuments(profileRes.data.documents || []);
+        }
       } else {
-        throw new Error(res.message || 'Gagal mengirimkan sanggahan');
+        throw new Error(data.message || 'Gagal mengirimkan sanggahan');
       }
     } catch (err: any) {
       setToast({ title: 'Gagal Kirim Sanggahan', message: err.message || 'Terjadi kesalahan sistem.', type: 'error' });
@@ -744,27 +766,26 @@ export default function DashboardPage() {
 
       {/* SANGGAHAN SECTION (Jika Status DITOLAK dan Masa Sanggah Buka) */}
       {isSanggahPeriodOpen && effectiveStatus === 'DITOLAK' && !isSanggahan && (
-        <div className="bg-rose-50 rounded-3xl border-2 border-rose-200 p-6 sm:p-8 shadow-md space-y-6">
+        <div className="bg-rose-50/90 rounded-3xl border-2 border-rose-200 p-6 sm:p-8 shadow-md space-y-6 animate-in fade-in">
+          {/* Header Formulir */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-rose-100 pb-5">
             <div className="flex items-center gap-3">
-              <div className="p-3 bg-rose-600 text-white rounded-2xl shadow-md shadow-rose-200">
+              <div className="p-3 bg-rose-600 text-white rounded-2xl shadow-md shadow-rose-200 shrink-0">
                 <RefreshCw className="w-6 h-6 animate-pulse" />
               </div>
               <div>
                 <span className="text-[10px] font-extrabold uppercase tracking-wider bg-rose-100 text-rose-800 px-3 py-1 rounded-full border border-rose-200">
-                  Masa Sanggah &amp; Perbaikan Berkas
+                  Masa Sanggah &amp; Klarifikasi Berkas
                 </span>
                 <h3 className="text-xl font-black text-slate-900 mt-1">Formulir Pengajuan Sanggahan</h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Bagi pendaftar tidak lolos yang memiliki sanggahan atau bukti kendala pada berkas
+                </p>
               </div>
             </div>
-            <Link
-              href="/dashboard/berkas"
-              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-900 text-white font-bold text-xs rounded-xl hover:bg-slate-800 transition-colors shadow-sm"
-            >
-              <FileText className="w-4 h-4 text-blue-300" /> Perbaiki / Unggah Berkas Baru
-            </Link>
           </div>
 
+          {/* Catatan Alasan Penolakan dari Tim Verifikator */}
           <div className="bg-white p-5 rounded-2xl border border-rose-100 space-y-2">
             <p className="text-xs font-bold text-rose-900 flex items-center gap-1.5">
               <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
@@ -775,7 +796,8 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          <div className="space-y-3">
+          {/* Kolom Narasi Sanggahan */}
+          <div className="space-y-2">
             <label className="block text-xs font-bold text-slate-800">
               Penjelasan / Alasan Sanggahan Anda *
             </label>
@@ -783,20 +805,104 @@ export default function DashboardPage() {
               rows={4}
               value={appealText}
               onChange={(e) => setAppealText(e.target.value)}
-              placeholder="Tuliskan alasan sanggahan dan perbaikan berkas (misal: 'Saya telah mengunggah kembali dokumen Transkrip Nilai yang sudah berstempel basah pada menu Kelola Berkas...')"
+              placeholder="Tuliskan alasan sanggahan secara jelas dan rinci (misal: 'Berdasarkan dokumen KTP/KK saya yang sah, domisili saya tercatat di Kab. Kolaka, Sulawesi Tenggara. Terlampir bukti dokumen pendukung...')"
               className="w-full px-4 py-3 rounded-2xl border border-slate-300 text-xs focus:ring-2 focus:ring-rose-500 focus:outline-none leading-relaxed text-slate-900 bg-white"
             ></textarea>
+          </div>
+
+          {/* Bagian Unggah Bukti Mischecking atau Kendala Saat Pengisian */}
+          <div className="p-5 sm:p-6 bg-gradient-to-br from-amber-50/90 via-rose-50/50 to-white rounded-3xl border-2 border-dashed border-rose-300 shadow-xs space-y-3">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-start gap-3">
+                <div className="p-2.5 bg-rose-600 text-white rounded-xl shadow-xs shrink-0 mt-0.5">
+                  <UploadCloud className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-extrabold text-slate-900 flex items-center gap-2">
+                    Unggah Bukti Mischecking atau Kendala Saat Pengisian
+                    <span className="text-[10px] font-bold px-2 py-0.5 bg-rose-100 text-rose-800 rounded-full border border-rose-200">
+                      Disarankan
+                    </span>
+                  </h4>
+                  <p className="text-xs text-slate-600 mt-0.5 leading-relaxed">
+                    Lampirkan tangkapan layar (screenshot), dokumen resmi pendukung, atau surat keterangan yang membuktikan adanya mischecking verifikator atau kendala teknis saat pengisian formulir.
+                  </p>
+                  <p className="text-[11px] text-slate-500 font-mono mt-1">
+                    Format: PDF, JPG, PNG (Maks. 5MB)
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Hidden File Input */}
+            <input
+              type="file"
+              ref={buktiInputRef}
+              accept=".pdf,.png,.jpg,.jpeg"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                if (file.size > 5 * 1024 * 1024) {
+                  setToast({
+                    title: 'Ukuran File Terlalu Besar',
+                    message: 'Ukuran berkas bukti maksimal 5MB. Silakan kompres file Anda terlebih dahulu.',
+                    type: 'error',
+                  });
+                  e.target.value = '';
+                  return;
+                }
+                setBuktiFile(file);
+                e.target.value = '';
+              }}
+            />
+
+            {/* UI Pemilihan File */}
+            {!buktiFile ? (
+              <button
+                type="button"
+                onClick={() => buktiInputRef.current?.click()}
+                className="w-full py-4 px-5 rounded-2xl bg-white hover:bg-rose-50/80 border-2 border-rose-300 text-rose-900 font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2.5 transition-all shadow-xs hover:shadow-md cursor-pointer group"
+              >
+                <FileUp className="w-5 h-5 text-rose-600 group-hover:-translate-y-0.5 transition-transform" />
+                <span>Pilih Berkas Bukti Mischecking / Kendala</span>
+              </button>
+            ) : (
+              <div className="p-4 bg-white rounded-2xl border-2 border-emerald-400 shadow-xs flex items-center justify-between gap-3 animate-in fade-in">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="p-2.5 bg-emerald-100 text-emerald-700 rounded-xl shrink-0">
+                    <CheckCircle2 className="w-5 h-5" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs sm:text-sm font-extrabold text-slate-900 truncate" title={buktiFile.name}>
+                      📄 {buktiFile.name}
+                    </p>
+                    <p className="text-[11px] text-emerald-800 font-semibold mt-0.5">
+                      {(buktiFile.size / 1024).toFixed(1)} KB • Siap Dilampirkan Bersama Sanggahan
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setBuktiFile(null)}
+                  className="px-3 py-1.5 text-xs font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-xl transition-colors shrink-0 cursor-pointer"
+                >
+                  Ganti / Hapus File
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
             <p className="text-[11px] text-slate-500 italic">
               * Setelah mengirimkan sanggahan, status pendaftaran Anda akan berubah kembali menjadi <strong>VERIFIKASI BERKAS</strong> untuk diperiksa ulang oleh Admin.
             </p>
-          </div>
-
-          <div className="flex justify-end pt-2">
             <button
               type="button"
               disabled={submittingAppeal || !appealText.trim()}
               onClick={handleSendAppeal}
-              className="px-6 py-3 bg-rose-600 hover:bg-rose-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-black text-xs rounded-2xl shadow-lg shadow-rose-200 transition-all flex items-center gap-2"
+              className="w-full sm:w-auto px-7 py-3.5 bg-rose-600 hover:bg-rose-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-black text-xs sm:text-sm rounded-2xl shadow-lg shadow-rose-200 transition-all flex items-center justify-center gap-2 cursor-pointer"
             >
               {submittingAppeal ? (
                 <>
@@ -808,6 +914,74 @@ export default function DashboardPage() {
                 </>
               )}
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* TAMPILAN SANGGAHAN DALAM PROSES (Jika sudah mengajukan sanggahan) */}
+      {isSanggahan && (
+        <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-3xl border-2 border-amber-300 p-6 sm:p-8 shadow-md space-y-4 animate-in fade-in">
+          <div className="flex items-center gap-3 border-b border-amber-200 pb-4">
+            <div className="p-3 bg-amber-600 text-white rounded-2xl shadow-sm">
+              <RefreshCw className="w-6 h-6 animate-spin" />
+            </div>
+            <div>
+              <span className="text-[10px] font-extrabold uppercase tracking-wider bg-amber-200 text-amber-900 px-3 py-0.5 rounded-full border border-amber-300">
+                Sanggahan Terkirim
+              </span>
+              <h3 className="text-lg sm:text-xl font-black text-slate-900 mt-1">
+                Pengajuan Sanggahan Sedang Dalam Pemeriksaan
+              </h3>
+              <p className="text-xs text-slate-600 mt-0.5">
+                Tim verifikator sedang meninjau sanggahan dan berkas bukti yang Anda ajukan.
+              </p>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <div className="p-4 bg-white rounded-2xl border border-amber-200 space-y-2">
+              <p className="text-xs font-bold text-amber-900">
+                Isi Sanggahan yang Anda Ajukan:
+              </p>
+              <p className="text-xs text-slate-800 font-medium whitespace-pre-line leading-relaxed">
+                {application?.notes}
+              </p>
+            </div>
+
+            {/* Tampilkan Berkas Bukti yang Dilampirkan */}
+            {(() => {
+              const buktiDoc = documents.find((d: any) => (d.docType || '').toLowerCase() === 'bukti_sanggah' || (d.storedName && d.storedName.startsWith('bukti_sanggah')));
+              if (!buktiDoc) return null;
+              return (
+                <div className="p-3.5 bg-amber-100/70 border border-amber-300 rounded-xl flex items-center justify-between gap-3 text-xs">
+                  <div className="flex items-center gap-2 text-amber-950 font-bold truncate">
+                    <FileText className="w-4 h-4 text-amber-800 shrink-0" />
+                    <span className="truncate">Berkas Bukti Dilampirkan: {buktiDoc.originalName}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const token = localStorage.getItem('bssc_access_token');
+                      const res = await fetch(`/api/v1/applicant/documents/${buktiDoc.id}/view`, {
+                        headers: { Authorization: `Bearer ${token}` }
+                      });
+                      if (res.ok) {
+                        const blob = await res.blob();
+                        const url = URL.createObjectURL(blob);
+                        window.open(url, '_blank');
+                      }
+                    }}
+                    className="px-3 py-1.5 bg-white hover:bg-amber-50 text-amber-900 font-extrabold text-xs rounded-lg border border-amber-300 shadow-2xs shrink-0 flex items-center gap-1 cursor-pointer"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" /> Lihat Bukti
+                  </button>
+                </div>
+              );
+            })()}
+
+            <p className="text-xs text-slate-500 italic">
+              ℹ️ Hasil verifikasi ulang sanggahan akan diumumkan pada masa <strong>Pengumuman Hasil Sanggah (09 - 11 November 2026)</strong>.
+            </p>
           </div>
         </div>
       )}

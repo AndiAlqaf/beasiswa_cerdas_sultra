@@ -60,6 +60,6 @@ router.post('/upload/:docType', (req, res, next) => {
 router.get('/application', getApplication);
 router.post('/application', submitApplication);
 router.post('/application/resubmit', resubmitApplication);
-router.post('/application/appeal', submitAppeal);
+router.post('/application/appeal', createUploadMiddleware('bukti_sanggah'), submitAppeal);
 
 module.exports = router;

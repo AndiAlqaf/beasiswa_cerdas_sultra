@@ -376,6 +376,23 @@ async function updateEducation(req, res) {
 function uploadDocument(docType) {
   return async (req, res) => {
     try {
+      const fs = require('fs');
+      if (req.file && req.file.path && fs.existsSync(req.file.path)) {
+        try { fs.unlinkSync(req.file.path); } catch (e) {}
+      }
+      return res.status(403).json({
+        success: false,
+        message: 'Pengunggahan berkas pendaftaran telah dikunci secara permanen. Seluruh dokumen bersifat final dan hanya dapat dilihat.',
+      });
+    } catch (err) {
+      return res.status(500).json({ success: false, message: 'Gagal memproses unggahan.' });
+    }
+  };
+}
+
+function _unused_legacy_uploadDocument(docType) {
+  return async (req, res) => {
+    try {
       const userId = req.user.id;
       const pool = getPool();
       const fs = require('fs');
@@ -649,6 +666,7 @@ async function submitAppeal(req, res) {
     const userId = req.user.id;
     const { appealNotes } = req.body;
     const pool = getPool();
+    const fs = require('fs');
 
     if (!appealNotes || !appealNotes.trim()) {
       return res.status(400).json({ success: false, message: 'Harap isi penjelasan / alasan sanggahan Anda.' });
@@ -668,10 +686,37 @@ async function submitAppeal(req, res) {
       return res.status(400).json({ success: false, message: 'Sanggahan hanya dapat diajukan jika status pendaftaran DITOLAK.' });
     }
 
-    const newNotes = `[SANGGAHAN MAHASISWA]: ${appealNotes.trim()}\n--- (Catatan Verifikator Sebelumnya: ${app.notes || '-'})`;
+    let buktiDocId = null;
+    let buktiDocName = null;
+    if (req.file) {
+      buktiDocId = uuidv4();
+      buktiDocName = req.file.originalname;
+      const storedFileName = `bukti_sanggah_${req.file.filename}`;
+      
+      // Hapus bukti sanggah lama pendaftar ini jika ada
+      const [oldBukti] = await pool.execute(
+        "SELECT id, file_path FROM documents WHERE user_id = ? AND doc_type = 'bukti_sanggah'",
+        [userId]
+      );
+      for (const ob of oldBukti) {
+        if (ob.file_path && fs.existsSync(ob.file_path)) {
+          try { fs.unlinkSync(ob.file_path); } catch (e) {}
+        }
+        await pool.execute('DELETE FROM documents WHERE id = ?', [ob.id]);
+      }
+
+      await pool.execute(
+        `INSERT INTO documents (id, user_id, doc_type, original_name, stored_name, mime_type, file_size, file_path)
+         VALUES (?, ?, 'bukti_sanggah', ?, ?, ?, ?, ?)`,
+        [buktiDocId, userId, req.file.originalname, storedFileName, req.file.mimetype, req.file.size, req.file.path]
+      );
+    }
+
+    const lampiranBuktiText = buktiDocName ? `\n[BUKTI MISCHECKING/KENDALA]: ${buktiDocName}` : '';
+    const newNotes = `[SANGGAHAN MAHASISWA]: ${appealNotes.trim()}${lampiranBuktiText}\n--- (Catatan Verifikator Sebelumnya: ${app.notes || '-'})`;
 
     await pool.execute(
-      `UPDATE applications SET status = 'VERIFIKASI_BERKAS', notes = ? WHERE id = ?`,
+      `UPDATE applications SET status = 'VERIFIKASI_BERKAS', notes = ?, is_lulus_sanggah = 0 WHERE id = ?`,
       [newNotes, app.id]
     );
 
@@ -679,14 +724,14 @@ async function submitAppeal(req, res) {
       action: 'APPLICATION_APPEALED',
       userId,
       ipAddress: getClientIp(req),
-      details: { registrationNo: app.registration_no, appealNotes },
+      details: { registrationNo: app.registration_no, appealNotes, hasBukti: !!req.file },
       requestId: req.requestId,
     });
 
     res.json({
       success: true,
-      message: 'Sanggahan berhasil dikirim! Berkas Anda akan diperiksa dan diverifikasi ulang oleh tim verifikator.',
-      data: { status: 'VERIFIKASI_BERKAS', notes: newNotes },
+      message: 'Sanggahan beserta bukti berhasil dikirim! Berkas Anda akan diperiksa dan diverifikasi ulang oleh tim verifikator.',
+      data: { status: 'VERIFIKASI_BERKAS', notes: newNotes, buktiDocId },
     });
   } catch (err) {
     log(LOG_LEVELS.ERROR, `Submit appeal error: ${err.message}`);
@@ -694,9 +739,6 @@ async function submitAppeal(req, res) {
   }
 }
 
-/**
- * GET /api/v1/applicant/documents/:docId/view
- */
 async function viewDocument(req, res) {
   try {
     const userId = req.user.id;

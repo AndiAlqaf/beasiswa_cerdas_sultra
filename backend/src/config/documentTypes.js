@@ -29,6 +29,7 @@ const CANONICAL_DOC_TYPES = [
   'pernyataan',
   'esai',
   'pendukung',
+  'bukti_sanggah',
 ];
 
 // Alias lama (legacy) yang masih bisa muncul di form klien / API.
@@ -67,6 +68,7 @@ function normalizeDocType(raw) {
   if (['esai', 'filemotivationoresai', 'motivationletter', 'essay', 'fileesai', 'karyatulis'].includes(clean)) return 'esai';
   if (['selfie', 'filepasfoto', 'pasfoto', 'fileselfie', 'foto'].includes(clean)) return 'selfie';
   if (['pendukung', 'filependukung', 'prestasi', 'sertifikat'].includes(clean)) return 'pendukung';
+  if (['buktisanggah', 'bukti', 'buktikendala', 'filebukti', 'buktimischecking', 'lampiranbukti'].includes(clean)) return 'bukti_sanggah';
 
   return raw.trim().toLowerCase();
 }

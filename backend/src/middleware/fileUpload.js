@@ -21,7 +21,7 @@ const UPLOAD_DIRS = [
   'selfies', 'ktm', 'pendukung', 'ijazah', 'dtks', 'ktp', 'transkrip',
   'surat_permohonan', 'surat_pernyataan', 'pernyataan', 'esai',
   'fileSuratPermohonan', 'filePasfoto', 'fileKtp', 'fileSuratAktif',
-  'fileTranskrip', 'fileDtks', 'fileSuratPernyataan', 'fileMotivationOrEsai'
+  'fileTranskrip', 'fileDtks', 'fileSuratPernyataan', 'fileMotivationOrEsai', 'bukti_sanggah'
 ];
 for (const dir of UPLOAD_DIRS) {
   const fullPath = path.join(env.UPLOAD_DIR, dir);

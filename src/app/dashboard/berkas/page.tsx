@@ -1,5 +1,7 @@
 'use client';
 
+import Link from 'next/link';
+
 import React, { useState, useEffect, useRef } from 'react';
 import { fetchAPI } from '@/lib/api';
 import { getStoredScheduleConfig, getDynamicTimeline, ScheduleConfig } from '@/lib/schedule';
@@ -17,7 +19,7 @@ import {
   Lock,
   Check,
   AlertTriangle,
-  RefreshCw,
+  RefreshCw, ArrowRight,
 } from 'lucide-react';
 import SelfieLivenessModal from '@/components/SelfieLivenessModal';
 
@@ -349,55 +351,40 @@ export default function BerkasPage() {
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Kelola Berkas Unggahan</h1>
           <p className="text-blue-100 text-xs sm:text-sm mt-1 max-w-xl leading-relaxed">
-            {isSanggahPeriodOpen
-              ? `Masa Sanggah sedang aktif (${sanggahDateRange}). Anda dapat memperbarui berkas perbaikan sanggahan. Berkas lama tetap tersimpan sebagai riwayat perbandingan.`
-              : `Pengunggahan dan perbaikan berkas hanya dapat dilakukan pada Masa Sanggah (${sanggahDateRange}). Saat ini portal berkas sedang dikunci.`}
+            Seluruh berkas pendaftaran Anda telah tersimpan secara permanen dan dikunci (hanya dapat dilihat). Pengajuan sanggahan berkas dilakukan melalui formulir di halaman Dashboard.
           </p>
         </div>
       </div>
 
-      {/* Banner Status Masa Sanggah */}
-      {!isSanggahPeriodOpen ? (
-        <div className="bg-gradient-to-r from-amber-50 to-slate-50 border-2 border-amber-300 rounded-3xl p-6 shadow-sm flex items-start gap-4 animate-in fade-in">
-          <div className="p-3 bg-amber-600 text-white rounded-2xl shrink-0 shadow-sm">
+      {/* Banner Status Berkas Terkunci Permanen */}
+      <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-blue-950 border-2 border-slate-700 rounded-3xl p-6 shadow-md text-white flex flex-col md:flex-row items-start md:items-center justify-between gap-5 animate-in fade-in">
+        <div className="flex items-start gap-4">
+          <div className="p-3 bg-amber-500/20 text-amber-400 border border-amber-400/30 rounded-2xl shrink-0 mt-1">
             <Lock className="w-6 h-6" />
           </div>
           <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-200 text-amber-900 border border-amber-300">
-                Di Luar Masa Sanggah
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-400 text-slate-950">
+                Arsip Terkunci Permanen
               </span>
-              <span className="text-xs text-amber-800 font-bold">Pengunggahan Berkas Ditutup</span>
+              <span className="text-xs text-slate-300 font-semibold">Hanya Dapat Dilihat (Read-Only)</span>
             </div>
-            <h3 className="text-base sm:text-lg font-extrabold text-slate-900">
-              Portal Pengunggahan & Perbaikan Berkas Sedang Dikunci
+            <h3 className="text-base sm:text-lg font-extrabold text-white">
+              Semua Berkas Pendaftaran Telah Dikunci
             </h3>
-            <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-medium">
-              Pengunggahan maupun perubahan berkas pendaftaran hanya dapat dilakukan pada <strong>Masa Sanggah ({sanggahDateRange})</strong>. Di luar jadwal tersebut, sistem mengunci seluruh aksi pengunggahan dan perbaikan berkas untuk menjaga keabsahan data seleksi. Anda tetap dapat meninjau berkas yang telah tersimpan melalui tombol <strong>Lihat File</strong>.
+            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-medium max-w-2xl">
+              Seluruh dokumen pendaftaran telah terkunci permanen dan hanya dapat ditinjau (Lihat File). Jika Anda berstatus tidak lolos dan ingin mengajukan sanggahan, silakan gunakan <strong>Formulir Pengajuan Sanggahan</strong> di Dashboard dengan mengunggah bukti mischecking atau kendala teknis saat pengisian.
             </p>
           </div>
         </div>
-      ) : (
-        <div className="bg-gradient-to-r from-emerald-50 to-blue-50 border-2 border-emerald-300 rounded-3xl p-6 shadow-sm flex items-start gap-4 animate-in fade-in">
-          <div className="p-3 bg-emerald-600 text-white rounded-2xl shrink-0 shadow-sm">
-            <CheckCircle2 className="w-6 h-6" />
-          </div>
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-200 text-emerald-900 border border-emerald-300">
-                Masa Sanggah Aktif
-              </span>
-              <span className="text-xs text-emerald-800 font-bold">{sanggahDateRange}</span>
-            </div>
-            <h3 className="text-base sm:text-lg font-extrabold text-slate-900">
-              Pengunggahan Berkas Masa Sanggah Terbuka
-            </h3>
-            <p className="text-xs sm:text-sm text-slate-700 leading-relaxed font-medium">
-              Anda dapat mengunggah berkas sanggahan bagi dokumen yang memerlukan perbaikan. <strong>Penting:</strong> Setelah berkas sanggahan dipilih dan dikonfirmasi, dokumen akan <strong>langsung terkunci permanen</strong>. Berkas awal pendaftaran tetap tersimpan sebagai riwayat perbandingan.
-            </p>
-          </div>
-        </div>
-      )}
+        <Link
+          href="/dashboard"
+          className="px-5 py-3 rounded-2xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs uppercase tracking-wider transition-all shadow-md shrink-0 flex items-center gap-2"
+        >
+          <span>Ke Dashboard Sanggahan</span>
+          <ArrowRight className="w-4 h-4" />
+        </Link>
+      </div>
 
       {/* Banner Khusus Status PERLU_UNGGAH_ULANG */}
       {applicationStatus === 'PERLU_UNGGAH_ULANG' && (() => {
@@ -473,15 +460,12 @@ export default function BerkasPage() {
         );
       })()}
 
-      {/* Grid Dokumen */}
+      {/* Grid Dokumen (Terkunci Permanen / Read-Only) */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         {documentTypes.map((docTypeItem) => {
           const matchingDocs = documents.filter((d) => isDocTypeMatch(d, docTypeItem.key));
           const presentDocs = matchingDocs.filter((d) => !d.isMissing);
 
-          // Cek apakah berkas merupakan sanggahan:
-          // 1. Ditandai d.isSanggah === true atau storedName mengandung prefix 'sanggah_'
-          // 2. ATAU jika memiliki lebih dari 1 file (presentDocs.length > 1), maka file setelah index 0 adalah sanggahan
           const isDocSanggah = (d: DocumentInfo, idx: number) => {
             if (d.isSanggah) return true;
             if (d.storedName && d.storedName.startsWith('sanggah_')) return true;
@@ -496,30 +480,19 @@ export default function BerkasPage() {
           const latestSanggahDoc = hasSanggahanUploaded ? sanggahDocs[sanggahDocs.length - 1] : null;
           const registrationDoc = registrationDocs.length > 0 ? registrationDocs[0] : null;
 
-          const isFileMissing = presentDocs.length === 0 && missingDocuments.some(mKey => isDocTypeMatch({ docType: mKey } as any, docTypeItem.key));
+          const isFileMissing = presentDocs.length === 0;
 
           return (
             <div
               key={docTypeItem.key}
               className={`rounded-3xl p-6 transition-all flex flex-col justify-between border ${
                 isFileMissing
-                  ? 'bg-rose-50/40 border-rose-300 shadow-sm ring-1 ring-rose-200'
+                  ? 'bg-slate-50/80 border-dashed border-slate-300'
                   : hasSanggahanUploaded
                   ? 'bg-amber-50/20 border-amber-300 shadow-sm ring-1 ring-amber-100'
-                  : registrationDoc
-                  ? 'bg-white border-slate-200 shadow-sm hover:shadow-md'
-                  : 'bg-slate-50/80 border-dashed border-slate-300'
+                  : 'bg-white border-slate-200 shadow-sm hover:shadow-md'
               }`}
             >
-              {/* Hidden File Input */}
-              <input
-                type="file"
-                ref={(el) => { fileInputRefs.current[docTypeItem.key] = el; }}
-                onChange={(e) => handleFileChange(docTypeItem.key, e)}
-                accept={docTypeItem.accept}
-                className="hidden"
-              />
-
               <div>
                 {/* Header Badge */}
                 <div className="flex items-center justify-between mb-4">
@@ -528,21 +501,13 @@ export default function BerkasPage() {
                       <span className="text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full border bg-amber-100 text-amber-900 border-amber-300 flex items-center gap-1 shadow-2xs">
                         <Check className="w-3 h-3 text-amber-700" /> Berkas Sanggahan Terkirim
                       </span>
-                    ) : isFileMissing ? (
-                      <span className="text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full border bg-rose-600 text-white border-rose-700 shadow-2xs animate-pulse">
-                        ⚠️ File Perlu Dilengkapi
-                      </span>
                     ) : registrationDoc ? (
-                      <span className="text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full border bg-blue-100 text-blue-900 border-blue-200 flex items-center gap-1">
-                        <FileText className="w-3 h-3 text-blue-600" /> Berkas Pendaftaran
+                      <span className="text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full border bg-emerald-100 text-emerald-900 border-emerald-300 flex items-center gap-1 shadow-2xs">
+                        <Check className="w-3 h-3 text-emerald-700" /> Berkas Tersimpan
                       </span>
                     ) : (
-                      <span className={`text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${
-                        docTypeItem.required
-                          ? 'bg-amber-100 text-amber-800 border-amber-200'
-                          : 'bg-slate-200 text-slate-600 border-slate-300'
-                      }`}>
-                        {docTypeItem.required ? 'Wajib Unggah' : 'Opsional'}
+                      <span className="text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full border bg-slate-200 text-slate-600 border-slate-300">
+                        {docTypeItem.required ? 'Berkas Tidak Diunggah' : 'Opsional (Tidak Ada)'}
                       </span>
                     )}
 
@@ -553,27 +518,10 @@ export default function BerkasPage() {
                     )}
                   </div>
 
-                  {hasSanggahanUploaded ? (
-                    <span className="text-[10px] text-slate-400 font-semibold flex items-center gap-1">
-                      <Lock className="w-3 h-3 text-slate-400" /> Terkunci Permanen
-                    </span>
-                  ) : !isSanggahPeriodOpen && registrationDoc ? (
-                    <span className="text-[10px] text-slate-400 font-semibold flex items-center gap-1">
-                      <Lock className="w-3 h-3 text-slate-400" /> Terkunci
-                    </span>
-                  ) : isSanggahPeriodOpen && registrationDoc ? (
-                    <span className="text-[10px] text-amber-800 font-bold bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
-                      Bisa Disanggah
-                    </span>
-                  ) : null}
+                  <span className="text-[10px] text-slate-400 font-bold flex items-center gap-1">
+                    <Lock className="w-3 h-3 text-slate-400" /> Terkunci Permanen
+                  </span>
                 </div>
-
-                {isFileMissing && (
-                  <div className="p-3 bg-rose-100/80 border border-rose-300 rounded-2xl flex items-center gap-2 text-rose-900 text-xs font-bold mb-3 shadow-2xs">
-                    <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
-                    <span>Berkas ini belum dilampirkan atau tidak terbaca di server. Silakan unggah berkas sanggahan.</span>
-                  </div>
-                )}
 
                 {/* Doc Title & Description */}
                 <h3 className="font-bold text-slate-900 text-base mb-1">{docTypeItem.label}</h3>
@@ -614,7 +562,7 @@ export default function BerkasPage() {
                     </div>
 
                     {/* 2. Berkas Lama Pendaftaran (jika ada) */}
-                    {registrationDoc ? (
+                    {registrationDoc && (
                       <div className="bg-slate-50 rounded-2xl p-3 border border-slate-200 space-y-1.5 opacity-90">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-1.5 min-w-0">
@@ -639,14 +587,9 @@ export default function BerkasPage() {
                           <span>{formatSize(registrationDoc.fileSize)}</span>
                         </div>
                       </div>
-                    ) : (
-                      <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-200 text-[11px] text-slate-500 italic">
-                        ℹ️ Dokumen awal saat pendaftaran belum dilampirkan. Berkas ini telah dilengkapi pada Masa Sanggah.
-                      </div>
                     )}
                   </div>
                 ) : registrationDoc ? (
-                  /* Hanya ada Berkas Pendaftaran Awal (belum pernah mengajukan sanggahan) */
                   <div className="space-y-2 mb-4">
                     <div className="bg-slate-50 rounded-2xl p-3.5 border border-slate-200 space-y-2">
                       <div className="flex items-center justify-between">
@@ -654,7 +597,7 @@ export default function BerkasPage() {
                           📄 {registrationDoc.originalName}
                         </p>
                         <span className="text-[9px] font-bold uppercase bg-blue-100 text-blue-800 px-2 py-0.5 rounded-md">
-                          Dari Pendaftaran
+                          Arsip Pendaftaran
                         </span>
                       </div>
                       <div className="flex items-center gap-4 text-[11px] text-slate-500 font-medium">
@@ -670,98 +613,30 @@ export default function BerkasPage() {
                     </div>
                   </div>
                 ) : (
-                  <div className="p-4 bg-amber-50/50 border border-amber-200/60 rounded-2xl text-[11px] text-amber-800 leading-relaxed mb-4">
-                    Belum ada berkas yang diunggah untuk kategori ini. Silakan unggah berkas perbaikan Anda pada Masa Sanggah ini.
+                  <div className="p-4 bg-slate-100/70 border border-slate-200 rounded-2xl text-[11px] text-slate-500 leading-relaxed mb-4">
+                    Dokumen ini tidak dilampirkan saat pendaftaran dan telah terkunci secara permanen.
                   </div>
                 )}
               </div>
 
-              {/* Action Buttons */}
+              {/* Action Buttons - Cuma Bisa Dilihat (Read-Only) */}
               <div className="flex items-center gap-2 pt-3 border-t border-slate-100 mt-auto">
-                {hasSanggahanUploaded && latestSanggahDoc ? (
-                  /* KASUS 1: Berkas Sanggahan sudah terunggah -> LANGSUNG TERKUNCI PERMANEN */
+                {(latestSanggahDoc || registrationDoc) ? (
                   <div className="w-full flex items-center gap-2">
                     <button
                       type="button"
-                      onClick={() => handleViewDocument(latestSanggahDoc.id)}
-                      className="flex-1 py-2.5 px-3 text-xs font-bold bg-amber-50 hover:bg-amber-100 text-amber-900 rounded-xl transition-colors flex items-center justify-center gap-1.5 border border-amber-300 shadow-2xs"
+                      onClick={() => handleViewDocument((latestSanggahDoc || registrationDoc)!.id)}
+                      className="flex-1 py-2.5 px-3 text-xs font-bold bg-blue-50 hover:bg-blue-100 text-blue-900 rounded-xl transition-colors flex items-center justify-center gap-1.5 border border-blue-200 shadow-2xs cursor-pointer"
                     >
-                      <ExternalLink className="w-3.5 h-3.5" /> Lihat Berkas Sanggahan
+                      <ExternalLink className="w-3.5 h-3.5" /> Lihat File
                     </button>
-                    <div className="px-3 py-2 text-[11px] font-bold text-slate-500 bg-slate-100 rounded-xl border border-slate-200 flex items-center gap-1 shrink-0">
-                      <Lock className="w-3.5 h-3.5 text-slate-400" /> Terkunci
+                    <div className="px-3 py-2 text-[11px] font-bold text-slate-400 bg-slate-100 rounded-xl border border-slate-200 flex items-center gap-1 shrink-0">
+                      <Lock className="w-3.5 h-3.5 text-slate-400" /> Terkunci Permanen
                     </div>
                   </div>
-                ) : !isSanggahPeriodOpen ? (
-                  /* KASUS 2: DI LUAR MASA SANGGAH -> SEMUA AKSI EDIT/UNGGAH TERKUNCI */
-                  <div className="w-full flex items-center gap-2">
-                    {registrationDoc ? (
-                      <>
-                        <button
-                          type="button"
-                          onClick={() => handleViewDocument(registrationDoc.id)}
-                          className="flex-1 py-2.5 px-3 text-xs font-bold bg-blue-50 hover:bg-blue-100 text-blue-800 rounded-xl transition-colors flex items-center justify-center gap-1.5 border border-blue-200 shadow-2xs"
-                        >
-                          <ExternalLink className="w-3.5 h-3.5" /> Lihat File
-                        </button>
-                        <div className="px-3 py-2 text-[11px] font-bold text-slate-400 bg-slate-100 rounded-xl border border-slate-200 flex items-center gap-1 shrink-0">
-                          <Lock className="w-3.5 h-3.5 text-slate-400" /> Terkunci
-                        </div>
-                      </>
-                    ) : (
-                      <button
-                        type="button"
-                        disabled
-                        className="w-full py-2.5 px-3 text-xs font-bold rounded-xl bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed flex items-center justify-center gap-1.5"
-                      >
-                        <Lock className="w-3.5 h-3.5" /> Terkunci (Di Luar Masa Sanggah)
-                      </button>
-                    )}
-                  </div>
                 ) : (
-                  /* KASUS 3: MASA SANGGAH AKTIF & BELUM UNGGAH SANGGAHAN -> DIBUKA UNTUK UNGGAH SANGGAHAN! */
-                  <div className="w-full flex items-center gap-2">
-                    {registrationDoc && (
-                      <button
-                        type="button"
-                        onClick={() => handleViewDocument(registrationDoc.id)}
-                        className="flex-1 py-2.5 px-3 text-xs font-bold bg-blue-50 hover:bg-blue-100 text-blue-800 rounded-xl transition-colors flex items-center justify-center gap-1.5 border border-blue-200 shadow-2xs"
-                      >
-                        <ExternalLink className="w-3.5 h-3.5" /> Lihat File
-                      </button>
-                    )}
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (docTypeItem.key === 'selfie') {
-                          setIsCameraModalOpen(true);
-                        } else {
-                          handleTriggerUpload(docTypeItem.key);
-                        }
-                      }}
-                      className={`flex-1 py-2.5 px-3 text-xs font-bold rounded-xl transition-all shadow-sm flex items-center justify-center gap-1.5 ${
-                        docTypeItem.key === 'selfie'
-                          ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/20'
-                          : registrationDoc
-                          ? 'bg-amber-600 hover:bg-amber-700 text-white shadow-amber-600/20'
-                          : 'bg-blue-900 hover:bg-blue-950 text-white shadow-blue-900/20'
-                      }`}
-                    >
-                      {docTypeItem.key === 'selfie' ? (
-                        <>
-                          <Camera className="w-3.5 h-3.5" /> {registrationDoc ? 'Ambil Foto Ulang' : 'Ambil Foto via Kamera'}
-                        </>
-                      ) : registrationDoc ? (
-                        <>
-                          <RefreshCw className="w-3.5 h-3.5" /> Unggah Sanggahan
-                        </>
-                      ) : (
-                        <>
-                          <Upload className="w-3.5 h-3.5" /> Unggah Berkas
-                        </>
-                      )}
-                    </button>
+                  <div className="w-full py-2.5 px-3 text-xs font-bold rounded-xl bg-slate-100 text-slate-400 border border-slate-200 flex items-center justify-center gap-1.5 cursor-not-allowed">
+                    <Lock className="w-3.5 h-3.5 text-slate-400" /> Berkas Terkunci (Tidak Tersedia)
                   </div>
                 )}
               </div>
@@ -770,7 +645,7 @@ export default function BerkasPage() {
         })}
       </div>
 
-      {/* Modal Konfirmasi Unggah Berkas */}
+{/* Modal Konfirmasi Unggah Berkas */}
       {pendingUpload && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-in fade-in">
           <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden border border-slate-100 p-6 sm:p-7 animate-in zoom-in-95 space-y-5">

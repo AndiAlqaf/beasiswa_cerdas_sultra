@@ -17,6 +17,7 @@ const getDocTitle = (key: string) => {
   if (['esai', 'filemotivationoresai', 'motivationletter', 'essay', 'fileesai'].includes(clean)) return 'Motivation Letter / Esai';
   if (['selfie', 'filepasfoto', 'pasfoto', 'fileselfie', 'foto'].includes(clean)) return 'Pasfoto / Selfie';
   if (['pendukung', 'filependukung', 'prestasi', 'sertifikat'].includes(clean)) return 'Berkas Pendukung / Sertifikat';
+  if (['buktisanggah', 'bukti', 'buktikendala', 'filebukti', 'buktimischecking', 'lampiranbukti'].includes(clean)) return 'Bukti Mischecking / Kendala Sanggahan';
   return key;
 };
 
@@ -167,6 +168,9 @@ export default function SeleksiPage() {
     'IPK Kumulatif yang diinput tidak sesuai dengan transkrip nilai resmi.',
     'Dokumen Kartu Tanda Penduduk (KTP) / KK tidak sesuai dengan domisili Sultra.',
     'Dokumen persyaratan utama (Surat Pernyataan / Esai) tidak dilampirkan.',
+    'Bukti yang diunggah tidak valid atau tidak membuktikan adanya mischecking verifikator.',
+    'Koreksi data tidak dapat diterima karena dokumen bukti tidak sah / tidak berstempel.',
+    'Setelah peninjauan ulang berkas, pendaftar tetap tidak memenuhi kriteria persyaratan beasiswa.',
   ];
 
   const formatAsalDaerah = (asal: string) => {
@@ -261,11 +265,17 @@ export default function SeleksiPage() {
     setSubmittingReject(true);
     try {
       const id = selectedApplicant.userId || selectedApplicant.id;
+      const isSanggahanApp = applicantDetail?.application?.notes?.includes('[SANGGAHAN');
+      let finalNotes = rejectReason.trim();
+      if (isSanggahanApp && !finalNotes.includes('[HASIL SANGGAH DITOLAK]')) {
+        const prevNotes = applicantDetail?.application?.notes || selectedApplicant?.notes || '';
+        finalNotes = `[HASIL SANGGAH DITOLAK]: ${finalNotes}\n--- (Riwayat ${prevNotes})`;
+      }
       await fetchAPI(`/admin/applicants/${id}/verify`, {
         method: 'PATCH',
         body: JSON.stringify({
           status: 'DITOLAK',
-          notes: rejectReason.trim(),
+          notes: finalNotes,
         }),
       });
 
@@ -759,17 +769,31 @@ export default function SeleksiPage() {
                         </div>
 
                         {/* Pengajuan Sanggahan Notice Box (If any) */}
-                        {applicantDetail.application?.notes && applicantDetail.application.notes.includes('[SANGGAHAN') && (
-                          <div className="p-4 bg-amber-50 border-2 border-amber-300 rounded-2xl space-y-2">
-                            <div className="flex items-center gap-2 text-amber-900 font-extrabold text-xs">
-                              <RefreshCw className="w-4 h-4 text-amber-700 animate-spin" />
-                              <span>Catatan Sanggahan & Perbaikan Berkas Mahasiswa</span>
+                        {applicantDetail.application?.notes && applicantDetail.application.notes.includes('[SANGGAHAN') && (() => {
+                          const buktiDoc = applicantDetail.documents?.find((d: any) => (d.docType || '').toLowerCase() === 'bukti_sanggah' || (d.storedName && d.storedName.startsWith('bukti_sanggah')));
+                          return (
+                            <div className="p-4 bg-amber-50 border-2 border-amber-300 rounded-2xl space-y-3 shadow-xs">
+                              <div className="flex items-center justify-between gap-2 flex-wrap">
+                                <div className="flex items-center gap-2 text-amber-900 font-extrabold text-xs uppercase tracking-wide">
+                                  <RefreshCw className="w-4 h-4 text-amber-700 animate-spin" />
+                                  <span>Catatan Sanggahan & Perbaikan Berkas Mahasiswa</span>
+                                </div>
+                                {buktiDoc && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleViewDocument(targetUserId, buktiDoc.id)}
+                                    className="px-3 py-1.5 bg-amber-200 hover:bg-amber-300 text-amber-950 font-black text-xs rounded-xl border border-amber-400 transition-colors flex items-center gap-1.5 shadow-2xs cursor-pointer"
+                                  >
+                                    <ExternalLink className="w-3.5 h-3.5" /> Buka Berkas Bukti Sanggahan
+                                  </button>
+                                )}
+                              </div>
+                              <div className="p-3 bg-white rounded-xl border border-amber-200 text-xs text-slate-900 leading-relaxed font-medium whitespace-pre-line">
+                                {applicantDetail.application.notes}
+                              </div>
                             </div>
-                            <div className="p-3 bg-white rounded-xl border border-amber-200 text-xs text-slate-900 leading-relaxed font-medium whitespace-pre-line">
-                              {applicantDetail.application.notes}
-                            </div>
-                          </div>
-                        )}
+                          );
+                        })()}
 
                         {/* Keterangan Penolakan Box (At Top) */}
                         {(applicantDetail.application?.status || selectedApplicant.status) === 'DITOLAK' && (
@@ -1077,7 +1101,7 @@ export default function SeleksiPage() {
                       }`}
                       title={isRejected ? 'Status saat ini: Ditolak (Klik untuk mengubah alasan penolakan)' : 'Tolak berkas / alihkan status'}
                     >
-                      <XCircle className="w-4 h-4" /> {isRejected ? 'Ubah Alasan Tolak' : 'Tolak'}
+                      <XCircle className="w-4 h-4" /> {applicantDetail?.application?.notes?.includes('[SANGGAHAN') ? (isRejected ? 'Ubah Alasan Tolak Sanggahan' : 'Tolak Sanggahan') : (isRejected ? 'Ubah Alasan Tolak' : 'Tolak')}
                     </button>
                     <button
                       type="button"
@@ -1139,7 +1163,7 @@ export default function SeleksiPage() {
                     <XCircle className="w-5 h-5 text-rose-100" />
                   </div>
                   <div>
-                    <h3 className="text-base font-extrabold">Alasan Penolakan Pendaftaran</h3>
+                    <h3 className="text-base font-extrabold">{applicantDetail?.application?.notes?.includes('[SANGGAHAN') ? 'Tanggapan & Alasan Penolakan Sanggahan' : 'Alasan Penolakan Pendaftaran'}</h3>
                     <p className="text-xs text-rose-100">Pendaftar: {selectedApplicant?.namaLengkap || selectedApplicant?.email}</p>
                   </div>
                 </div>
