@@ -2,10 +2,10 @@
 
 import React, { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
-import { Users, FileCheck, Clock, CheckCircle, XCircle, Loader2, AlertCircle, Search, X } from 'lucide-react';
+import { Users, FileCheck, Clock, CheckCircle, XCircle, Loader2, AlertCircle, Search, X, RefreshCw } from 'lucide-react';
 import { fetchAPI } from '@/lib/api';
 
-type FilterCategory = 'RECENT' | 'ALL' | 'MENUNGGU' | 'BERKAS_LOLOS' | 'DITOLAK' | 'DITERIMA';
+type FilterCategory = 'RECENT' | 'ALL' | 'MENUNGGU' | 'SANGGAHAN' | 'BERKAS_LOLOS' | 'DITOLAK' | 'DITERIMA';
 
 export default function AdminDashboardPage() {
   const [data, setData] = useState<any>(null);
@@ -121,6 +121,17 @@ export default function AdminDashboardPage() {
       badgeBg: 'bg-amber-100 text-amber-800',
     },
     {
+      key: 'SANGGAHAN',
+      label: 'Verifikasi Sanggah',
+      value: stats.sanggahanMasuk || 0,
+      icon: RefreshCw,
+      color: 'text-amber-700',
+      bg: 'bg-amber-100',
+      activeBorder: 'border-amber-500',
+      activeRing: 'ring-2 ring-amber-500/20 bg-amber-50/30',
+      badgeBg: 'bg-amber-200 text-amber-900',
+    },
+    {
       key: 'BERKAS_LOLOS',
       label: 'Berkas Lolos',
       value: stats.berkasLolos || 0,
@@ -155,13 +166,21 @@ export default function AdminDashboardPage() {
     },
   ];
 
+  const isApplicantSanggahan = (a: any) => {
+    return a.status === 'VERIFIKASI_BERKAS' && (
+      (typeof a.notes === 'string' && (a.notes.includes('[SANGGAHAN') || a.notes.includes('[SANGGAHAN MAHASISWA]')))
+    );
+  };
+
   const displayedApplicants = useMemo(() => {
     const sourceList = activeFilter === 'RECENT' ? recentApplicants : (allApplicants.length > 0 ? allApplicants : recentApplicants);
 
     let filtered = sourceList.filter((a: any) => {
       if (activeFilter === 'RECENT' || activeFilter === 'ALL') return true;
       if (activeFilter === 'MENUNGGU') return a.status === 'TERKIRIM';
+      if (activeFilter === 'SANGGAHAN') return isApplicantSanggahan(a);
       if (activeFilter === 'BERKAS_LOLOS') {
+        if (isApplicantSanggahan(a)) return false;
         if (berkasLolosSubFilter === 'ONLY_VERIFIED') {
           return ['VERIFIKASI_BERKAS', 'SELEKSI_ADMINISTRASI', 'LOLOS_VERIFIKASI'].includes(a.status);
         }
@@ -200,6 +219,8 @@ export default function AdminDashboardPage() {
         return 'Daftar Seluruh Pendaftar';
       case 'MENUNGGU':
         return 'Daftar Pendaftar Menunggu Verifikasi';
+      case 'SANGGAHAN':
+        return 'Daftar Pengajuan Sanggahan (Verifikasi Sanggah)';
       case 'BERKAS_LOLOS':
         return 'Daftar Mahasiswa Berkas Lolos';
       case 'DITOLAK':
@@ -242,7 +263,7 @@ export default function AdminDashboardPage() {
       </div>
 
       {/* Stats Grid (Clickable) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         {statItems.map((stat) => {
           const isActive = activeFilter === stat.key;
           return (
@@ -380,22 +401,30 @@ export default function AdminDashboardPage() {
                       {applicant.submittedAt ? new Date(applicant.submittedAt).toLocaleDateString('id-ID') : '-'}
                     </td>
                     <td className="p-4">
-                      <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
-                        applicant.status === 'DITERIMA' ? 'bg-emerald-100 text-emerald-700' :
-                        applicant.status === 'LOLOS_VERIFIKASI' ? 'bg-teal-100 text-teal-700' :
-                        applicant.status === 'DITOLAK' ? 'bg-rose-100 text-rose-700' :
-                        'bg-amber-100 text-amber-700'
-                      }`}>
-                        {applicant.status === 'LOLOS_VERIFIKASI'
-                          ? 'Lolos Verifikasi'
-                          : applicant.status === 'DITERIMA'
-                          ? 'Diterima'
-                          : applicant.status === 'DITOLAK'
-                          ? 'Ditolak'
-                          : applicant.status === 'TERKIRIM'
-                          ? 'Terkirim'
-                          : applicant.status}
-                      </span>
+                      {isApplicantSanggahan(applicant) ? (
+                        <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-900 border border-amber-300 inline-flex items-center gap-1.5 whitespace-nowrap shadow-xs">
+                          <RefreshCw className="w-3 h-3 text-amber-700 animate-spin" /> Verifikasi Sanggah
+                        </span>
+                      ) : (
+                        <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
+                          applicant.status === 'DITERIMA' ? 'bg-emerald-100 text-emerald-700' :
+                          applicant.status === 'LOLOS_VERIFIKASI' ? 'bg-teal-100 text-teal-700' :
+                          applicant.status === 'DITOLAK' ? 'bg-rose-100 text-rose-700' :
+                          'bg-amber-100 text-amber-700'
+                        }`}>
+                          {applicant.status === 'LOLOS_VERIFIKASI'
+                            ? 'Lolos Verifikasi'
+                            : applicant.status === 'DITERIMA'
+                            ? 'Diterima'
+                            : applicant.status === 'DITOLAK'
+                            ? 'Ditolak'
+                            : applicant.status === 'TERKIRIM'
+                            ? 'Terkirim'
+                            : applicant.status === 'VERIFIKASI_BERKAS'
+                            ? 'Verifikasi Berkas'
+                            : applicant.status}
+                        </span>
+                      )}
                     </td>
                     <td className="p-4">
                       <Link

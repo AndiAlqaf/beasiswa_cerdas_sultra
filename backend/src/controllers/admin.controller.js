@@ -18,14 +18,30 @@ async function getDashboard(req, res) {
 
     const [[{ totalPendaftar }]] = await pool.execute('SELECT COUNT(*) as totalPendaftar FROM applications');
     const [[{ menungguVerifikasi }]] = await pool.execute("SELECT COUNT(*) as menungguVerifikasi FROM applications WHERE status = 'TERKIRIM'");
-    const [[{ berkasLolos }]] = await pool.execute("SELECT COUNT(*) as berkasLolos FROM applications WHERE status IN ('VERIFIKASI_BERKAS', 'SELEKSI_ADMINISTRASI', 'LOLOS_VERIFIKASI', 'DITERIMA', 'PENCAIRAN_TERMIN_1', 'PENCAIRAN_TERMIN_2')");
+    
+    // Hitung pendaftar yang mengajukan sanggahan (status VERIFIKASI_BERKAS dan terdapat riwayat sanggahan mahasiswa)
+    const [[{ sanggahanMasuk }]] = await pool.execute(`
+      SELECT COUNT(*) as sanggahanMasuk 
+      FROM applications 
+      WHERE status = 'VERIFIKASI_BERKAS' 
+        AND (notes LIKE '%[SANGGAHAN%' OR notes LIKE '%[SANGGAHAN MAHASISWA]%')
+    `);
+
+    // Berkas Lolos: HANYA yang benar-benar lolos tahap administrasi/lolos verifikasi/diterima/pencairan ATAU yang verifikasi awal (BUKAN pendaftar sanggah)
+    const [[{ berkasLolos }]] = await pool.execute(`
+      SELECT COUNT(*) as berkasLolos 
+      FROM applications 
+      WHERE status IN ('LOLOS_VERIFIKASI', 'DITERIMA', 'PENCAIRAN_TERMIN_1', 'PENCAIRAN_TERMIN_2')
+         OR (status IN ('VERIFIKASI_BERKAS', 'SELEKSI_ADMINISTRASI') AND (notes IS NULL OR (notes NOT LIKE '%[SANGGAHAN%' AND notes NOT LIKE '%[SANGGAHAN MAHASISWA]%')))
+    `);
+
     const [[{ diterima }]] = await pool.execute("SELECT COUNT(*) as diterima FROM applications WHERE status IN ('DITERIMA', 'PENCAIRAN_TERMIN_1', 'PENCAIRAN_TERMIN_2')");
     const [[{ ditolak }]] = await pool.execute("SELECT COUNT(*) as ditolak FROM applications WHERE status = 'DITOLAK'");
     const [[{ totalUsers }]] = await pool.execute("SELECT COUNT(*) as totalUsers FROM users WHERE role = 'mahasiswa'");
 
     const [recentApplicants] = await pool.execute(`
       SELECT u.nama_lengkap, u.email, u.jenjang_target,
-             a.registration_no, a.status, a.submitted_at
+             a.registration_no, a.status, a.submitted_at, a.notes
       FROM applications a
       JOIN users u ON u.id = a.user_id
       ORDER BY a.submitted_at DESC
@@ -35,10 +51,10 @@ async function getDashboard(req, res) {
     res.json({
       success: true,
       data: {
-        stats: { totalPendaftar, menungguVerifikasi, berkasLolos, diterima, ditolak, totalUsers },
+        stats: { totalPendaftar, menungguVerifikasi, sanggahanMasuk, berkasLolos, diterima, ditolak, totalUsers },
         recentApplicants: recentApplicants.map(a => ({
           namaLengkap: a.nama_lengkap, email: a.email, jenjangTarget: a.jenjang_target,
-          registrationNo: a.registration_no, status: a.status, submittedAt: a.submitted_at,
+          registrationNo: a.registration_no, status: a.status, notes: a.notes, submittedAt: a.submitted_at,
         })),
       },
     });
