@@ -221,8 +221,7 @@ const verifyStatusValidation = [
   
   body('notes')
     .optional()
-    .trim()
-    .isLength({ max: 1000 }).withMessage('Catatan maks 1000 karakter.'),
+    .trim(),
   
   handleValidation,
 ];
