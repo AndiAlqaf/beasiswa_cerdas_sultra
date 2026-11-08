@@ -1352,7 +1352,7 @@ export default function SeleksiPage() {
                       </>
                     ) : (
                       <>
-                        <XCircle className="w-4 h-4" /> Konfirmasi Tolak Pendaftaran
+                        <XCircle className="w-4 h-4" /> {applicantDetail?.application?.notes?.includes('[SANGGAHAN') ? 'Konfirmasi Tolak Sanggahan' : 'Konfirmasi Tolak Pendaftaran'}
                       </>
                     )}
                   </button>
