@@ -115,7 +115,30 @@ export default function DashboardPage() {
         headers,
         body: formData,
       });
-      const data = await res.json();
+
+      const rawText = await res.text().catch(() => '');
+      let data: any = null;
+      if (rawText) {
+        try {
+          data = JSON.parse(rawText);
+        } catch {
+          if (res.status === 413) {
+            throw new Error('Ukuran file bukti yang Anda unggah terlalu besar untuk diproses server. Silakan kompres atau perkecil ukuran foto/PDF Anda (disarankan di bawah 2MB) lalu coba kirim kembali.');
+          } else if (res.status === 502 || res.status === 504) {
+            throw new Error('Koneksi server mengalami batas waktu (timeout) saat mengunggah berkas. Pastikan koneksi internet stabil atau perkecil ukuran file bukti Anda.');
+          } else if (!res.ok) {
+            throw new Error(`Server merespon dengan status ${res.status}. Silakan kompres file bukti lalu coba kirim kembali.`);
+          }
+        }
+      }
+
+      if (!data) {
+        if (res.status === 413) {
+          throw new Error('Ukuran file bukti terlalu besar (melebihi batas transfer server). Silakan kompres file foto/PDF Anda di bawah 2MB.');
+        }
+        throw new Error('Koneksi terputus saat mengunggah berkas. Silakan coba kompres ukuran foto/PDF Anda menjadi lebih kecil lalu kirim kembali.');
+      }
+
       if (res.ok && data.success) {
         setToast({
           title: 'Sanggahan Terkirim!',
@@ -306,6 +329,18 @@ export default function DashboardPage() {
           badgeText: 'Terverifikasi',
         };
       case 'DITOLAK':
+        if (isPenetapanPeriodOpen || isSanggahPeriodCompleted) {
+          return {
+            title: 'Belum Lolos Seleksi',
+            desc: 'Tetap semangat dan jangan berkecil hati! Perjalanan pendidikan Anda masih panjang dan kesempatan emas lainnya menanti di masa depan. Teruslah berkarya, belajar, dan berprestasi untuk kebanggaan Sulawesi Tenggara.',
+            badgeBg: 'bg-rose-100 text-rose-800',
+            icon: XCircle,
+            iconBg: 'bg-rose-50 text-rose-600',
+            badgeText: 'Belum Lolos',
+            encouragement: true,
+            notes: effectiveNotes,
+          };
+        }
         return {
           title: 'Belum Lolos Verifikasi',
           desc: effectiveNotes || 'Mohon maaf, berkas pendaftaran Anda belum memenuhi kualifikasi verifikasi berkas.',
@@ -513,9 +548,23 @@ export default function DashboardPage() {
             <div>
               <p className="text-[11px] text-slate-500 font-bold uppercase tracking-wider mb-1.5">Status Pendaftaran</p>
               <h3 className="text-lg font-bold text-slate-900">{statusInfo.title}</h3>
-              <p className="text-sm text-slate-500 mt-2 leading-relaxed">
+              <p className="text-sm text-slate-600 mt-2 leading-relaxed font-medium">
                 {statusInfo.desc}
               </p>
+
+              {statusInfo.encouragement && statusInfo.notes && (
+                <div className="mt-3.5 pt-3 border-t border-slate-100">
+                  <details className="group text-xs">
+                    <summary className="font-semibold text-rose-700 hover:text-rose-900 cursor-pointer list-none flex items-center justify-between">
+                      <span>Lihat Riwayat Catatan Verifikator</span>
+                      <span className="text-[10px] text-slate-400 group-open:rotate-180 transition-transform">▼</span>
+                    </summary>
+                    <div className="mt-2 p-2.5 bg-rose-50/70 border border-rose-200 rounded-xl text-[11px] text-rose-950 font-mono whitespace-pre-line max-h-40 overflow-y-auto leading-relaxed">
+                      {statusInfo.notes}
+                    </div>
+                  </details>
+                </div>
+              )}
             </div>
           </div>
 
@@ -749,26 +798,29 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* INFORMASI PENETAPAN FINAL (Jika Masa Sanggah Telah Ditutup / Masuk Fase Penetapan) */}
-      {isSanggahPeriodCompleted && effectiveStatus === 'DITOLAK' && (
-        <div className="bg-slate-50 rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-4">
+      {/* INFORMASI PENETAPAN FINAL & PESAN PENYEMANGAT */}
+      {(isSanggahPeriodCompleted || isPenetapanPeriodOpen) && effectiveStatus === 'DITOLAK' && (
+        <div className="bg-gradient-to-br from-amber-50/70 via-slate-50 to-white rounded-3xl border border-amber-200 p-6 sm:p-8 shadow-sm space-y-4">
           <div className="flex items-center gap-3">
-            <div className="p-3 bg-slate-800 text-white rounded-2xl shadow-sm">
-              <ShieldCheck className="w-6 h-6 text-amber-400" />
+            <div className="p-3 bg-[#0B3A6A] text-white rounded-2xl shadow-sm">
+              <Award className="w-6 h-6 text-amber-300" />
             </div>
             <div>
-              <span className="text-[10px] font-extrabold uppercase tracking-wider bg-slate-200 text-slate-700 px-3 py-1 rounded-full border border-slate-300">
-                Penetapan Hasil Seleksi Final
+              <span className="text-[10px] font-extrabold uppercase tracking-wider bg-amber-100 text-amber-900 px-3 py-1 rounded-full border border-amber-300">
+                Pesan &amp; Apresiasi Pemprov Sultra
               </span>
-              <h3 className="text-lg font-black text-slate-900 mt-1">Masa Sanggah Telah Ditutup</h3>
+              <h3 className="text-lg font-black text-slate-900 mt-1">Tetap Semangat &amp; Terus Berprestasi!</h3>
             </div>
           </div>
-          <div className="bg-white p-5 rounded-2xl border border-slate-200 text-xs text-slate-700 leading-relaxed space-y-2">
+          <div className="bg-white p-5 rounded-2xl border border-slate-200 text-xs sm:text-sm text-slate-700 leading-relaxed space-y-3">
             <p>
-              Masa pengajuan sanggahan telah resmi berakhir pada jadwal <strong>{sanggahStep?.date || '5 - 8 November 2026'}</strong>.
+              Hasil seleksi Beasiswa Stimulan Sultra Cerdas 2026 telah resmi ditetapkan berdasarkan Surat Keputusan (SK) Gubernur Sulawesi Tenggara.
             </p>
-            <p className="text-slate-600">
-              Hasil penetapan penerima beasiswa saat ini telah bersifat <strong>final dan mengikat</strong> berdasarkan Surat Keputusan (SK) Gubernur Sulawesi Tenggara. Terima kasih atas partisipasi dan dedikasi Anda dalam mengikuti proses seleksi Beasiswa Stimulan Sultra Cerdas 2026.
+            <div className="p-4 bg-amber-50/80 border-l-4 border-amber-400 rounded-r-xl text-xs text-amber-950 italic leading-relaxed font-medium">
+              &ldquo;Kepada seluruh mahasiswa Sulawesi Tenggara yang belum berhasil menerima beasiswa pada periode ini: jangan pernah berkecil hati. Seluruh ikhtiar, kerja keras, dan potensi luar biasa yang Anda miliki adalah kebanggaan daerah. Kegagalan hari ini adalah tangga awal menuju pencapaian yang lebih gemilang. Teruslah belajar, berinovasi, dan mengukir prestasi terbaik demi masa depan Anda dan daerah yang kita cintai.&rdquo;
+            </div>
+            <p className="text-slate-500 text-xs pt-1">
+              — Panitia Seleksi Beasiswa Stimulan Sultra Cerdas, Pemerintah Provinsi Sulawesi Tenggara
             </p>
           </div>
         </div>

@@ -269,14 +269,16 @@ function startEmailScheduler() {
     log(LOG_LEVELS.INFO, '[SCHEDULER] Guard blast direset untuk hari baru.');
   });
 
-  // Cek pada hari penetapan penerima beasiswa
-  cron.schedule('0 9 * * *', async () => {
+  // Cek pada hari penetapan penerima beasiswa tepat pukul 23:59 WITA (Asia/Makassar)
+  cron.schedule('59 23 * * *', async () => {
     if (blastPengumumanSudahTerkirim) return;
-    const today = new Date().toISOString().split('T')[0];
-    if (today !== penetapanDate) return;
+    const todayWita = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Makassar' });
+    if (todayWita !== penetapanDate) return;
 
-    log(LOG_LEVELS.INFO, '[SCHEDULER] 🔔 Hari penetapan penerima beasiswa tiba! Memulai pengiriman email SK...');
+    log(LOG_LEVELS.INFO, '[SCHEDULER] 🔔 Pengumuman penetapan resmi penerima beasiswa (23:59 WITA) tiba! Memulai pengiriman email SK...');
     await jalankanBlastPenetapanPenerima();
+  }, {
+    timezone: 'Asia/Makassar'
   });
 }
 

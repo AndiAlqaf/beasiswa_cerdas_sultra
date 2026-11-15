@@ -76,7 +76,7 @@ if (typeof window !== 'undefined') {
       case 'pengumuman-sanggah': mockTime = `${config.pengumumanSanggahDate} 23:59:00`; break;
       case 'penetapan':
       case 'penetapan-resmi':
-      case 'penetapan-penerima': mockTime = `${config.penetapanDate || '2026-11-16'} 10:00:00`; break;
+      case 'penetapan-penerima': mockTime = `${config.penetapanDate || '2026-11-16'} 23:59:00`; break;
       case 'kontrak': mockTime = `${config.kontrakDate || '2026-11-18'} 10:00:00`; break;
       case 'penyaluran':
       case 'pencairan': mockTime = `${config.penyaluranDate || '2026-11-23'} 10:00:00`; break;
@@ -134,7 +134,7 @@ export function getDynamicTimeline(
   const getStatus = (
     startStr: string, 
     endStr: string, 
-    announcementType?: 'awal' | 'sanggah' | boolean
+    announcementType?: 'awal' | 'sanggah' | 'penetapan' | boolean
   ): 'completed' | 'active' | 'upcoming' => {
     const start = parseDate(startStr);
     if (announcementType === 'awal' || announcementType === true) {
@@ -143,8 +143,8 @@ export function getDynamicTimeline(
       const witaOffsetMinutes = -480; // WITA (UTC+8)
       const diffMinutes = userOffsetMinutes - witaOffsetMinutes;
       start.setHours(18, 0 - diffMinutes, 0, 0);
-    } else if (announcementType === 'sanggah') {
-      // Pengumuman Hasil Sanggah TETAP dirilis pada pukul 23:59:00 WITA (UTC+8)
+    } else if (announcementType === 'sanggah' || announcementType === 'penetapan') {
+      // Pengumuman Hasil Sanggah & Penetapan Resmi dirilis pada pukul 23:59:00 WITA (UTC+8)
       const userOffsetMinutes = start.getTimezoneOffset();
       const witaOffsetMinutes = -480; // WITA (UTC+8)
       const diffMinutes = userOffsetMinutes - witaOffsetMinutes;
@@ -256,7 +256,7 @@ export function getDynamicTimeline(
       date: formatDateRange(config.penetapanDate || '2026-11-16', '2026-11-17'),
       startDate: config.penetapanDate || '2026-11-16',
       endDate: '2026-11-17',
-      status: getStatus(config.penetapanDate || '2026-11-16', '2026-11-17')
+      status: getStatus(config.penetapanDate || '2026-11-16', '2026-11-17', 'penetapan')
     },
     {
       id: 'kontrak',
