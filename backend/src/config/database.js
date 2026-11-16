@@ -246,6 +246,7 @@ async function runMigrations() {
   const appColumns = [
     'announcement_email_sent_at DATETIME NULL',
     'appeal_email_sent_at DATETIME NULL',
+    'penetapan_email_sent_at DATETIME NULL',
     'is_lulus_sanggah TINYINT(1) NOT NULL DEFAULT 0'
   ];
   for (const colDef of appColumns) {

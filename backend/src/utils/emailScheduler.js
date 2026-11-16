@@ -207,7 +207,7 @@ async function jalankanBlastPenetapanPenerima() {
       FROM applications a
       JOIN users u ON u.id = a.user_id
       WHERE a.status IN ('DITERIMA', 'PENCAIRAN_TERMIN_1', 'PENCAIRAN_TERMIN_2')
-        AND a.announcement_email_sent_at IS NULL
+        AND a.penetapan_email_sent_at IS NULL
     `);
 
     if (penerimaResmi.length === 0) {
@@ -237,7 +237,7 @@ async function jalankanBlastPenetapanPenerima() {
       const appIds = penerimaResmi.map(p => p.application_id);
       const placeholders = appIds.map(() => '?').join(',');
       await pool.execute(
-        `UPDATE applications SET announcement_email_sent_at = NOW() WHERE id IN (${placeholders})`,
+        `UPDATE applications SET penetapan_email_sent_at = NOW() WHERE id IN (${placeholders})`,
         appIds
       );
     }
