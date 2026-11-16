@@ -2,11 +2,11 @@
  * Template Email Notifikasi Kelulusan Beasiswa Sultra Cerdas (BSSC) 2026
  *
  * Khusus dikirimkan kepada seluruh pendaftar yang DINYATAKAN LULUS (DITERIMA)
- * secara serentak pada tanggal pengumuman hasil seleksi.
+ * secara serentak pada tanggal penetapan resmi penerima beasiswa.
  */
 
 /**
- * Template Email: DITERIMA / LULUS SELEKSI
+ * Template Email: DITERIMA / PENETAPAN RESMI PENERIMA BEASISWA
  * @param {Object} data
  * @param {string} data.namaLengkap - Nama lengkap pendaftar
  * @param {string} data.registrationNo - Nomor registrasi (misal: BSSC-2026-S1-0001)
@@ -15,15 +15,18 @@
  * @param {string} [data.portalUrl] - URL portal beasiswa
  */
 function templateKelulusan({ namaLengkap, registrationNo, jenjangTarget, announcementDate, portalUrl = 'https://bssc.akusahabatrakyat.com/dashboard' }) {
+  const waGroupUrl = 'https://chat.whatsapp.com/DKx9IvH25jJDKnzqf0qrrF?s=sw&p=i&iam=2';
+  const minbestWa = '+62 823 5555 6187';
+
   return {
-    subject: `🎉 Selamat! Anda Dinyatakan LULUS Seleksi — Beasiswa Sultra Cerdas 2026`,
+    subject: `🎉 Selamat! Anda Ditetapkan Sebagai Penerima Beasiswa Sultra Cerdas 2026`,
     html: `
 <!DOCTYPE html>
 <html lang="id">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Pengumuman Kelulusan Beasiswa Sultra Cerdas</title>
+  <title>Pengumuman Penetapan Penerima Beasiswa Sultra Cerdas</title>
 </head>
 <body style="margin:0;padding:0;background-color:#f8fafc;font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;">
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;padding:36px 16px;">
@@ -42,7 +45,7 @@ function templateKelulusan({ namaLengkap, registrationNo, jenjangTarget, announc
               <h1 style="margin:0;font-size:24px;font-weight:800;color:#ffffff;line-height:1.3;letter-spacing:-0.5px;">
                 Beasiswa Stimulan<br/>Sultra Cerdas 2026
               </h1>
-              <p style="margin:8px 0 0;font-size:13px;color:#93c5fd;">Pengumuman Hasil Seleksi Akhir Penerima Beasiswa</p>
+              <p style="margin:8px 0 0;font-size:13px;color:#93c5fd;">Pengumuman Resmi Penetapan Penerima Beasiswa</p>
             </td>
           </tr>
 
@@ -50,7 +53,7 @@ function templateKelulusan({ namaLengkap, registrationNo, jenjangTarget, announc
           <tr>
             <td style="background:#ecfdf5;border-top:3px solid #10b981;border-bottom:1px solid #a7f3d0;padding:16px 24px;text-align:center;">
               <span style="display:inline-block;background:#059669;color:#ffffff;font-size:13px;font-weight:800;letter-spacing:1px;padding:8px 24px;border-radius:9999px;text-transform:uppercase;box-shadow:0 2px 8px rgba(5,150,105,0.25);">
-                ✅ LULUS & DITERIMA SEBAGAI PENERIMA
+                ✅ RESMI DITETAPKAN SEBAGAI PENERIMA
               </span>
             </td>
           </tr>
@@ -62,7 +65,7 @@ function templateKelulusan({ namaLengkap, registrationNo, jenjangTarget, announc
                 Yth. Saudara/i <strong>${namaLengkap}</strong>,
               </p>
               <p style="margin:0 0 24px;font-size:14px;color:#475569;line-height:1.75;">
-                Berdasarkan hasil verifikasi berkas, penilaian berkas akademik/prestasi, serta keputusan rapat pleno Tim Seleksi Beasiswa Stimulan Pemerintah Provinsi Sulawesi Tenggara Tahun Anggaran 2026, dengan penuh rasa bangga kami menyatakan bahwa Anda:
+                Berdasarkan hasil verifikasi berkas, penilaian akademik/prestasi, serta penetapan resmi Tim Seleksi Beasiswa Stimulan Pemerintah Provinsi Sulawesi Tenggara Tahun Anggaran 2026, dengan penuh rasa bangga kami menyatakan bahwa Anda:
               </p>
 
               <!-- Kartu Keputusan -->
@@ -83,39 +86,53 @@ function templateKelulusan({ namaLengkap, registrationNo, jenjangTarget, announc
                         <td style="padding:6px 0;font-size:13px;color:#0f172a;font-weight:700;">: Jenjang ${jenjangTarget}</td>
                       </tr>
                       <tr>
-                        <td style="padding:6px 0;font-size:13px;color:#64748b;font-weight:600;">Tanggal Pengumuman</td>
+                        <td style="padding:6px 0;font-size:13px;color:#64748b;font-weight:600;">Tanggal Penetapan</td>
                         <td style="padding:6px 0;font-size:13px;color:#0f172a;font-weight:700;">: ${announcementDate}</td>
                       </tr>
                       <tr>
                         <td style="padding:6px 0;font-size:13px;color:#64748b;font-weight:600;">Status Seleksi</td>
-                        <td style="padding:6px 0;font-size:14px;color:#059669;font-weight:800;">: DITERIMA (LULUS)</td>
+                        <td style="padding:6px 0;font-size:14px;color:#059669;font-weight:800;">: DITERIMA</td>
                       </tr>
                     </table>
                   </td>
                 </tr>
               </table>
 
-              <!-- Tahap Lanjutan -->
-              <h3 style="margin:0 0 14px;font-size:14px;font-weight:800;color:#0f172a;text-transform:uppercase;letter-spacing:0.5px;">
-                📌 Instruksi & Langkah Selanjutnya
-              </h3>
-              <ol style="margin:0 0 28px;padding-left:20px;font-size:13.5px;color:#334155;line-height:1.8;">
-                <li style="margin-bottom:6px;"><strong>Login ke Portal:</strong> Periksa dashboard akun Anda untuk mengunduh Surat Keterangan Lulus Seleksi (SK Lulus).</li>
-                <li style="margin-bottom:6px;"><strong>Verifikasi Rekening Bank:</strong> Pastikan buku tabungan / nomor rekening bank yang terdaftar berstatus aktif atas nama pribadi.</li>
-                <li style="margin-bottom:6px;"><strong>Penandatanganan Dokumen:</strong> Ikuti petunjuk penyerahan pakta integritas dan berkas pencairan termin pertama.</li>
-              </ol>
+              <!-- BANNER INFORMASI PENTING (WHATSAPP GROUP & MINBEST) -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="background:#fffdf5;border:2px solid #fcd34d;border-radius:14px;margin-bottom:28px;">
+                <tr>
+                  <td style="padding:20px 22px;">
+                    <h3 style="margin:0 0 8px;font-size:15px;font-weight:800;color:#0b2545;">
+                      💡 Informasi Penting
+                    </h3>
+                    <p style="margin:0 0 12px;font-size:13.5px;color:#334155;line-height:1.7;">
+                      Terima kasih telah mengikuti seluruh tahapan seleksi Beasiswa Stimulan Sultra Cerdas 2026. Untuk informasi selanjutnya silakan menghubungi Minbest BSSC 2026 (WA <strong>${minbestWa}</strong>) atau bergabung dalam WA group resmi berikut ini:
+                    </p>
+                    <div style="background:#ffffff;border:1px solid #e2e8f0;border-radius:10px;padding:12px 16px;margin:12px 0;">
+                      <a href="${waGroupUrl}" target="_blank" style="color:#0284c7;font-weight:700;font-size:13px;text-decoration:underline;word-break:break-all;">
+                        🔗 ${waGroupUrl}
+                      </a>
+                    </div>
+                    <div style="text-align:center;margin-top:14px;">
+                      <a href="${waGroupUrl}" target="_blank" style="display:inline-block;background:#16a34a;color:#ffffff;font-size:13px;font-weight:700;padding:10px 24px;border-radius:8px;text-decoration:none;box-shadow:0 2px 6px rgba(22,163,74,0.3);">
+                        Gabung Grup WhatsApp Resmi &rarr;
+                      </a>
+                    </div>
+                  </td>
+                </tr>
+              </table>
 
               <!-- Tombol Akses Dashboard -->
-              <div style="text-align:center;margin:32px 0;">
+              <div style="text-align:center;margin:28px 0 20px;">
                 <a href="${portalUrl}" style="display:inline-block;background:#0B3A6A;color:#ffffff;font-size:14px;font-weight:700;padding:14px 36px;border-radius:10px;text-decoration:none;box-shadow:0 4px 12px rgba(11,58,106,0.3);letter-spacing:0.3px;">
-                  Masuk ke Portal Beasiswa &rarr;
+                  Buka Dashboard Mahasiswa &rarr;
                 </a>
               </div>
 
               <!-- Peringatan Keamanan -->
-              <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:14px 18px;margin-top:24px;">
+              <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:14px 18px;margin-top:20px;">
                 <p style="margin:0;font-size:12.5px;color:#92400e;line-height:1.5;">
-                  ⚠️ <strong>PENTING:</strong> Program Beasiswa Sultra Cerdas tidak memungut biaya apapun (GRATIS). Waspadai segala bentuk penipuan yang mengatasnamakan Panitia Seleksi Pemprov Sultra.
+                  ⚠️ <strong>PENTING:</strong> Seluruh proses Beasiswa Sultra Cerdas bebas biaya (GRATIS). Waspadai segala bentuk penipuan yang mengatasnamakan Panitia Seleksi Pemprov Sultra.
                 </p>
               </div>
             </td>
@@ -155,8 +172,11 @@ function templateKelulusan({ namaLengkap, registrationNo, jenjangTarget, announc
  * @param {string} [data.portalUrl] - URL portal beasiswa
  */
 function templateKelulusanHasilSanggah({ namaLengkap, registrationNo, jenjangTarget, announcementDate, portalUrl = 'https://bssc.akusahabatrakyat.com/dashboard' }) {
+  const waGroupUrl = 'https://chat.whatsapp.com/DKx9IvH25jJDKnzqf0qrrF?s=sw&p=i&iam=2';
+  const minbestWa = '+62 823 5555 6187';
+
   return {
-    subject: `🎉 Selamat! Sanggahan Dikabulkan & Anda Dinyatakan LULUS — Beasiswa Sultra Cerdas 2026`,
+    subject: `🎉 Selamat! Sanggahan Dikabulkan & Anda Ditetapkan Sebagai Penerima — Beasiswa Sultra Cerdas 2026`,
     html: `
 <!DOCTYPE html>
 <html lang="id">
@@ -182,7 +202,7 @@ function templateKelulusanHasilSanggah({ namaLengkap, registrationNo, jenjangTar
               <h1 style="margin:0;font-size:24px;font-weight:800;color:#ffffff;line-height:1.3;letter-spacing:-0.5px;">
                 Beasiswa Stimulan<br/>Sultra Cerdas 2026
               </h1>
-              <p style="margin:8px 0 0;font-size:13px;color:#bae6fd;">Pengumuman Hasil Verifikasi Sanggahan & Seleksi Akhir</p>
+              <p style="margin:8px 0 0;font-size:13px;color:#bae6fd;">Pengumuman Hasil Verifikasi Sanggahan & Penetapan Penerima</p>
             </td>
           </tr>
 
@@ -190,7 +210,7 @@ function templateKelulusanHasilSanggah({ namaLengkap, registrationNo, jenjangTar
           <tr>
             <td style="background:#ecfdf5;border-top:3px solid #10b981;border-bottom:1px solid #a7f3d0;padding:16px 24px;text-align:center;">
               <span style="display:inline-block;background:#059669;color:#ffffff;font-size:13px;font-weight:800;letter-spacing:1px;padding:8px 24px;border-radius:9999px;text-transform:uppercase;box-shadow:0 2px 8px rgba(5,150,105,0.25);">
-                ✅ SANGGAHAN DIKABULKAN &bull; DINYATAKAN LULUS
+                ✅ SANGGAHAN DIKABULKAN &bull; RESMI DITETAPKAN
               </span>
             </td>
           </tr>
@@ -207,7 +227,7 @@ function templateKelulusanHasilSanggah({ namaLengkap, registrationNo, jenjangTar
               
               <div style="background:#f0fdf4;border-left:4px solid #16a34a;padding:16px 20px;margin:20px 0 24px;border-radius:0 10px 10px 0;">
                 <p style="margin:0;font-size:14px;color:#14532d;font-weight:700;line-height:1.6;">
-                  Permohonan sanggahan Anda telah <span style="text-decoration:underline;">DIKABULKAN</span>. Status pendaftaran Anda resmi diperbarui dan dinyatakan <strong>LULUS SELEKSI AKHIR</strong> sebagai Penerima Beasiswa Sultra Cerdas 2026.
+                  Permohonan sanggahan Anda telah <span style="text-decoration:underline;">DIKABULKAN</span>. Status pendaftaran Anda resmi diperbarui dan dinyatakan <strong>RESMI DITETAPKAN</strong> sebagai Penerima Beasiswa Sultra Cerdas 2026.
                 </p>
               </div>
 
@@ -233,7 +253,7 @@ function templateKelulusanHasilSanggah({ namaLengkap, registrationNo, jenjangTar
                         <td style="padding:6px 0;font-size:13px;color:#0f172a;font-weight:700;">: Pasca Masa Sanggah</td>
                       </tr>
                       <tr>
-                        <td style="padding:6px 0;font-size:13px;color:#64748b;font-weight:600;">Tanggal Pengumuman</td>
+                        <td style="padding:6px 0;font-size:13px;color:#64748b;font-weight:600;">Tanggal Penetapan</td>
                         <td style="padding:6px 0;font-size:13px;color:#0f172a;font-weight:700;">: ${announcementDate}</td>
                       </tr>
                       <tr>
@@ -245,18 +265,32 @@ function templateKelulusanHasilSanggah({ namaLengkap, registrationNo, jenjangTar
                 </tr>
               </table>
 
-              <!-- Tahap Lanjutan -->
-              <h3 style="margin:0 0 14px;font-size:14px;font-weight:800;color:#0f172a;text-transform:uppercase;letter-spacing:0.5px;">
-                📌 Langkah Selanjutnya
-              </h3>
-              <ol style="margin:0 0 28px;padding-left:20px;font-size:13.5px;color:#334155;line-height:1.8;">
-                <li style="margin-bottom:6px;"><strong>Unduh SK Hasil Sanggah:</strong> Masuk ke portal beasiswa untuk mengunduh Surat Keputusan hasil verifikasi sanggahan resmi.</li>
-                <li style="margin-bottom:6px;"><strong>Verifikasi Rekening Bank:</strong> Pastikan rekening bank Anda valid dan aktif atas nama pribadi sesuai identitas pendaftaran.</li>
-                <li style="margin-bottom:6px;"><strong>Tahap Penyaluran:</strong> Berkas Anda akan digabungkan bersama SK Penetapan Penerima Beasiswa untuk pencairan termin pertama.</li>
-              </ol>
+              <!-- BANNER INFORMASI PENTING (WHATSAPP GROUP & MINBEST) -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="background:#fffdf5;border:2px solid #fcd34d;border-radius:14px;margin-bottom:28px;">
+                <tr>
+                  <td style="padding:20px 22px;">
+                    <h3 style="margin:0 0 8px;font-size:15px;font-weight:800;color:#0b2545;">
+                      💡 Informasi Penting
+                    </h3>
+                    <p style="margin:0 0 12px;font-size:13.5px;color:#334155;line-height:1.7;">
+                      Terima kasih telah mengikuti seluruh tahapan seleksi Beasiswa Stimulan Sultra Cerdas 2026. Untuk informasi selanjutnya silakan menghubungi Minbest BSSC 2026 (WA <strong>${minbestWa}</strong>) atau bergabung dalam WA group resmi berikut ini:
+                    </p>
+                    <div style="background:#ffffff;border:1px solid #e2e8f0;border-radius:10px;padding:12px 16px;margin:12px 0;">
+                      <a href="${waGroupUrl}" target="_blank" style="color:#0284c7;font-weight:700;font-size:13px;text-decoration:underline;word-break:break-all;">
+                        🔗 ${waGroupUrl}
+                      </a>
+                    </div>
+                    <div style="text-align:center;margin-top:14px;">
+                      <a href="${waGroupUrl}" target="_blank" style="display:inline-block;background:#16a34a;color:#ffffff;font-size:13px;font-weight:700;padding:10px 24px;border-radius:8px;text-decoration:none;box-shadow:0 2px 6px rgba(22,163,74,0.3);">
+                        Gabung Grup WhatsApp Resmi &rarr;
+                      </a>
+                    </div>
+                  </td>
+                </tr>
+              </table>
 
               <!-- Tombol Akses Dashboard -->
-              <div style="text-align:center;margin:32px 0;">
+              <div style="text-align:center;margin:28px 0 20px;">
                 <a href="${portalUrl}" style="display:inline-block;background:#0B3A6A;color:#ffffff;font-size:14px;font-weight:700;padding:14px 36px;border-radius:10px;text-decoration:none;box-shadow:0 4px 12px rgba(11,58,106,0.3);letter-spacing:0.3px;">
                   Buka Portal Dashboard &rarr;
                 </a>

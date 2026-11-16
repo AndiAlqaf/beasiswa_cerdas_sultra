@@ -1,49 +1,57 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Award, Search, Calendar, FileText, CheckCircle2, Download, Printer, Filter, ShieldCheck, Sparkles, Loader2, Clock, ArrowRight, XCircle, RefreshCw } from 'lucide-react';
+import {
+  Award,
+  Calendar,
+  FileText,
+  CheckCircle2,
+  ShieldCheck,
+  Sparkles,
+  Loader2,
+  Clock,
+  ArrowRight,
+  XCircle,
+  Lightbulb,
+  ExternalLink,
+  ChevronRight,
+  AlertCircle,
+} from 'lucide-react';
 import { fetchAPI } from '@/lib/api';
 import { getStoredScheduleConfig, getDynamicTimeline, ScheduleConfig } from '@/lib/schedule';
 import Link from 'next/link';
 
-interface Recipient {
-  registrationNo: string;
-  namaLengkap: string;
-  jenjangTarget: string;
-  status: string;
-  verifiedAt: string;
-  institusi: string;
-  jurusan: string;
-  isLulusSanggah?: boolean;
-  isSanggah?: boolean;
-  jalur?: string;
-  notes?: string;
-}
-
 export default function PengumumanPage() {
-  const [myApp, setMyApp] = useState<any>(null);
-  const [recipients, setRecipients] = useState<Recipient[]>([]);
-  const [loadingRecipients, setLoadingRecipients] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [jenjangFilter, setJenjangFilter] = useState('');
-  const [showSkModal, setShowSkModal] = useState(false);
+  const [application, setApplication] = useState<any>(null);
+  const [profile, setProfile] = useState<any>(null);
+  const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   const [scheduleConfig, setScheduleConfig] = useState<ScheduleConfig>(getStoredScheduleConfig());
-  const [activeTab, setActiveTab] = useState<'all' | 'sanggah' | 'awal'>('all');
 
   useEffect(() => {
-    // Fetch user's own status
-    async function loadMyStatus() {
+    async function loadData() {
       try {
-        const res = await fetchAPI('/applicant/application').catch(() => null);
-        if (res?.success && res?.data) {
-          setMyApp(res.data);
+        const [appRes, profileRes] = await Promise.all([
+          fetchAPI('/applicant/application').catch(() => null),
+          fetchAPI('/applicant/profile').catch(() => null),
+        ]);
+
+        if (appRes?.success && appRes?.data) {
+          setApplication(appRes.data);
         }
-      } catch (e) {
-        // ignore
+
+        if (profileRes?.success && profileRes?.data) {
+          setProfile(profileRes.data.profile || {});
+          setUser(profileRes.data.user || {});
+        }
+      } catch (err) {
+        console.warn('Load pengumuman error:', err);
+      } finally {
+        setLoading(false);
       }
     }
 
-    loadMyStatus();
+    loadData();
 
     // Schedule listener
     setScheduleConfig(getStoredScheduleConfig());
@@ -63,8 +71,8 @@ export default function PengumumanPage() {
   const penetapanStep = timeline.find((s) => s.id === 'penetapan');
 
   const isSanggahPeriodOpen = sanggahStep ? sanggahStep.status === 'active' : false;
+  const isSanggahPeriodCompleted = sanggahStep ? sanggahStep.status === 'completed' : false;
 
-  // Check if announcement stage is currently active or completed according to admin schedule
   const isAnnouncementPeriodOpen = pengumumanStep
     ? pengumumanStep.status === 'active' || pengumumanStep.status === 'completed'
     : false;
@@ -77,487 +85,418 @@ export default function PengumumanPage() {
     ? penetapanStep.status === 'active' || penetapanStep.status === 'completed'
     : false;
 
-  // Set default tab based on period
-  useEffect(() => {
-    if (isPenetapanPeriodOpen) {
-      setActiveTab('all');
-    } else if (isPengumumanSanggahPeriodOpen) {
-      setActiveTab('sanggah');
-    } else {
-      setActiveTab('awal');
-    }
-  }, [isPenetapanPeriodOpen, isPengumumanSanggahPeriodOpen]);
-
-  // Find currently active timeline step (or fallback to upcoming/first step)
   const activeStep =
     timeline.find((step) => step.status === 'active') ||
     timeline.find((step) => step.status === 'upcoming') ||
     timeline[0];
 
-  const loadRecipients = async () => {
-    if (!isAnnouncementPeriodOpen) {
-      setLoadingRecipients(false);
-      return;
+  const isSanggahan = application?.notes?.includes('[SANGGAHAN MAHASISWA]');
+
+  let effectiveStatus = application?.status;
+  let effectiveNotes = application?.notes;
+
+  if (isSanggahan) {
+    if (!isPengumumanSanggahPeriodOpen && (application?.status === 'DITERIMA' || application?.status === 'LOLOS_VERIFIKASI' || application?.status === 'DITOLAK')) {
+      effectiveStatus = 'VERIFIKASI_BERKAS';
+      effectiveNotes = 'Sanggahan sedang diperiksa. Mohon pantau kembali pada masa pengumuman hasil sanggah.';
     }
-    setLoadingRecipients(true);
-    try {
-      const params = new URLSearchParams();
-      if (searchTerm.trim()) params.set('search', searchTerm.trim());
-      if (jenjangFilter) params.set('jenjang', jenjangFilter);
-      if (activeTab) params.set('mode', activeTab);
-
-      const res = await fetchAPI(`/public/announcements/recipients?${params.toString()}`);
-      if (res.success && res.data) {
-        setRecipients(res.data.recipients || []);
-      }
-    } catch (e) {
-      console.warn('Load recipients error:', e);
-    } finally {
-      setLoadingRecipients(false);
+  } else {
+    if (!isAnnouncementPeriodOpen && (application?.status === 'DITERIMA' || application?.status === 'LOLOS_VERIFIKASI' || application?.status === 'DITOLAK')) {
+      effectiveStatus = 'VERIFIKASI_BERKAS';
+      effectiveNotes = undefined;
     }
-  };
+  }
 
-  useEffect(() => {
-    loadRecipients();
-  }, [jenjangFilter, isAnnouncementPeriodOpen, activeTab]);
+  // Sebelum jadwal penetapan resmi dibuka, status DITERIMA diperlakukan sebagai LOLOS_VERIFIKASI
+  // agar hasil penetapan tidak tampil sebelum waktu pengumuman resmi (16 Nov 23:59 WITA)
+  if ((effectiveStatus === 'DITERIMA' || effectiveStatus === 'PENCAIRAN_TERMIN_1' || effectiveStatus === 'PENCAIRAN_TERMIN_2') && !isPenetapanPeriodOpen) {
+    effectiveStatus = 'LOLOS_VERIFIKASI';
+  }
 
-  const handleSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    loadRecipients();
-  };
+  const isDiterima =
+    effectiveStatus === 'DITERIMA' ||
+    effectiveStatus === 'PENCAIRAN_TERMIN_1' ||
+    effectiveStatus === 'PENCAIRAN_TERMIN_2';
 
-  const effectiveMyStatus = myApp?.status;
-  const isUserAccepted =
-    isAnnouncementPeriodOpen &&
-    (effectiveMyStatus === 'DITERIMA' ||
-      (effectiveMyStatus === 'LOLOS_VERIFIKASI' && !isPenetapanPeriodOpen) ||
-      effectiveMyStatus === 'PENCAIRAN_TERMIN_1' ||
-      effectiveMyStatus === 'PENCAIRAN_TERMIN_2');
+  const namaMahasiswa = profile?.namaLengkap || user?.namaLengkap || 'Mahasiswa';
+  const noRegistrasi = application?.registrationNo || '-';
+  const nikMahasiswa = profile?.nik || user?.nik || '-';
+  const jenjang = profile?.jenjangTarget || user?.jenjangTarget || 'S1';
+  const perguruanTinggi = profile?.namaInstitusi || profile?.institusi || '-';
+  const programStudi = profile?.namaJurusan || profile?.jurusan || '-';
+
+  if (loading) {
+    return (
+      <div className="w-full max-w-5xl mx-auto py-24 text-center space-y-3">
+        <Loader2 className="w-10 h-10 text-blue-900 animate-spin mx-auto" />
+        <p className="text-xs sm:text-sm text-slate-500 font-medium">Memuat data pengumuman hasil seleksi...</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="w-full space-y-6 max-w-6xl mx-auto pb-16">
-      {/* Header Banner - Only Shown When Announcement Period is Open & User is Accepted or Viewing Results */}
-      {isAnnouncementPeriodOpen && isUserAccepted && (
-        <div className="bg-[#0B3A6A] rounded-3xl p-6 sm:p-10 text-white relative overflow-hidden shadow-sm border border-[#134983]">
-          <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-            <div className="space-y-3 max-w-3xl">
-              <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-extrabold tracking-wider uppercase border border-emerald-400/30">
-                <CheckCircle2 className="w-4 h-4 text-emerald-300" />{' '}
-                {isPenetapanPeriodOpen
-                  ? 'RESMI DITETAPKAN (SK GUBERNUR - TAHAP 06)'
-                  : isPengumumanSanggahPeriodOpen
-                  ? 'HASIL SANGGAH: BERKAS TERVERIFIKASI'
-                  : 'TAHAP 03: BERKAS TERVERIFIKASI'}
-              </div>
-              <h1 className="text-2xl sm:text-4xl font-black tracking-tight text-white">
-                {isPenetapanPeriodOpen
-                  ? 'Penerima Resmi Beasiswa Sultra Cerdas 2026'
-                  : isPengumumanSanggahPeriodOpen
-                  ? 'Hasil Evaluasi Sanggahan: Berkas Terverifikasi'
-                  : 'Berkas Terverifikasi'}
-              </h1>
-              <p className="text-blue-100 text-xs sm:text-sm leading-relaxed font-light">
-                Nomor Registrasi:{' '}
-                <strong className="font-mono bg-white/10 px-2.5 py-1 rounded text-white font-bold">
-                  {myApp?.registrationNo || 'BSSC-2026-REG'}
-                </strong>
-                .{' '}
-                {isPenetapanPeriodOpen
-                  ? 'Selamat! Nama Anda telah resmi tercantum dalam SK Gubernur sebagai penerima sah Beasiswa Sultra Cerdas 2026. Silakan lengkapi nomor rekening bank Anda di Beranda Dashboard untuk pencairan Termin 1.'
-                  : isPengumumanSanggahPeriodOpen
-                  ? 'Sanggahan Anda telah ditinjau dan berkas dinyatakan terverifikasi. Pengumuman penetapan penerima beasiswa resmi (SK Gubernur) akan diumumkan pada 16 - 17 November 2026.'
-                  : 'Berkas pendaftaran Anda telah selesai diverifikasi oleh tim penilai. Pengumuman penetapan penerima beasiswa resmi (SK Gubernur) akan diumumkan pada 16 - 17 November 2026.'}
-              </p>
-            </div>
-            <div className="shrink-0 flex flex-col sm:flex-row gap-3">
-              {isPenetapanPeriodOpen && (
-                <Link
-                  href="/dashboard"
-                  className="px-5 py-3.5 bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-xs sm:text-sm rounded-2xl shadow-sm transition-all flex items-center justify-center gap-2 border border-blue-400/40"
-                >
-                  💳 Input Norek Bank
-                </Link>
-              )}
-              {isPenetapanPeriodOpen && (
-                <button
-                  onClick={() => setShowSkModal(true)}
-                  className="px-6 py-3.5 bg-emerald-700 hover:bg-emerald-800 text-white font-extrabold text-xs sm:text-sm rounded-2xl shadow-sm transition-all flex items-center justify-center gap-2 border border-emerald-600"
-                >
-                  <Printer className="w-4 h-4" /> Cetak SK &amp; Bukti Lolos (PDF)
-                </button>
-              )}
-            </div>
+    <div className="w-full space-y-6 max-w-5xl mx-auto pb-16">
+      {/* Header Halaman */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">Pengumuman Hasil Seleksi</h1>
+          <p className="text-xs sm:text-sm text-slate-500 mt-1">
+            Informasi resmi hasil verifikasi dan penetapan penerima Beasiswa Stimulan Sultra Cerdas 2026.
+          </p>
+        </div>
+      </div>
+
+      {/* BELUM MENGAJUKAN PENDAFTARAN */}
+      {!application?.registrationNo && (
+        <div className="bg-white rounded-3xl border border-slate-200 p-8 text-center space-y-4 shadow-xs">
+          <div className="w-14 h-14 rounded-2xl bg-slate-100 text-slate-500 flex items-center justify-center mx-auto">
+            <AlertCircle className="w-7 h-7" />
+          </div>
+          <h3 className="text-lg font-bold text-slate-900">Belum Ada Pendaftaran Diajukan</h3>
+          <p className="text-xs sm:text-sm text-slate-500 max-w-md mx-auto leading-relaxed">
+            Anda belum mengajukan pendaftaran beasiswa. Silakan lengkapi formulir dan unggah berkas persyaratan di menu Pendaftaran.
+          </p>
+          <div className="pt-2">
+            <Link
+              href="/dashboard/daftar"
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-900 hover:bg-blue-950 text-white font-bold text-xs rounded-xl shadow-xs transition-colors"
+            >
+              Isi Formulir Pendaftaran <ArrowRight className="w-4 h-4" />
+            </Link>
           </div>
         </div>
       )}
 
-      {/* Clean Page Title Header when Announcement is Closed */}
-      {!isAnnouncementPeriodOpen && (
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">Pengumuman Hasil Seleksi</h1>
-            <p className="text-xs sm:text-sm text-slate-500 mt-1">Pantau status pelaksanaan seleksi dan pengumuman penetapan penerima beasiswa.</p>
-          </div>
-        </div>
-      )}
-
-      {/* Sanggahan Alert Banner (jika DITOLAK dan masa sanggah SEDANG DIBUKA) */}
-      {isAnnouncementPeriodOpen && isSanggahPeriodOpen && effectiveMyStatus === 'DITOLAK' && (
-        <div className="bg-rose-50 border border-rose-200 rounded-2xl p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-rose-600 text-white rounded-xl shadow-xs">
-              <Sparkles className="w-5 h-5" />
-            </div>
-            <div>
-              <h4 className="font-extrabold text-xs text-rose-900 uppercase">Masa Sanggah Dibuka</h4>
-              <p className="text-xs text-rose-700">Berkas Anda dinyatakan belum memenuhi kualifikasi. Anda dapat mengajukan perbaikan di halaman utama dashboard.</p>
-            </div>
-          </div>
-          <Link
-            href="/dashboard"
-            className="px-4 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs rounded-xl transition-colors shrink-0 shadow-xs"
-          >
-            Ajukan Sanggahan
-          </Link>
-        </div>
-      )}
-
-      {/* Informasi Masa Sanggah Selesai (Fase Penetapan / Pasca Sanggah) */}
-      {isAnnouncementPeriodOpen && sanggahStep?.status === 'completed' && effectiveMyStatus === 'DITOLAK' && (
-        <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-slate-800 text-white rounded-xl shadow-xs">
-              <ShieldCheck className="w-5 h-5 text-amber-400" />
-            </div>
-            <div>
-              <h4 className="font-extrabold text-xs text-slate-900 uppercase">Masa Sanggah Berakhir &bull; Penetapan Hasil Seleksi Final</h4>
-              <p className="text-xs text-slate-600">Masa pengajuan sanggahan telah resmi ditutup. Seluruh keputusan penetapan penerima beasiswa bersifat final dan mengikat sesuai SK Gubernur Sulawesi Tenggara.</p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Main Content Area */}
-      {!isAnnouncementPeriodOpen ? (
-        /* Only Show Currently Active Timeline Step Before Announcement Release Date */
-        <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-6">
+      {/* JIKA PENGUMUMAN BELUM DIBUKA */}
+      {application?.registrationNo && !isAnnouncementPeriodOpen && (
+        <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-xs space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-5">
             <div className="space-y-1">
-              <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight mt-1">
-                {activeStep?.title || 'Pendaftaran Online'}
+              <span className="text-[10px] font-black uppercase tracking-wider bg-blue-50 text-blue-900 px-3 py-1 rounded-full border border-blue-200">
+                Tahapan Seleksi Berjalan
+              </span>
+              <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight mt-2">
+                {activeStep?.title || 'Pendaftaran & Verifikasi Berkas'}
               </h2>
               <p className="text-xs text-slate-500">
-                {activeStep?.desc || 'Pembuatan akun, pengisian formulir, & unggah berkas di portal resmi.'}
+                {activeStep?.desc || 'Dokumen pendaftaran sedang diteliti dan divalidasi oleh tim penilai.'}
               </p>
             </div>
             <div className="shrink-0">
               <span className="inline-flex items-center gap-1.5 px-4 py-2 rounded-2xl text-xs font-bold bg-blue-50 text-blue-900 border border-blue-200 shadow-xs">
                 <Clock className="w-4 h-4 text-blue-700" />
-                {activeStep?.date || '1 - 18 Oktober 2026'}
+                {activeStep?.date || 'Oktober - November 2026'}
               </span>
             </div>
           </div>
 
           <div className="bg-slate-50/80 rounded-2xl p-5 border border-slate-200 text-xs sm:text-sm text-slate-700 space-y-2">
             <p className="leading-relaxed">
-              Pengumuman resmi hasil seleksi dan daftar penerima beasiswa belum dirilis. Saat ini alur pelaksanaan beasiswa masih berada pada tahap <strong className="text-slate-900">{activeStep?.title}</strong> ({activeStep?.date}).
+              Pengumuman resmi hasil seleksi dan daftar penetapan penerima beasiswa belum dirilis. Saat ini tahapan beasiswa masih berada pada tahap{' '}
+              <strong className="text-slate-900">{activeStep?.title}</strong> ({activeStep?.date}).
             </p>
             <p className="text-slate-500 text-xs">
-              Jadwal rilis resmi pengumuman kelulusan: <strong className="text-slate-800">{pengumumanStep?.date || '2 - 4 November 2026'}</strong>.
+              Jadwal rilis penetapan resmi penerima beasiswa:{' '}
+              <strong className="text-slate-800">{penetapanStep?.date || '16 November 2026 pukul 23:59 WITA'}</strong>.
             </p>
           </div>
-
-          <div className="pt-2 flex justify-end">
-            <Link
-              href="/#jadwal"
-              className="inline-flex items-center gap-2 text-xs font-extrabold text-blue-900 hover:text-blue-950 transition-colors bg-blue-50 hover:bg-blue-100 border border-blue-200 px-4 py-2.5 rounded-xl shadow-xs"
-            >
-              Lihat Seluruh Timeline &amp; Agenda di Beranda <ArrowRight className="w-4 h-4" />
-            </Link>
-          </div>
-        </div>
-      ) : (
-        /* Recipient Table View when Announcement Date is Reached */
-        <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-5">
-            <div>
-              <div className="flex items-center gap-2 mb-1.5">
-                <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider ${
-                  isPenetapanPeriodOpen
-                    ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
-                    : isPengumumanSanggahPeriodOpen
-                    ? 'bg-amber-100 text-amber-900 border border-amber-200'
-                    : 'bg-blue-100 text-blue-900 border border-blue-200'
-                }`}>
-                  {isPenetapanPeriodOpen
-                    ? 'SK GUBERNUR • KEPUTUSAN FINAL'
-                    : isPengumumanSanggahPeriodOpen
-                    ? 'PENGUMUMAN HASIL SANGGAH'
-                    : 'PENGUMUMAN HASIL SELEKSI AWAL'}
-                </span>
-              </div>
-              <h3 className="text-xl font-black text-slate-900 flex items-center gap-2">
-                <ShieldCheck className="w-6 h-6 text-blue-900" />
-                {isPenetapanPeriodOpen
-                  ? 'Penetapan Penerima Resmi Beasiswa (SK Gubernur)'
-                  : isPengumumanSanggahPeriodOpen
-                  ? 'Pengumuman Hasil Verifikasi Sanggahan'
-                  : 'Daftar Nama Lolos Verifikasi Berkas'}
-              </h3>
-              <p className="text-xs text-slate-500 mt-1">
-                {isPenetapanPeriodOpen
-                  ? 'Daftar keseluruhan penerima resmi beasiswa yang telah ditetapkan dalam SK Gubernur.'
-                  : isPengumumanSanggahPeriodOpen
-                  ? 'Daftar berkas pendaftar yang telah selesai diteliti ulang pada masa sanggah.'
-                  : 'Daftar mahasiswa yang berkas pendaftarannya telah dinyatakan terverifikasi.'}
-              </p>
-            </div>
-            {isPenetapanPeriodOpen && (
-              <button
-                onClick={() => setShowSkModal(true)}
-                className="inline-flex items-center gap-2 px-4 py-2.5 bg-slate-900 text-white font-bold text-xs rounded-xl hover:bg-slate-800 transition-colors shrink-0 shadow-xs"
-              >
-                <Printer className="w-4 h-4 text-amber-400" /> Lihat Format SK Resmi
-              </button>
-            )}
-          </div>
-
-          {/* Mode Switcher Tabs */}
-          <div className="flex flex-wrap items-center gap-2 border-b border-slate-100 pb-3">
-            {isPenetapanPeriodOpen && (
-              <button
-                type="button"
-                onClick={() => setActiveTab('all')}
-                className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all ${
-                  activeTab === 'all'
-                    ? 'bg-blue-900 text-white shadow-sm'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                }`}
-              >
-                🏛️ Keseluruhan Penerima Resmi (SK Gubernur)
-              </button>
-            )}
-            {(isPengumumanSanggahPeriodOpen || isPenetapanPeriodOpen) && (
-              <button
-                type="button"
-                onClick={() => setActiveTab('sanggah')}
-                className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all ${
-                  activeTab === 'sanggah'
-                    ? 'bg-blue-900 text-white shadow-sm'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                }`}
-              >
-                🔄 {isPenetapanPeriodOpen ? 'Penerima Jalur Pasca Sanggah' : 'Berkas Terverifikasi (Pasca Sanggah)'}
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={() => setActiveTab('awal')}
-              className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all ${
-                activeTab === 'awal'
-                  ? 'bg-blue-900 text-white shadow-sm'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-              }`}
-            >
-              📋 {isPenetapanPeriodOpen ? 'Penerima Jalur Seleksi Awal' : 'Berkas Terverifikasi (Seleksi Awal)'}
-            </button>
-          </div>
-
-          {/* Filter Bar */}
-          <form onSubmit={handleSearchSubmit} className="flex flex-col sm:flex-row items-center gap-3">
-            <div className="relative flex-1 w-full">
-              <Search className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Cari nama mahasiswa, NIK, No. Registrasi, atau nama Perguruan Tinggi..."
-                className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs focus:ring-2 focus:ring-blue-900 focus:outline-none text-slate-900"
-              />
-            </div>
-            <select
-              value={jenjangFilter}
-              onChange={(e) => setJenjangFilter(e.target.value)}
-              className="w-full sm:w-48 py-3 px-4 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-semibold text-slate-700 focus:ring-2 focus:ring-blue-900 focus:outline-none"
-            >
-              <option value="">Semua Jenjang</option>
-              <option value="S1">Jenjang S1</option>
-              <option value="S2">Jenjang S2</option>
-              <option value="S3">Jenjang S3</option>
-              <option value="D3">Jenjang D3</option>
-            </select>
-            <button
-              type="submit"
-              className="w-full sm:w-auto px-6 py-3 bg-blue-900 hover:bg-blue-950 text-white font-bold text-xs rounded-2xl transition-all shadow-md shrink-0"
-            >
-              Cari Penerima
-            </button>
-          </form>
-
-          {/* Recipients Table / Cards */}
-          {loadingRecipients ? (
-            <div className="py-16 text-center space-y-3">
-              <Loader2 className="w-8 h-8 text-blue-900 animate-spin mx-auto" />
-              <p className="text-xs text-slate-500 font-medium">Memuat data penerima beasiswa resmi...</p>
-            </div>
-          ) : recipients.length === 0 ? (
-            <div className="py-16 text-center space-y-3 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
-              <Award className="w-12 h-12 text-slate-300 mx-auto" />
-              <h4 className="font-bold text-slate-800 text-sm">Belum Ada Data</h4>
-              <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                Tidak ada data pada tab ini yang cocok dengan pencarian <strong>"{searchTerm}"</strong>.
-              </p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto border border-slate-100 rounded-2xl">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-slate-50 text-slate-700 font-extrabold border-b border-slate-200 uppercase tracking-wider text-[10px]">
-                  <tr>
-                    <th className="py-3.5 px-4">No.</th>
-                    <th className="py-3.5 px-4">No. Registrasi</th>
-                    <th className="py-3.5 px-4">Nama Mahasiswa</th>
-                    <th className="py-3.5 px-4">Jenjang</th>
-                    <th className="py-3.5 px-4">Perguruan Tinggi / Prodi</th>
-                    <th className="py-3.5 px-4 text-center">{isPenetapanPeriodOpen ? 'Jalur Kelulusan' : 'Jalur Berkas'}</th>
-                    <th className="py-3.5 px-4 text-center">{isPenetapanPeriodOpen ? 'Status Penetapan (No. 06)' : 'Status Verifikasi Berkas'}</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 font-medium text-slate-800">
-                  {recipients.map((rec, idx) => (
-                    <tr key={idx} className="hover:bg-slate-50/80 transition-colors">
-                      <td className="py-3.5 px-4 font-bold text-slate-400">{idx + 1}</td>
-                      <td className="py-3.5 px-4 font-mono font-bold text-blue-900">{rec.registrationNo}</td>
-                      <td className="py-3.5 px-4 font-bold text-slate-900">{rec.namaLengkap}</td>
-                      <td className="py-3.5 px-4">
-                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700">
-                          {rec.jenjangTarget}
-                        </span>
-                      </td>
-                      <td className="py-3.5 px-4">
-                        <p className="font-semibold text-slate-900">{rec.institusi}</p>
-                        <p className="text-[10px] text-slate-500">{rec.jurusan}</p>
-                      </td>
-                      <td className="py-3.5 px-4 text-center">
-                        <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
-                          rec.isSanggah
-                            ? 'bg-amber-100 text-amber-900 border border-amber-200'
-                            : 'bg-blue-50 text-blue-900 border border-blue-200'
-                        }`}>
-                          {rec.isSanggah ? 'Pasca Sanggah' : 'Seleksi Awal'}
-                        </span>
-                      </td>
-                      <td className="py-3.5 px-4 text-center">
-                        {rec.status === 'LOLOS_VERIFIKASI' ? (
-                          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[10px] font-extrabold uppercase bg-teal-100 text-teal-800 border border-teal-200">
-                            <CheckCircle2 className="w-3 h-3 text-teal-600" /> BERKAS TERVERIFIKASI
-                          </span>
-                        ) : rec.status === 'DITERIMA' || rec.status === 'PENCAIRAN_TERMIN_1' || rec.status === 'PENCAIRAN_TERMIN_2' ? (
-                          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[10px] font-extrabold uppercase bg-emerald-100 text-emerald-800 border border-emerald-200">
-                            <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                            {isPenetapanPeriodOpen ? 'RESMI DITETAPKAN' : 'BERKAS TERVERIFIKASI'}
-                          </span>
-                        ) : rec.status === 'DITOLAK' ? (
-                          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[10px] font-extrabold uppercase bg-rose-100 text-rose-800 border border-rose-200">
-                            <XCircle className="w-3 h-3 text-rose-600" /> DITOLAK
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[10px] font-extrabold uppercase bg-blue-100 text-blue-800 border border-blue-200">
-                            <Clock className="w-3 h-3 text-blue-600" /> PROSES
-                          </span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
         </div>
       )}
 
-      {/* Modal Format SK Resmi Penerima Beasiswa */}
-      {showSkModal && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/70 backdrop-blur-sm p-4 animate-in fade-in overflow-y-auto">
-          <div className="bg-white rounded-3xl w-[96vw] max-w-4xl shadow-2xl overflow-hidden border border-slate-200 my-8">
-            <div className="bg-slate-900 text-white p-5 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <FileText className="w-5 h-5 text-amber-400" />
-                <h3 className="font-extrabold text-sm sm:text-base">Surat Keputusan (SK) Penetapan Penerima Beasiswa Sultra Cerdas</h3>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => window.print()}
-                  className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs rounded-xl transition-colors flex items-center gap-1 shadow-sm"
-                >
-                  <Printer className="w-3.5 h-3.5" /> Cetak Dokumen SK
-                </button>
-                <button
-                  onClick={() => setShowSkModal(false)}
-                  className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white text-xs font-bold rounded-xl transition-colors"
-                >
-                  Tutup
-                </button>
-              </div>
-            </div>
-
-            {/* Content Printable SK */}
-            <div className="p-8 sm:p-12 space-y-6 text-black font-sans text-xs max-h-[75vh] overflow-y-auto bg-white">
-              <div className="text-center border-b-4 border-black pb-4 space-y-1">
-                <h2 className="text-lg font-black uppercase tracking-wider">PEMERINTAH PROVINSI SULAWESI TENGGARA</h2>
-                <h1 className="text-xl font-black uppercase tracking-wider">DINAS PENDIDIKAN DAN KEBUDAYAAN</h1>
-                <p className="text-[11px]">Jalan Kompleks Perkantoran Bumi Praja Anduonohu Kendari — Sulawesi Tenggara</p>
-              </div>
-
-              <div className="text-center space-y-1 py-2">
-                <h3 className="font-bold text-sm uppercase underline">SURAT KEPUTUSAN KEPALA DINAS PENDIDIKAN DAN KEBUDAYAAN</h3>
-                <p className="font-mono text-xs">NOMOR: 421.5/BSSC-SK/X/2026</p>
-                <p className="font-bold uppercase mt-2">TENTANG PENETAPAN PENERIMA BEASISWA STIMULAN SULTRA CERDAS TAHUN ANGGARAN 2026</p>
-              </div>
-
-              <div className="space-y-3 leading-relaxed text-justify">
-                <p><strong>MEMUTUSKAN:</strong> Menetapkan nama-nama mahasiswa yang tercantum dalam Lampiran Surat Keputusan ini sebagai <strong>Penerima Resmi Beasiswa Stimulan Sultra Cerdas Tahun 2026</strong> Pemerintah Provinsi Sulawesi Tenggara.</p>
-              </div>
-
-              <div className="border border-black rounded-lg overflow-hidden my-4">
-                <table className="w-full text-left border-collapse text-[11px]">
-                  <thead className="bg-gray-100 border-b border-black font-bold">
-                    <tr>
-                      <th className="p-2 border-r border-black">No.</th>
-                      <th className="p-2 border-r border-black">No. Registrasi</th>
-                      <th className="p-2 border-r border-black">Nama Lengkap Mahasiswa</th>
-                      <th className="p-2 border-r border-black">Jenjang</th>
-                      <th className="p-2">Perguruan Tinggi</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {recipients.slice(0, 15).map((r, i) => (
-                      <tr key={i} className="border-b border-gray-300">
-                        <td className="p-2 border-r border-black font-bold text-center">{i + 1}</td>
-                        <td className="p-2 border-r border-black font-mono">{r.registrationNo}</td>
-                        <td className="p-2 border-r border-black font-bold">{r.namaLengkap}</td>
-                        <td className="p-2 border-r border-black text-center">{r.jenjangTarget}</td>
-                        <td className="p-2">{r.institusi}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              <div className="flex justify-end pt-8">
-                <div className="text-center w-64 space-y-1">
-                  <p>Ditetapkan di Kendari</p>
-                  <p className="font-bold">Pada Tanggal: 22 Oktober 2026</p>
-                  <p className="pt-2 font-bold uppercase">Kepala Dinas Pendidikan dan Kebudayaan Prov. Sultra</p>
-                  <div className="h-16 flex items-center justify-center italic text-gray-400">
-                    [Tanda Tangan &amp; Cap Basah Digital]
+      {/* JIKA MASA PENGUMUMAN DIBUKA & SUDAH ADA PENDAFTARAN */}
+      {application?.registrationNo && isAnnouncementPeriodOpen && (
+        <>
+          {/* ===================== KASUS 1: DITERIMA (PENERIMA RESMI) ===================== */}
+          {isDiterima && (
+            <div className="space-y-6">
+              {/* Hero Banner Lolos */}
+              <div className="bg-[#0B3A6A] rounded-3xl p-6 sm:p-10 text-white relative overflow-hidden shadow-sm border border-[#134983]">
+                <div className="relative z-10 flex flex-col justify-between gap-4">
+                  <div className="space-y-3 max-w-2xl">
+                    <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-extrabold tracking-wider uppercase border border-emerald-400/30">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-300" />{' '}
+                      {isPenetapanPeriodOpen
+                        ? 'RESMI DITETAPKAN'
+                        : isPengumumanSanggahPeriodOpen
+                        ? 'HASIL SANGGAH: TERVERIFIKASI'
+                        : 'BERKAS TERVERIFIKASI'}
+                    </div>
+                    <h1 className="text-2xl sm:text-4xl font-black tracking-tight text-white">
+                      {isPenetapanPeriodOpen
+                        ? 'Selamat! Anda Ditetapkan Sebagai Penerima Beasiswa'
+                        : 'Selamat! Berkas Pendaftaran Anda Terverifikasi'}
+                    </h1>
+                    <p className="text-blue-100 text-xs sm:text-sm leading-relaxed font-light">
+                      {isPenetapanPeriodOpen
+                        ? 'Selamat! Anda telah resmi ditetapkan sebagai penerima Beasiswa Stimulan Sultra Cerdas 2026 Pemerintah Provinsi Sulawesi Tenggara.'
+                        : 'Seluruh berkas persyaratan Anda telah selesai diverifikasi dan dinyatakan memenuhi syarat.'}
+                    </p>
                   </div>
-                  <p className="font-bold underline uppercase">H. YUSUF, S.Pd., M.Si.</p>
-                  <p className="text-[10px]">NIP. 19710812 199703 1 004</p>
+                </div>
+              </div>
+
+              {/* Data Identitas Penerima */}
+              <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-xs space-y-6">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-900 flex items-center justify-center">
+                      <ShieldCheck className="w-5 h-5 text-blue-900" />
+                    </div>
+                    <div>
+                      <h3 className="text-base sm:text-lg font-bold text-slate-900">Identitas Penerima Beasiswa</h3>
+                      <p className="text-xs text-slate-500">Data pendaftar resmi penerima Beasiswa Stimulan Sultra Cerdas 2026</p>
+                    </div>
+                  </div>
+                  <span className="px-3 py-1 rounded-full text-[10px] font-extrabold uppercase bg-emerald-100 text-emerald-800 border border-emerald-200">
+                    RESMI DITETAPKAN
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5 text-xs">
+                  <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-1">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Nomor Registrasi</span>
+                    <p className="font-mono font-bold text-sm text-blue-950">{noRegistrasi}</p>
+                  </div>
+                  <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-1">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Nama Mahasiswa</span>
+                    <p className="font-bold text-sm text-slate-900">{namaMahasiswa}</p>
+                  </div>
+                  <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-1">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Nomor Induk Kependudukan (NIK)</span>
+                    <p className="font-mono font-bold text-sm text-slate-800">{nikMahasiswa}</p>
+                  </div>
+                  <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-1">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Jenjang Pendidikan</span>
+                    <p className="font-bold text-sm text-slate-900">Jenjang {jenjang}</p>
+                  </div>
+                  <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-1">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Perguruan Tinggi</span>
+                    <p className="font-bold text-sm text-slate-900">{perguruanTinggi}</p>
+                  </div>
+                  <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-1">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Program Studi</span>
+                    <p className="font-bold text-sm text-slate-900">{programStudi}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* BANNER INFORMASI PENTING TAHAPAN PENETAPAN (WA MINBEST & WA GROUP) */}
+              <div className="bg-[#FFFDF5] rounded-2xl sm:rounded-3xl border-2 border-amber-300 p-5 sm:p-6 shadow-xs">
+                <div className="flex items-start sm:items-center gap-4">
+                  <div className="w-12 h-12 rounded-2xl bg-[#0B2545] text-amber-300 flex items-center justify-center shrink-0 shadow-sm">
+                    <Lightbulb className="w-6 h-6 text-amber-300" />
+                  </div>
+                  <div className="space-y-1.5 flex-1 min-w-0">
+                    <h3 className="text-base sm:text-lg font-black text-[#0B2545] tracking-tight">
+                      Informasi Penting
+                    </h3>
+                    <p className="text-xs sm:text-sm text-slate-700 leading-relaxed font-medium">
+                      Terima kasih telah mengikuti seluruh tahapan seleksi Beasiswa Stimulan Sultra Cerdas 2026. Untuk informasi selanjutnya silakan menghubungi Minbest BSSC 2026 (WA +62 823 5555 6187) atau bergabung dalam WA group berikut ini:
+                    </p>
+                    <div className="pt-1">
+                      <a
+                        href="https://chat.whatsapp.com/DKx9IvH25jJDKnzqf0qrrF?s=sw&p=i&iam=2"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 text-xs sm:text-sm font-bold text-blue-700 hover:text-blue-900 underline break-all group transition-colors"
+                      >
+                        <svg className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-600 shrink-0 group-hover:scale-110 transition-transform" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.711 2.598 2.664-.698c.974.577 1.956.883 2.8.883 3.181 0 5.767-2.586 5.768-5.766 0-3.18-2.587-5.77-5.772-5.77zm6.772 5.766c-.001 3.737-3.041 6.777-6.777 6.777-.999 0-2.146-.301-3.08-.857l-3.415.895.912-3.334c-.663-1.049-1.014-2.261-1.014-3.481 0-3.738 3.04-6.778 6.777-6.778 3.738 0 6.777 3.04 6.777 6.778zM12.031 2C6.49 2 2 6.49 2 12.031c0 1.986.586 3.842 1.602 5.405L2 22l4.698-1.57c1.513.916 3.286 1.442 5.333 1.442 5.541 0 10.031-4.49 10.031-10.031C22.062 6.49 17.572 2 12.031 2z"/>
+                        </svg>
+                        <span>https://chat.whatsapp.com/DKx9IvH25jJDKnzqf0qrrF?s=sw&p=i&iam=2</span>
+                      </a>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        </div>
+          )}
+
+          {/* ===================== KASUS 2: LOLOS_VERIFIKASI ===================== */}
+          {effectiveStatus === 'LOLOS_VERIFIKASI' && (
+            <div className="space-y-6">
+              {isPenetapanPeriodOpen ? (
+                /* Pada fase Penetapan: Belum Terpilih Sebagai Penerima */
+                <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-xs space-y-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-5">
+                    <div>
+                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-slate-100 text-slate-700 border border-slate-200">
+                        PENETAPAN HASIL SELEKSI AKHIR
+                      </span>
+                      <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight mt-2">
+                        Belum Terpilih Sebagai Penerima Beasiswa
+                      </h2>
+                      <p className="text-xs text-slate-500 mt-1">
+                        Nomor Registrasi: <strong className="font-mono text-slate-800">{noRegistrasi}</strong> &bull; {namaMahasiswa}
+                      </p>
+                    </div>
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200 shrink-0">
+                      Belum Terpilih
+                    </span>
+                  </div>
+
+                  <div className="p-5 bg-slate-50 rounded-2xl border border-slate-200 text-xs sm:text-sm text-slate-700 leading-relaxed space-y-3">
+                    <p>
+                      Terima kasih telah mengikuti seluruh tahapan seleksi hingga akhir. Berdasarkan hasil penetapan resmi, mohon maaf Anda belum terpilih sebagai penerima Beasiswa Stimulan Sultra Cerdas 2026 pada periode ini. Tetap semangat, jangan berkecil hati, dan teruslah berprestasi dalam perjalanan pendidikan Anda.
+                    </p>
+                  </div>
+
+                  {/* Apresiasi Pemprov Sultra */}
+                  <div className="bg-amber-50/70 border border-amber-200 rounded-2xl p-5 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Award className="w-5 h-5 text-amber-600" />
+                      <h4 className="font-extrabold text-xs text-amber-950 uppercase tracking-wider">Apresiasi Pemprov Sulawesi Tenggara</h4>
+                    </div>
+                    <p className="text-xs text-amber-900 italic leading-relaxed font-medium">
+                      &ldquo;Kepada seluruh mahasiswa Sulawesi Tenggara yang belum berhasil menerima beasiswa pada periode ini: jangan pernah berkecil hati. Seluruh ikhtiar, kerja keras, dan potensi luar biasa yang Anda miliki adalah kebanggaan daerah. Kegagalan hari ini adalah tangga awal menuju pencapaian yang lebih gemilang. Teruslah belajar, berinovasi, dan mengukir prestasi terbaik demi masa depan Anda dan daerah yang kita cintai.&rdquo;
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                /* Sebelum Penetapan: Berkas Lolos Verifikasi */
+                <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-xs space-y-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-5">
+                    <div>
+                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-teal-100 text-teal-800 border border-teal-200">
+                        {isPengumumanSanggahPeriodOpen ? 'HASIL EVALUASI SANGGAH' : 'HASIL VERIFIKASI BERKAS'}
+                      </span>
+                      <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight mt-2">
+                        Lolos Verifikasi Berkas
+                      </h2>
+                      <p className="text-xs text-slate-500 mt-1">
+                        Nomor Registrasi: <strong className="font-mono text-slate-800">{noRegistrasi}</strong> &bull; {namaMahasiswa}
+                      </p>
+                    </div>
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-teal-50 text-teal-800 border border-teal-200 shrink-0">
+                      <CheckCircle2 className="w-4 h-4 text-teal-600" /> Lolos Verifikasi
+                    </span>
+                  </div>
+
+                  <div className="p-5 bg-teal-50/60 rounded-2xl border border-teal-200 text-xs sm:text-sm text-teal-950 leading-relaxed space-y-2">
+                    <p>
+                      Berkas pendaftaran Anda dinyatakan <strong>Lolos Verifikasi Berkas</strong>. Silakan pantau pengumuman penetapan resmi penerima beasiswa yang dijadwalkan pada <strong className="text-teal-900">{penetapanStep?.date || '16 November 2026 pukul 23:59 WITA'}</strong>.
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ===================== KASUS 3: DITOLAK ===================== */}
+          {effectiveStatus === 'DITOLAK' && (
+            <div className="space-y-6">
+              {/* Jika masih dalam masa sanggah aktif */}
+              {isSanggahPeriodOpen && (
+                <div className="bg-rose-50 border border-rose-200 rounded-2xl p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 bg-rose-600 text-white rounded-xl shadow-xs">
+                      <Sparkles className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h4 className="font-extrabold text-xs text-rose-900 uppercase">Masa Sanggah Sedang Dibuka</h4>
+                      <p className="text-xs text-rose-700">Berkas pendaftaran Anda belum memenuhi kualifikasi. Anda dapat mengajukan sanggahan dan perbaikan berkas di Dashboard.</p>
+                    </div>
+                  </div>
+                  <Link
+                    href="/dashboard"
+                    className="px-4 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs rounded-xl transition-colors shrink-0 shadow-xs"
+                  >
+                    Ajukan Sanggahan
+                  </Link>
+                </div>
+              )}
+
+              {/* Card Status Belum Lolos Seleksi */}
+              <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-xs space-y-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-5">
+                  <div>
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-rose-100 text-rose-800 border border-rose-200">
+                      {isPenetapanPeriodOpen || isSanggahPeriodCompleted
+                        ? 'KEPUTUSAN PENETAPAN FINAL'
+                        : 'HASIL VERIFIKASI BERKAS'}
+                    </span>
+                    <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight mt-2">
+                      {isPenetapanPeriodOpen || isSanggahPeriodCompleted
+                        ? 'Belum Lolos Seleksi'
+                        : 'Belum Lolos Verifikasi'}
+                    </h2>
+                    <p className="text-xs text-slate-500 mt-1">
+                      Nomor Registrasi: <strong className="font-mono text-slate-800">{noRegistrasi}</strong> &bull; {namaMahasiswa}
+                    </p>
+                  </div>
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-rose-50 text-rose-800 border border-rose-200 shrink-0">
+                    <XCircle className="w-4 h-4 text-rose-600" /> Belum Lolos
+                  </span>
+                </div>
+
+                <div className="p-5 bg-slate-50 rounded-2xl border border-slate-200 text-xs sm:text-sm text-slate-700 leading-relaxed space-y-2">
+                  <p>
+                    Tetap semangat dan jangan berkecil hati! Perjalanan pendidikan Anda masih panjang dan kesempatan emas lainnya menanti di masa depan. Teruslah berkarya, belajar, dan berprestasi untuk kebanggaan Sulawesi Tenggara.
+                  </p>
+                </div>
+
+                {/* Riwayat Catatan Verifikator (Collapsible) */}
+                {effectiveNotes && (
+                  <details className="group bg-slate-50/80 border border-slate-200 rounded-2xl p-4 transition-all">
+                    <summary className="font-bold text-xs text-slate-700 cursor-pointer list-none flex items-center justify-between">
+                      <span className="flex items-center gap-2">
+                        <FileText className="w-4 h-4 text-slate-500" />
+                        Lihat Riwayat Catatan Verifikasi Administrasi
+                      </span>
+                      <ChevronRight className="w-4 h-4 text-slate-400 group-open:rotate-90 transition-transform" />
+                    </summary>
+                    <div className="pt-3 mt-3 border-t border-slate-200/80 text-xs text-slate-600 whitespace-pre-wrap leading-relaxed font-sans">
+                      {effectiveNotes}
+                    </div>
+                  </details>
+                )}
+
+                {/* Pesan & Apresiasi Pemprov Sultra */}
+                <div className="bg-amber-50/70 border border-amber-200 rounded-2xl p-5 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Award className="w-5 h-5 text-amber-600" />
+                    <h4 className="font-extrabold text-xs text-amber-950 uppercase tracking-wider">Pesan Semangat &amp; Apresiasi Pemprov Sultra</h4>
+                  </div>
+                  <p className="text-xs text-amber-900 italic leading-relaxed font-medium">
+                    &ldquo;Kepada seluruh mahasiswa Sulawesi Tenggara yang belum berhasil menerima beasiswa pada periode ini: jangan pernah berkecil hati. Seluruh ikhtiar, kerja keras, dan potensi luar biasa yang Anda miliki adalah kebanggaan daerah. Kegagalan hari ini adalah tangga awal menuju pencapaian yang lebih gemilang. Teruslah belajar, berinovasi, dan mengukir prestasi terbaik demi masa depan Anda dan daerah yang kita cintai.&rdquo;
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ===================== KASUS 4: MASIH PROSES VERIFIKASI ===================== */}
+          {effectiveStatus !== 'DITERIMA' &&
+            effectiveStatus !== 'PENCAIRAN_TERMIN_1' &&
+            effectiveStatus !== 'PENCAIRAN_TERMIN_2' &&
+            effectiveStatus !== 'LOLOS_VERIFIKASI' &&
+            effectiveStatus !== 'DITOLAK' && (
+              <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-xs space-y-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-5">
+                  <div>
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-blue-100 text-blue-900 border border-blue-200">
+                      STATUS PROSES
+                    </span>
+                    <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight mt-2">
+                      Verifikasi Berkas Sedang Berlangsung
+                    </h2>
+                    <p className="text-xs text-slate-500 mt-1">
+                      Nomor Registrasi: <strong className="font-mono text-slate-800">{noRegistrasi}</strong> &bull; {namaMahasiswa}
+                    </p>
+                  </div>
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-blue-50 text-blue-800 border border-blue-200 shrink-0">
+                    <Clock className="w-4 h-4 text-blue-600" /> Proses Pemeriksaan
+                  </span>
+                </div>
+
+                <div className="p-5 bg-slate-50 rounded-2xl border border-slate-200 text-xs sm:text-sm text-slate-700 leading-relaxed">
+                  <p>
+                    Dokumen persyaratan pendaftaran Anda saat ini sedang diperiksa dan diteliti oleh tim verifikator Pemerintah Provinsi Sulawesi Tenggara. Silakan pantau pengumuman secara berkala.
+                  </p>
+                </div>
+              </div>
+            )}
+        </>
       )}
     </div>
   );

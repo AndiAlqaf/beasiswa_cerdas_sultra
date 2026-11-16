@@ -188,11 +188,11 @@ async function jalankanBlastHasilSanggah() {
 }
 
 /**
- * 3. Blast Email Resmi Penetapan Penerima Beasiswa (SK Gubernur)
+ * 3. Blast Email Resmi Penetapan Penerima Beasiswa
  * Khusus dikirim pada tahap Penetapan Penerima Beasiswa.
  */
 async function jalankanBlastPenetapanPenerima() {
-  log(LOG_LEVELS.INFO, '[SCHEDULER] Memulai blast email PENETAPAN RESMI PENERIMA BEASISWA (SK Gubernur)...');
+  log(LOG_LEVELS.INFO, '[SCHEDULER] Memulai blast email PENETAPAN RESMI PENERIMA BEASISWA...');
 
   try {
     const pool = getPool();
@@ -219,7 +219,7 @@ async function jalankanBlastPenetapanPenerima() {
       weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
     });
 
-    log(LOG_LEVELS.INFO, `[SCHEDULER] Ditemukan ${penerimaResmi.length} penerima resmi SK Gubernur. Menyiapkan email...`);
+    log(LOG_LEVELS.INFO, `[SCHEDULER] Ditemukan ${penerimaResmi.length} penerima resmi. Menyiapkan email...`);
 
     const recipients = penerimaResmi.map((p) => {
       const { subject, html } = templateKelulusan({
@@ -255,7 +255,7 @@ async function jalankanBlastPenetapanPenerima() {
  * Start cron job
  * Sesuai arahan Panitia: Pengumuman hasil seleksi awal & hasil sanggah HANYA ada di portal web
  * (tidak ada email terkirim saat mahasiswa melihat hasil seleksi/sanggah).
- * Email resmi HANYA dikirimkan saat tahap Penetapan Penerima Beasiswa (SK Gubernur).
+ * Email resmi HANYA dikirimkan saat tahap Penetapan Resmi Penerima Beasiswa.
  */
 function startEmailScheduler() {
   const penetapanDate = env.PENETAPAN_DATE || '2026-11-16';
@@ -275,7 +275,7 @@ function startEmailScheduler() {
     const todayWita = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Makassar' });
     if (todayWita !== penetapanDate) return;
 
-    log(LOG_LEVELS.INFO, '[SCHEDULER] 🔔 Pengumuman penetapan resmi penerima beasiswa (23:59 WITA) tiba! Memulai pengiriman email SK...');
+    log(LOG_LEVELS.INFO, '[SCHEDULER] 🔔 Pengumuman penetapan resmi penerima beasiswa (23:59 WITA) tiba! Memulai pengiriman email pengumuman...');
     await jalankanBlastPenetapanPenerima();
   }, {
     timezone: 'Asia/Makassar'

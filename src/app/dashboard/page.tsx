@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, useRef } from 'react';
-import { CheckCircle2, Clock, FileText, Calendar, ChevronRight, AlertCircle, Award, XCircle, ArrowRight, Send, Loader2, RefreshCw, Landmark, Save, CreditCard, ExternalLink, ShieldCheck, Lock, UploadCloud, FileUp } from 'lucide-react';
+import { CheckCircle2, Clock, FileText, Calendar, ChevronRight, AlertCircle, Award, XCircle, ArrowRight, Send, Loader2, RefreshCw, Landmark, Save, CreditCard, ExternalLink, ShieldCheck, Lock, UploadCloud, FileUp, Lightbulb } from 'lucide-react';
 import Link from 'next/link';
 import { getUser, fetchAPI } from '@/lib/api';
 import { getStoredScheduleConfig, getDynamicTimeline, ScheduleConfig } from '@/lib/schedule';
@@ -265,6 +265,12 @@ export default function DashboardPage() {
     }
   }
 
+  // Sebelum jadwal penetapan resmi dibuka, status DITERIMA diperlakukan sebagai LOLOS_VERIFIKASI
+  // agar hasil penetapan tidak tampil sebelum waktu pengumuman resmi (16 Nov 23:59 WITA)
+  if ((effectiveStatus === 'DITERIMA' || effectiveStatus === 'PENCAIRAN_TERMIN_1' || effectiveStatus === 'PENCAIRAN_TERMIN_2') && !isPenetapanPeriodOpen) {
+    effectiveStatus = 'LOLOS_VERIFIKASI';
+  }
+
   const userName = user?.namaLengkap || user?.email || 'Peserta';
   const hasSubmitted = !!application?.registrationNo;
 
@@ -301,6 +307,16 @@ export default function DashboardPage() {
   const getStatusBadge = (status?: string) => {
     switch (status) {
       case 'LOLOS_VERIFIKASI':
+        if (isPenetapanPeriodOpen) {
+          return {
+            title: 'Belum Terpilih Sebagai Penerima Beasiswa',
+            desc: 'Terima kasih telah mengikuti seluruh tahapan seleksi hingga akhir. Berdasarkan hasil penetapan resmi, mohon maaf Anda belum terpilih sebagai penerima Beasiswa Stimulan Sultra Cerdas 2026 pada periode ini. Tetap semangat, jangan berkecil hati, dan teruslah berprestasi dalam perjalanan pendidikan Anda.',
+            badgeBg: 'bg-slate-100 text-slate-700 border border-slate-200',
+            icon: CheckCircle2,
+            iconBg: 'bg-slate-100 text-slate-600',
+            badgeText: 'Belum Terpilih',
+          };
+        }
         return {
           title: 'Lolos Verifikasi Berkas',
           desc: 'Berkas pendaftaran Anda dinyatakan lolos verifikasi. Silakan tunggu pengumuman penetapan penerima beasiswa resmi.',
@@ -313,7 +329,7 @@ export default function DashboardPage() {
         if (isPenetapanPeriodOpen) {
           return {
             title: 'Penetapan Penerima Beasiswa',
-            desc: 'Selamat! Anda telah resmi ditetapkan sebagai penerima Beasiswa Stimulan Sultra Cerdas 2026. Silakan lengkapi data rekening bank Anda di bawah ini.',
+            desc: 'Selamat! Anda telah resmi ditetapkan sebagai penerima Beasiswa Stimulan Sultra Cerdas 2026. Silakan simak informasi penting terkait tahapan selanjutnya pada pengumuman di bawah ini.',
             badgeBg: 'bg-emerald-100 text-emerald-800',
             icon: Award,
             iconBg: 'bg-emerald-50 text-emerald-600',
@@ -669,107 +685,35 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* PENYALURAN BEASISWA & REKENING BANK CARD (Tahap 1 - 50%: HANYA Muncul di Masa Penetapan Resmi Bagi Penerima yang Lolos / DITERIMA) */}
+      {/* INFORMASI PENTING TAHAPAN PENETAPAN PENERIMA BEASISWA (PENGGANTI INPUT REKENING) */}
       {(effectiveStatus === 'DITERIMA' || effectiveStatus === 'PENCAIRAN_TERMIN_1' || effectiveStatus === 'PENCAIRAN_TERMIN_2') && isPenetapanPeriodOpen && (
-        <div className="bg-white rounded-3xl border border-blue-200 p-6 sm:p-8 shadow-sm space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-5">
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-blue-900 text-white rounded-2xl shadow-sm">
-                <Landmark className="w-6 h-6" />
-              </div>
-              <div>
-                <span className="text-[10px] font-extrabold uppercase tracking-wider bg-blue-100 text-blue-900 px-3 py-1 rounded-full border border-blue-200">
-                  Penyaluran Tahap 1 (50%)
-                </span>
-                <h3 className="text-xl font-black text-slate-900 mt-1">Data Rekening Bank Penerima Beasiswa</h3>
-              </div>
+        <div className="bg-[#FFFDF5] rounded-2xl sm:rounded-3xl border-2 border-amber-300 p-5 sm:p-6 shadow-xs">
+          <div className="flex items-start sm:items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-[#0B2545] text-amber-300 flex items-center justify-center shrink-0 shadow-sm">
+              <Lightbulb className="w-6 h-6 text-amber-300" />
             </div>
-            <div className="text-xs text-slate-600 bg-blue-50/70 px-4 py-2.5 rounded-2xl border border-blue-100 max-w-sm leading-relaxed">
-              💳 <strong>Penyaluran Beasiswa:</strong> Selamat, Anda telah resmi ditetapkan dalam SK Gubernur. Silakan lengkapi data rekening bank atas nama pendaftar sendiri untuk proses penyaluran Beasiswa Stimulan Sultra Cerdas 50% Termin 1.
+            <div className="space-y-1.5 flex-1 min-w-0">
+              <h3 className="text-base sm:text-lg font-black text-[#0B2545] tracking-tight">
+                Informasi Penting
+              </h3>
+              <p className="text-xs sm:text-sm text-slate-700 leading-relaxed font-medium">
+                Terima kasih telah mengikuti seluruh tahapan seleksi Beasiswa Stimulan Sultra Cerdas 2026. Untuk informasi selanjutnya silakan menghubungi Minbest BSSC 2026 (WA +62 823 5555 6187) atau bergabung dalam WA group berikut ini:
+              </p>
+              <div className="pt-1">
+                <a
+                  href="https://chat.whatsapp.com/DKx9IvH25jJDKnzqf0qrrF?s=sw&p=i&iam=2"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 text-xs sm:text-sm font-bold text-blue-700 hover:text-blue-900 underline break-all group transition-colors"
+                >
+                  <svg className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-600 shrink-0 group-hover:scale-110 transition-transform" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.711 2.598 2.664-.698c.974.577 1.956.883 2.8.883 3.181 0 5.767-2.586 5.768-5.766 0-3.18-2.587-5.77-5.772-5.77zm6.772 5.766c-.001 3.737-3.041 6.777-6.777 6.777-.999 0-2.146-.301-3.08-.857l-3.415.895.912-3.334c-.663-1.049-1.014-2.261-1.014-3.481 0-3.738 3.04-6.778 6.777-6.778 3.738 0 6.777 3.04 6.777 6.778zM12.031 2C6.49 2 2 6.49 2 12.031c0 1.986.586 3.842 1.602 5.405L2 22l4.698-1.57c1.513.916 3.286 1.442 5.333 1.442 5.541 0 10.031-4.49 10.031-10.031C22.062 6.49 17.572 2 12.031 2z"/>
+                  </svg>
+                  <span>https://chat.whatsapp.com/DKx9IvH25jJDKnzqf0qrrF?s=sw&p=i&iam=2</span>
+                </a>
+              </div>
             </div>
           </div>
-
-          <form onSubmit={handleSaveBank} className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1.5">Nama Bank *</label>
-                <select
-                  value={namaBank}
-                  onChange={(e) => setNamaBank(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-semibold focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white text-slate-900"
-                >
-                  <option value="">-- Pilih Bank --</option>
-                  <option value="Bank Sultra (BPD Sultra)">Bank Sultra (BPD Sultra)</option>
-                  <option value="Bank Mandiri">Bank Mandiri</option>
-                  <option value="Bank BNI">Bank BNI</option>
-                  <option value="Bank BRI">Bank BRI</option>
-                  <option value="Bank BCA">Bank BCA</option>
-                  <option value="Bank BSI (Bank Syariah Indonesia)">Bank BSI (Bank Syariah Indonesia)</option>
-                  <option value="Bank BTN">Bank BTN</option>
-                  <option value="Lainnya">Lainnya (Bank Lain)</option>
-                </select>
-
-                {namaBank === 'Lainnya' && (
-                  <div className="mt-2.5 animate-in fade-in slide-in-from-top-1">
-                    <label className="block text-[11px] font-bold text-blue-900 mb-1">
-                      Ketik Nama Bank Lainnya *
-                    </label>
-                    <input
-                      type="text"
-                      value={bankLainnya}
-                      onChange={(e) => setBankLainnya(e.target.value)}
-                      placeholder="Contoh: Bank Danamon / CIMB Niaga / Muamalat"
-                      className="w-full px-3.5 py-2 rounded-xl border border-blue-400 bg-blue-50/50 text-xs font-semibold focus:ring-2 focus:ring-blue-600 focus:outline-none text-slate-900"
-                      autoFocus
-                    />
-                  </div>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1.5">Nomor Rekening Bank *</label>
-                <input
-                  type="text"
-                  value={noRekening}
-                  onChange={(e) => setNoRekening(e.target.value)}
-                  placeholder="Contoh: 001020304050"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-mono font-semibold focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white text-slate-900"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1.5">Nama Pemilik Rekening *</label>
-                <input
-                  type="text"
-                  value={namaRekening}
-                  onChange={(e) => setNamaRekening(e.target.value)}
-                  placeholder="Nama Sesuai Buku Tabungan / KTP"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-semibold focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white text-slate-900"
-                />
-              </div>
-            </div>
-
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
-              <p className="text-[11px] text-slate-500 italic">
-                * Pastikan rekening bank masih aktif atas nama pendaftar sendiri untuk kelancaran pencairan dana tahap pertama.
-              </p>
-              <button
-                type="submit"
-                disabled={savingBank}
-                className="px-5 py-2.5 bg-blue-900 hover:bg-blue-950 disabled:bg-slate-300 text-white font-extrabold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-2 shrink-0"
-              >
-                {savingBank ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" /> Menyimpan...
-                  </>
-                ) : (
-                  <>
-                    <Save className="w-4 h-4" /> Simpan Rekening Bank
-                  </>
-                )}
-              </button>
-            </div>
-          </form>
         </div>
       )}
 
@@ -799,7 +743,7 @@ export default function DashboardPage() {
       )}
 
       {/* INFORMASI PENETAPAN FINAL & PESAN PENYEMANGAT */}
-      {(isSanggahPeriodCompleted || isPenetapanPeriodOpen) && effectiveStatus === 'DITOLAK' && (
+      {(isSanggahPeriodCompleted || isPenetapanPeriodOpen) && (effectiveStatus === 'DITOLAK' || (isPenetapanPeriodOpen && effectiveStatus === 'LOLOS_VERIFIKASI')) && (
         <div className="bg-gradient-to-br from-amber-50/70 via-slate-50 to-white rounded-3xl border border-amber-200 p-6 sm:p-8 shadow-sm space-y-4">
           <div className="flex items-center gap-3">
             <div className="p-3 bg-[#0B3A6A] text-white rounded-2xl shadow-sm">
@@ -814,7 +758,7 @@ export default function DashboardPage() {
           </div>
           <div className="bg-white p-5 rounded-2xl border border-slate-200 text-xs sm:text-sm text-slate-700 leading-relaxed space-y-3">
             <p>
-              Hasil seleksi Beasiswa Stimulan Sultra Cerdas 2026 telah resmi ditetapkan berdasarkan Surat Keputusan (SK) Gubernur Sulawesi Tenggara.
+              Hasil seleksi Beasiswa Stimulan Sultra Cerdas 2026 telah resmi ditetapkan oleh Pemerintah Provinsi Sulawesi Tenggara.
             </p>
             <div className="p-4 bg-amber-50/80 border-l-4 border-amber-400 rounded-r-xl text-xs text-amber-950 italic leading-relaxed font-medium">
               &ldquo;Kepada seluruh mahasiswa Sulawesi Tenggara yang belum berhasil menerima beasiswa pada periode ini: jangan pernah berkecil hati. Seluruh ikhtiar, kerja keras, dan potensi luar biasa yang Anda miliki adalah kebanggaan daerah. Kegagalan hari ini adalah tangga awal menuju pencapaian yang lebih gemilang. Teruslah belajar, berinovasi, dan mengukir prestasi terbaik demi masa depan Anda dan daerah yang kita cintai.&rdquo;
