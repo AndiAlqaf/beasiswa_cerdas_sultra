@@ -5,7 +5,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { Bell, Calendar, Download, Printer, ShieldCheck, Search, Loader2, Award, CheckCircle2, FileText, ArrowRight } from 'lucide-react';
 import { fetchAPI } from '@/lib/api';
-import { getStoredScheduleConfig, getDynamicTimeline, ScheduleConfig } from '@/lib/schedule';
+import { getStoredScheduleConfig, getDynamicTimeline, ScheduleConfig, isPenetapanAnnounced } from '@/lib/schedule';
 import Link from 'next/link';
 
 interface Recipient {
@@ -42,9 +42,7 @@ export default function PublicPengumumanPage() {
     : false;
 
   const penetapanStep = timeline.find((s) => s.id === 'penetapan');
-  const isPenetapanPeriodOpen = penetapanStep
-    ? penetapanStep.status === 'active' || penetapanStep.status === 'completed'
-    : false;
+  const isPenetapanPeriodOpen = isPenetapanAnnounced(scheduleConfig);
 
   const loadRecipients = async () => {
     if (!isAnnouncementPeriodOpen) {

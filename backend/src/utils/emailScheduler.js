@@ -258,7 +258,7 @@ async function jalankanBlastPenetapanPenerima() {
  * Email resmi HANYA dikirimkan saat tahap Penetapan Resmi Penerima Beasiswa.
  */
 function startEmailScheduler() {
-  const penetapanDate = env.PENETAPAN_DATE || '2026-11-16';
+  const penetapanDate = env.PENETAPAN_DATE || '2026-11-17';
 
   log(LOG_LEVELS.INFO, `[SCHEDULER] Email scheduler aktif. Email kelulusan hanya dikirim pada tahap Penetapan Penerima Beasiswa: ${penetapanDate}`);
 

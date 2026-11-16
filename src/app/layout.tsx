@@ -37,8 +37,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="icon" href="/logo-sultra.png?v=2" type="image/png" />
         <link rel="shortcut icon" href="/logo-sultra.png?v=2" />
         <link rel="apple-touch-icon" href="/logo-sultra.png?v=2" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link href="https://fonts.googleapis.com/css2?family=Rubik:ital,wght@0,300..900;1,300..900&display=swap" rel="stylesheet" />
       </head>
-      <body suppressHydrationWarning className="min-h-full flex flex-col">{children}</body>
+      <body suppressHydrationWarning className={`${rubik.className} min-h-full flex flex-col`}>{children}</body>
     </html>
   );
 }

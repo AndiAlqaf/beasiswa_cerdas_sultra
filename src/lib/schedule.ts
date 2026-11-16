@@ -8,6 +8,8 @@ export interface ScheduleConfig {
   sanggahStart: string;
   sanggahEnd: string;
   pengumumanSanggahDate: string;
+  penetapanStartDate?: string;
+  penetapanEndDate?: string;
   penetapanDate: string;
   kontrakDate: string;
   penyaluranDate: string;
@@ -22,12 +24,14 @@ export const DEFAULT_SCHEDULE_CONFIG: ScheduleConfig = {
   sanggahStart: '2026-11-05',
   sanggahEnd: '2026-11-08',
   pengumumanSanggahDate: '2026-11-09',
-  penetapanDate: '2026-11-16',
+  penetapanStartDate: '2026-11-16',
+  penetapanEndDate: '2026-11-17',
+  penetapanDate: '2026-11-17',
   kontrakDate: '2026-11-18',
   penyaluranDate: '2026-11-23'
 };
 
-const STORAGE_KEY = 'bssc_schedule_config_v2';
+const STORAGE_KEY = 'bssc_schedule_config_v4';
 
 export function getStoredScheduleConfig(): ScheduleConfig {
   if (typeof window === 'undefined') return DEFAULT_SCHEDULE_CONFIG;
@@ -76,7 +80,7 @@ if (typeof window !== 'undefined') {
       case 'pengumuman-sanggah': mockTime = `${config.pengumumanSanggahDate} 23:59:00`; break;
       case 'penetapan':
       case 'penetapan-resmi':
-      case 'penetapan-penerima': mockTime = `${config.penetapanDate || '2026-11-16'} 23:59:00`; break;
+      case 'penetapan-penerima': mockTime = `${config.penetapanDate || '2026-11-17'} 23:59:00`; break;
       case 'kontrak': mockTime = `${config.kontrakDate || '2026-11-18'} 10:00:00`; break;
       case 'penyaluran':
       case 'pencairan': mockTime = `${config.penyaluranDate || '2026-11-23'} 10:00:00`; break;
@@ -253,10 +257,10 @@ export function getDynamicTimeline(
       id: 'penetapan',
       title: 'Penetapan Penerima Beasiswa',
       desc: 'SK Gubernur penetapan nama penerima Beasiswa Stimulan Sultra Cerdas.',
-      date: formatDateRange(config.penetapanDate || '2026-11-16', '2026-11-17'),
-      startDate: config.penetapanDate || '2026-11-16',
-      endDate: '2026-11-17',
-      status: getStatus(config.penetapanDate || '2026-11-16', '2026-11-17', 'penetapan')
+      date: formatDateRange(config.penetapanStartDate || '2026-11-16', config.penetapanEndDate || '2026-11-17'),
+      startDate: config.penetapanStartDate || '2026-11-16',
+      endDate: config.penetapanEndDate || '2026-11-17',
+      status: getStatus(config.penetapanStartDate || '2026-11-16', config.penetapanEndDate || '2026-11-17')
     },
     {
       id: 'kontrak',
@@ -278,3 +282,38 @@ export function getDynamicTimeline(
     }
   ];
 }
+
+/**
+ * Mengecek apakah pengumuman serentak hasil penetapan resmi sudah dirilis ke mahasiswa (di belakang layar).
+ * Pengumuman resmi serentak dirilis pada penetapanDate pukul 23:59:00 WITA.
+ */
+export function isPenetapanAnnounced(
+  config: ScheduleConfig = getStoredScheduleConfig(),
+  customNow?: string
+): boolean {
+  const parseDate = (dStr: string) => {
+    if (!dStr) return new Date();
+    if (dStr.includes(' ') || dStr.includes('T')) {
+      const normalized = dStr.replace(' ', 'T');
+      const [datePart, timePart] = normalized.split('T');
+      const [y, m, d] = datePart.split('-').map(Number);
+      const [hh, mm, ss] = (timePart || '00:00:00').split(':').map(Number);
+      return new Date(y, m - 1, d, hh || 0, mm || 0, ss || 0);
+    }
+    const [y, m, d] = dStr.split('-').map(Number);
+    return new Date(y, m - 1, d);
+  };
+
+  const releaseDateStr = config.penetapanDate || '2026-11-17';
+  const releaseTime = parseDate(releaseDateStr);
+  const userOffsetMinutes = releaseTime.getTimezoneOffset();
+  const witaOffsetMinutes = -480; // WITA (UTC+8)
+  const diffMinutes = userOffsetMinutes - witaOffsetMinutes;
+  releaseTime.setHours(23, 59 - diffMinutes, 0, 0);
+
+  const mockNow = typeof window !== 'undefined' ? (window as any).__MOCK_TIME : null;
+  const checkTime = customNow ? parseDate(customNow) : (mockNow ? parseDate(mockNow) : new Date());
+
+  return checkTime >= releaseTime;
+}
+

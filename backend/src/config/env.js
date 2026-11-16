@@ -74,6 +74,7 @@ const env = {
 
   // Jadwal Pengumuman Email Blast (format: YYYY-MM-DD)
   ANNOUNCEMENT_DATE: process.env.ANNOUNCEMENT_DATE || '',
+  PENETAPAN_DATE: process.env.PENETAPAN_DATE || '2026-11-17',
 };
 
 module.exports = env;

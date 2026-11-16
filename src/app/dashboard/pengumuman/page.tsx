@@ -18,7 +18,7 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { fetchAPI } from '@/lib/api';
-import { getStoredScheduleConfig, getDynamicTimeline, ScheduleConfig } from '@/lib/schedule';
+import { getStoredScheduleConfig, getDynamicTimeline, ScheduleConfig, isPenetapanAnnounced } from '@/lib/schedule';
 import Link from 'next/link';
 
 export default function PengumumanPage() {
@@ -81,9 +81,7 @@ export default function PengumumanPage() {
     ? pengumumanSanggahStep.status === 'active' || pengumumanSanggahStep.status === 'completed'
     : false;
 
-  const isPenetapanPeriodOpen = penetapanStep
-    ? penetapanStep.status === 'active' || penetapanStep.status === 'completed'
-    : false;
+  const isPenetapanPeriodOpen = isPenetapanAnnounced(scheduleConfig);
 
   const activeStep =
     timeline.find((step) => step.status === 'active') ||
@@ -108,7 +106,7 @@ export default function PengumumanPage() {
   }
 
   // Sebelum jadwal penetapan resmi dibuka, status DITERIMA diperlakukan sebagai LOLOS_VERIFIKASI
-  // agar hasil penetapan tidak tampil sebelum waktu pengumuman resmi (16 Nov 23:59 WITA)
+  // agar hasil penetapan tidak tampil sebelum waktu pengumuman resmi (17 Nov 23:59 WITA)
   if ((effectiveStatus === 'DITERIMA' || effectiveStatus === 'PENCAIRAN_TERMIN_1' || effectiveStatus === 'PENCAIRAN_TERMIN_2') && !isPenetapanPeriodOpen) {
     effectiveStatus = 'LOLOS_VERIFIKASI';
   }
@@ -192,12 +190,11 @@ export default function PengumumanPage() {
 
           <div className="bg-slate-50/80 rounded-2xl p-5 border border-slate-200 text-xs sm:text-sm text-slate-700 space-y-2">
             <p className="leading-relaxed">
-              Pengumuman resmi hasil seleksi dan daftar penetapan penerima beasiswa belum dirilis. Saat ini tahapan beasiswa masih berada pada tahap{' '}
-              <strong className="text-slate-900">{activeStep?.title}</strong> ({activeStep?.date}).
+              Pengumuman resmi hasil seleksi dan daftar penerima beasiswa belum dirilis. Saat ini tahapan beasiswa masih berada pada tahap{' '}
+              <strong className="text-slate-900">{activeStep?.title}</strong>.
             </p>
             <p className="text-slate-500 text-xs">
-              Jadwal rilis penetapan resmi penerima beasiswa:{' '}
-              <strong className="text-slate-800">{penetapanStep?.date || '16 November 2026 pukul 23:59 WITA'}</strong>.
+              Silakan ditunggu dan pantau informasi pengumuman secara berkala di portal ini.
             </p>
           </div>
         </div>
@@ -374,7 +371,7 @@ export default function PengumumanPage() {
 
                   <div className="p-5 bg-teal-50/60 rounded-2xl border border-teal-200 text-xs sm:text-sm text-teal-950 leading-relaxed space-y-2">
                     <p>
-                      Berkas pendaftaran Anda dinyatakan <strong>Lolos Verifikasi Berkas</strong>. Silakan pantau pengumuman penetapan resmi penerima beasiswa yang dijadwalkan pada <strong className="text-teal-900">{penetapanStep?.date || '16 November 2026 pukul 23:59 WITA'}</strong>.
+                      Berkas pendaftaran Anda dinyatakan <strong>Lolos Verifikasi Berkas</strong>. Silakan ditunggu dan pantau informasi pengumuman penetapan resmi penerima beasiswa secara berkala di portal ini.
                     </p>
                   </div>
                 </div>

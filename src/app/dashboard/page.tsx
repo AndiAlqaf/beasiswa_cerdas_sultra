@@ -4,7 +4,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { CheckCircle2, Clock, FileText, Calendar, ChevronRight, AlertCircle, Award, XCircle, ArrowRight, Send, Loader2, RefreshCw, Landmark, Save, CreditCard, ExternalLink, ShieldCheck, Lock, UploadCloud, FileUp, Lightbulb } from 'lucide-react';
 import Link from 'next/link';
 import { getUser, fetchAPI } from '@/lib/api';
-import { getStoredScheduleConfig, getDynamicTimeline, ScheduleConfig } from '@/lib/schedule';
+import { getStoredScheduleConfig, getDynamicTimeline, ScheduleConfig, isPenetapanAnnounced } from '@/lib/schedule';
 
 export default function DashboardPage() {
   const [user, setUser] = useState<any>(null);
@@ -244,9 +244,7 @@ export default function DashboardPage() {
     : false;
 
   const penetapanStep = timeline.find((s) => s.id === 'penetapan');
-  const isPenetapanPeriodOpen = penetapanStep
-    ? penetapanStep.status === 'active' || penetapanStep.status === 'completed'
-    : false;
+  const isPenetapanPeriodOpen = isPenetapanAnnounced(scheduleConfig);
 
   const isSanggahan = application?.notes?.includes('[SANGGAHAN MAHASISWA]');
 
@@ -266,7 +264,7 @@ export default function DashboardPage() {
   }
 
   // Sebelum jadwal penetapan resmi dibuka, status DITERIMA diperlakukan sebagai LOLOS_VERIFIKASI
-  // agar hasil penetapan tidak tampil sebelum waktu pengumuman resmi (16 Nov 23:59 WITA)
+  // agar hasil penetapan tidak tampil sebelum waktu pengumuman resmi (17 Nov 23:59 WITA)
   if ((effectiveStatus === 'DITERIMA' || effectiveStatus === 'PENCAIRAN_TERMIN_1' || effectiveStatus === 'PENCAIRAN_TERMIN_2') && !isPenetapanPeriodOpen) {
     effectiveStatus = 'LOLOS_VERIFIKASI';
   }
