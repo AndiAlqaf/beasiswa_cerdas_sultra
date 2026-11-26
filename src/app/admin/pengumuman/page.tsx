@@ -1,11 +1,13 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Megaphone, Award, Printer, CheckCircle2, FileText, Search, Loader2, Sparkles, AlertCircle, RefreshCw, Send, ShieldCheck, UserCheck } from 'lucide-react';
+import { Megaphone, Award, Printer, CheckCircle2, FileText, Search, Loader2, Sparkles, AlertCircle, RefreshCw, Send, ShieldCheck, UserCheck, Eye } from 'lucide-react';
 import { fetchAPI } from '@/lib/api';
+import FormulirDokumenModal from '@/components/FormulirDokumenModal';
 
 interface Recipient {
   id: string;
+  userId?: string;
   registrationNo: string;
   namaLengkap: string;
   nik: string;
@@ -35,26 +37,91 @@ export default function PenerbitanPengumumanAdminPage() {
   const [showSkModal, setShowSkModal] = useState(false);
   const [toast, setToast] = useState<{ title: string; message: string; type: 'success' | 'error' } | null>(null);
 
+  // Formulir Document Viewer Modal States
+  const [showFormulirModal, setShowFormulirModal] = useState(false);
+  const [formulirDetail, setFormulirDetail] = useState<any>(null);
+  const [loadingFormulir, setLoadingFormulir] = useState(false);
+
+  const handleOpenFormulir = async (recipient: Recipient) => {
+    setShowFormulirModal(true);
+    setLoadingFormulir(true);
+    setFormulirDetail(null);
+    try {
+      let targetId = recipient.userId || recipient.id;
+      if (!targetId && (recipient.registrationNo || recipient.namaLengkap)) {
+        const q = recipient.registrationNo || recipient.namaLengkap;
+        const listRes = await fetchAPI(`/admin/applicants?search=${encodeURIComponent(q)}&limit=10`);
+        if (listRes.success && listRes.data?.applicants?.length > 0) {
+          const found =
+            listRes.data.applicants.find((a: any) => a.registrationNo === recipient.registrationNo) ||
+            listRes.data.applicants[0];
+          targetId = found?.userId || found?.id;
+        }
+      }
+      const res = await fetchAPI(`/admin/applicants/${targetId}`);
+      if (res.success && res.data) {
+        setFormulirDetail(res.data);
+      }
+    } catch (err: any) {
+      setToast({
+        title: 'Gagal Memuat Formulir',
+        message: err.message || 'Gagal memuat dokumen formulir penerima beasiswa.',
+        type: 'error',
+      });
+      setShowFormulirModal(false);
+    } finally {
+      setLoadingFormulir(false);
+    }
+  };
+
+  const handleViewDocument = async (userId: string, docId: string) => {
+    try {
+      const token = localStorage.getItem('bssc_access_token');
+      const res = await fetch(`/api/v1/admin/applicants/${userId}/documents/${docId}/view`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error('Gagal memuat dokumen');
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      window.open(url, '_blank');
+      setTimeout(() => window.URL.revokeObjectURL(url), 60000);
+    } catch (err: any) {
+      alert(err.message || 'Gagal membuka dokumen.');
+    }
+  };
+
   const loadAcceptedApplicants = async () => {
     setLoading(true);
     try {
-      const res = await fetchAPI('/admin/applicants');
-      if (res.success && res.data) {
-        const all: any[] = res.data.applicants || [];
-        const accepted = all.filter(a => a.status === 'DITERIMA' || a.status === 'PENCAIRAN_TERMIN_1' || a.status === 'PENCAIRAN_TERMIN_2');
-        setRecipients(accepted.map(a => ({
-          id: a.id,
-          registrationNo: a.registrationNo || a.nik,
-          namaLengkap: a.namaLengkap,
-          nik: a.nik,
-          jenjangTarget: a.jenjangTarget,
-          email: a.email,
-          status: a.status,
-          verifiedAt: a.verifiedAt || new Date().toISOString(),
-          institusi: a.institusi || 'Universitas Halu Oleo',
-          jurusan: a.jurusan || 'Pendidikan'
-        })));
+      let all: any[] = [];
+      try {
+        const exportRes = await fetchAPI('/admin/applicants/export');
+        if (exportRes.success && exportRes.data?.applicants) {
+          all = exportRes.data.applicants;
+        }
+      } catch {
+        // fallback to paginated endpoint
       }
+      if (all.length === 0) {
+        const res = await fetchAPI('/admin/applicants?limit=500');
+        if (res.success && res.data) {
+          all = res.data.applicants || [];
+        }
+      }
+      const accepted = all.filter(a => a.status === 'DITERIMA' || a.status === 'PENCAIRAN_TERMIN_1' || a.status === 'PENCAIRAN_TERMIN_2');
+      setRecipients(accepted.map(a => ({
+        id: a.userId || a.id,
+        userId: a.userId || a.id,
+        registrationNo: a.registrationNo || a.nik,
+        namaLengkap: a.namaLengkap,
+        nik: a.nik,
+        jenjangTarget: a.jenjangTarget,
+        email: a.email,
+        status: a.status,
+        verifiedAt: a.verifiedAt || new Date().toISOString(),
+        institusi: a.perguruanTinggi || a.institusi || 'Universitas Halu Oleo',
+        jurusan: a.prodi || a.jurusan || 'Pendidikan'
+      })));
     } catch (e: any) {
       console.warn('Failed to load accepted applicants:', e);
     } finally {
@@ -100,8 +167,9 @@ export default function PenerbitanPengumumanAdminPage() {
   const countByJenjang = (j: string) => recipients.filter(r => r.jenjangTarget === j).length;
 
   return (
-    <div className="w-full space-y-8 max-w-7xl mx-auto pb-16">
-      {/* Header Banner */}
+    <div className="w-full max-w-7xl mx-auto pb-16">
+      <div className={showFormulirModal ? 'space-y-8 print:hidden' : 'space-y-8'}>
+        {/* Header Banner */}
       <div className="bg-[#0B3A6A] p-6 sm:p-8 rounded-3xl text-white shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-6 border border-blue-800/40">
         <div className="space-y-2">
           <h1 className="text-2xl sm:text-3xl font-black tracking-tight">
@@ -308,6 +376,7 @@ export default function PenerbitanPengumumanAdminPage() {
                   <th className="py-3 px-4">Jenjang</th>
                   <th className="py-3 px-4">Perguruan Tinggi</th>
                   <th className="py-3 px-4 text-center">Status</th>
+                  <th className="py-3 px-4 text-center">Aksi</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 font-medium text-slate-800">
@@ -328,6 +397,16 @@ export default function PenerbitanPengumumanAdminPage() {
                         <CheckCircle2 className="w-3 h-3 text-emerald-600" /> DITERIMA
                       </span>
                     </td>
+                    <td className="py-3 px-4 text-center">
+                      <button
+                        type="button"
+                        onClick={() => handleOpenFormulir(r)}
+                        className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 rounded-xl text-[11px] font-bold transition-colors inline-flex items-center gap-1.5 cursor-pointer"
+                        title="Lihat Dokumen Formulir Penerima"
+                      >
+                        <FileText className="w-3.5 h-3.5" /> Lihat Formulir
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -335,6 +414,18 @@ export default function PenerbitanPengumumanAdminPage() {
           </div>
         )}
       </div>
+      </div>
+
+      <FormulirDokumenModal
+        isOpen={showFormulirModal}
+        onClose={() => {
+          setShowFormulirModal(false);
+          setFormulirDetail(null);
+        }}
+        applicantDetail={formulirDetail}
+        loading={loadingFormulir}
+        onViewUploadedDoc={handleViewDocument}
+      />
 
       {/* Modal Format SK Resmi Penerima Beasiswa */}
       {showSkModal && (

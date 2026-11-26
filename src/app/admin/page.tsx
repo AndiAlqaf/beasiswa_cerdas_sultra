@@ -2,8 +2,9 @@
 
 import React, { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
-import { Users, FileCheck, Clock, CheckCircle, XCircle, Loader2, AlertCircle, Search, X, RefreshCw } from 'lucide-react';
+import { Users, FileCheck, Clock, CheckCircle, XCircle, Loader2, AlertCircle, Search, X, RefreshCw, FileText } from 'lucide-react';
 import { fetchAPI } from '@/lib/api';
+import FormulirDokumenModal from '@/components/FormulirDokumenModal';
 
 type FilterCategory = 'RECENT' | 'ALL' | 'MENUNGGU' | 'SANGGAHAN' | 'BERKAS_LOLOS' | 'DITOLAK' | 'DITERIMA';
 
@@ -16,6 +17,61 @@ export default function AdminDashboardPage() {
   const [activeFilter, setActiveFilter] = useState<FilterCategory>('RECENT');
   const [berkasLolosSubFilter, setBerkasLolosSubFilter] = useState<'ALL_LOLOS' | 'ONLY_VERIFIED'>('ALL_LOLOS');
   const [searchTerm, setSearchTerm] = useState('');
+
+  // Formulir Document Viewer State
+  const [showFormulirModal, setShowFormulirModal] = useState(false);
+  const [formulirDetail, setFormulirDetail] = useState<any>(null);
+  const [loadingFormulir, setLoadingFormulir] = useState(false);
+
+  const handleOpenFormulir = async (applicant: any) => {
+    setShowFormulirModal(true);
+    setLoadingFormulir(true);
+    setFormulirDetail(null);
+    try {
+      let targetId = applicant.userId || applicant.id;
+      if (!targetId && (applicant.registrationNo || applicant.email || applicant.namaLengkap)) {
+        const q = applicant.registrationNo || applicant.namaLengkap || applicant.email;
+        const listRes = await fetchAPI(`/admin/applicants?search=${encodeURIComponent(q)}&limit=10`);
+        if (listRes.success && listRes.data?.applicants?.length > 0) {
+          const found =
+            listRes.data.applicants.find(
+              (a: any) =>
+                (applicant.registrationNo && a.registrationNo === applicant.registrationNo) ||
+                (applicant.email && a.email === applicant.email)
+            ) || listRes.data.applicants[0];
+          targetId = found?.userId || found?.id;
+        }
+      }
+      if (!targetId) {
+        throw new Error('ID Pendaftar tidak ditemukan.');
+      }
+      const res = await fetchAPI(`/admin/applicants/${targetId}`);
+      if (res.success && res.data) {
+        setFormulirDetail(res.data);
+      }
+    } catch (err: any) {
+      alert(err.message || 'Gagal memuat dokumen formulir pendaftar.');
+      setShowFormulirModal(false);
+    } finally {
+      setLoadingFormulir(false);
+    }
+  };
+
+  const handleViewDocument = async (userId: string, docId: string) => {
+    try {
+      const token = localStorage.getItem('bssc_access_token');
+      const res = await fetch(`/api/v1/admin/applicants/${userId}/documents/${docId}/view`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error('Gagal memuat dokumen');
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      window.open(url, '_blank');
+      setTimeout(() => window.URL.revokeObjectURL(url), 60000);
+    } catch (err: any) {
+      alert(err.message || 'Gagal membuka dokumen.');
+    }
+  };
 
   useEffect(() => {
     async function loadDashboard() {
@@ -251,8 +307,9 @@ export default function AdminDashboardPage() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Welcome Section */}
+    <div className="relative">
+      <div className="space-y-6 print:hidden">
+        {/* Welcome Section */}
       <div className="bg-[#0B3A6A] rounded-2xl p-6 sm:p-8 text-white shadow-lg relative overflow-hidden">
         <div className="relative z-10">
           <h2 className="text-2xl sm:text-3xl font-bold mb-2">Selamat Datang, Admin! 👋</h2>
@@ -427,12 +484,27 @@ export default function AdminDashboardPage() {
                       )}
                     </td>
                     <td className="p-4">
-                      <Link
-                        href={`/admin/seleksi?search=${encodeURIComponent(applicant.registrationNo || applicant.namaLengkap || '')}`}
-                        className="text-blue-600 hover:text-blue-800 font-semibold text-xs bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition-colors inline-block"
-                      >
-                        Verifikasi
-                      </Link>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleOpenFormulir(applicant)}
+                          className={`font-semibold text-xs px-3 py-1.5 rounded-lg transition-colors inline-flex items-center gap-1.5 cursor-pointer ${
+                            applicant.status === 'DITERIMA'
+                              ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200'
+                              : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                          }`}
+                          title="Lihat Dokumen Formulir Pendaftaran"
+                        >
+                          <FileText className="w-3.5 h-3.5" />
+                          Lihat Formulir
+                        </button>
+                        <Link
+                          href={`/admin/seleksi?search=${encodeURIComponent(applicant.registrationNo || applicant.namaLengkap || '')}`}
+                          className="text-blue-600 hover:text-blue-800 font-semibold text-xs bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition-colors inline-block"
+                        >
+                          Verifikasi
+                        </Link>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -441,6 +513,18 @@ export default function AdminDashboardPage() {
           </table>
         </div>
       </div>
+      </div>
+
+      <FormulirDokumenModal
+        isOpen={showFormulirModal}
+        onClose={() => {
+          setShowFormulirModal(false);
+          setFormulirDetail(null);
+        }}
+        applicantDetail={formulirDetail}
+        loading={loadingFormulir}
+        onViewUploadedDoc={handleViewDocument}
+      />
     </div>
   );
 }

@@ -3,6 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Filter, Download, Eye, Edit, Trash2, Loader2, AlertCircle, X, FileText, Printer, ExternalLink, FileSpreadsheet, Check } from 'lucide-react';
 import { fetchAPI } from '@/lib/api';
+import { extractValidAchievementItems, formatAchievementForPrint, hasAchievementContent } from '@/lib/achievementHelpers';
+import FormulirDokumenModal from '@/components/FormulirDokumenModal';
 
 const getDocTitle = (key: string) => {
   if (!key) return '-';
@@ -62,51 +64,46 @@ const formatStatusLabel = (status?: string) => {
 
 const renderAchievementDetails = (rawStr?: string) => {
   if (!rawStr || !rawStr.trim()) return '-';
-  if (rawStr.trim().startsWith('[')) {
-    try {
-      const items = JSON.parse(rawStr);
-      if (Array.isArray(items) && items.length > 0) {
+  const items = extractValidAchievementItems(rawStr);
+  if (items.length === 0) return '-';
+  return (
+    <div className="space-y-2 py-1">
+      {items.map((item: any, idx: number) => {
+        const hasDoc = Boolean(item.buktiFile || item.buktiFileName || item.buktiLink);
         return (
-          <div className="space-y-2 py-1">
-            {items.map((item: any, idx: number) => (
-              <div key={idx} className="border-b border-slate-100 last:border-0 pb-1.5 last:pb-0">
-                <p className="font-semibold text-slate-900">
-                  {idx + 1}. {item.nama || item.name || '-'} {item.tahun ? `(${item.tahun})` : ''}
-                </p>
-                {(item.buktiFile || item.buktiLink) && (
-                  <div className="flex flex-wrap items-center gap-2 mt-1">
-                    {item.buktiFile && (
-                      <a
-                        href={item.buktiFile}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-[11px] font-bold text-blue-700 hover:text-blue-900 bg-blue-50 px-2.5 py-1 rounded border border-blue-200 shadow-xs"
-                      >
-                        🖼️ Lihat Foto Bukti ({item.buktiFileName || 'File Bukti'})
-                      </a>
-                    )}
-                    {item.buktiLink && (
-                      <a
-                        href={item.buktiLink.startsWith('http') ? item.buktiLink : `https://${item.buktiLink}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 hover:text-emerald-900 bg-emerald-50 px-2.5 py-1 rounded border border-emerald-200 shadow-xs"
-                      >
-                        🔗 Buka Link Bukti
-                      </a>
-                    )}
-                  </div>
+          <div key={idx} className="border-b border-slate-100 last:border-0 pb-1.5 last:pb-0">
+            <p className="font-semibold text-slate-900">
+              {idx + 1}. {item.nama || '-'} {item.tahun ? `(${item.tahun})` : ''} {hasDoc ? <span className="text-slate-600 font-normal">(terlampir)</span> : ''}
+            </p>
+            {(item.buktiFile || item.buktiLink) && (
+              <div className="flex flex-wrap items-center gap-2 mt-1 print:hidden">
+                {item.buktiFile && item.buktiFile !== '[TERLAMPIR]' && (
+                  <a
+                    href={item.buktiFile}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-[11px] font-bold text-blue-700 hover:text-blue-900 bg-blue-50 px-2.5 py-1 rounded border border-blue-200 shadow-xs"
+                  >
+                    🖼️ Lihat Foto Bukti ({item.buktiFileName || 'File Bukti'})
+                  </a>
+                )}
+                {item.buktiLink && (
+                  <a
+                    href={item.buktiLink.startsWith('http') ? item.buktiLink : `https://${item.buktiLink}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 hover:text-emerald-900 bg-emerald-50 px-2.5 py-1 rounded border border-emerald-200 shadow-xs"
+                  >
+                    🔗 Buka Link Bukti
+                  </a>
                 )}
               </div>
-            ))}
+            )}
           </div>
         );
-      }
-    } catch (e) {
-      // fallback
-    }
-  }
-  return <div className="whitespace-pre-line">{rawStr}</div>;
+      })}
+    </div>
+  );
 };
 
 export default function PendaftarPage() {
@@ -153,12 +150,60 @@ export default function PendaftarPage() {
   const [applicantDetail, setApplicantDetail] = useState<any>(null);
   const [loadingDetail, setLoadingDetail] = useState<boolean>(false);
 
+  // Formulir Document Viewer Modal States
+  const [showFormulirModal, setShowFormulirModal] = useState<boolean>(false);
+  const [formulirDetail, setFormulirDetail] = useState<any>(null);
+  const [loadingFormulir, setLoadingFormulir] = useState<boolean>(false);
+
+  const handleOpenFormulir = async (applicant: any) => {
+    setShowFormulirModal(true);
+    if (applicantDetail && (applicantDetail.user?.id === (applicant.userId || applicant.id))) {
+      setFormulirDetail(applicantDetail);
+      setLoadingFormulir(false);
+      return;
+    }
+    setLoadingFormulir(true);
+    setFormulirDetail(null);
+    try {
+      let id = applicant.userId || applicant.id;
+      if (!id && (applicant.registrationNo || applicant.namaLengkap)) {
+        const q = applicant.registrationNo || applicant.namaLengkap;
+        const listRes = await fetchAPI(`/admin/applicants?search=${encodeURIComponent(q)}&limit=10`);
+        if (listRes.success && listRes.data?.applicants?.length > 0) {
+          const found =
+            listRes.data.applicants.find((a: any) => a.registrationNo === applicant.registrationNo) ||
+            listRes.data.applicants[0];
+          id = found?.userId || found?.id;
+        }
+      }
+      const res = await fetchAPI(`/admin/applicants/${id}`);
+      if (res.success && res.data) {
+        setFormulirDetail(res.data);
+      }
+    } catch (err: any) {
+      alert(err.message || 'Gagal memuat dokumen formulir pendaftar.');
+      setShowFormulirModal(false);
+    } finally {
+      setLoadingFormulir(false);
+    }
+  };
+
   const handleOpenDetail = async (applicant: any) => {
     setSelectedApplicant(applicant);
     setLoadingDetail(true);
     setApplicantDetail(null);
     try {
-      const id = applicant.userId || applicant.id;
+      let id = applicant.userId || applicant.id;
+      if (!id && (applicant.registrationNo || applicant.namaLengkap)) {
+        const q = applicant.registrationNo || applicant.namaLengkap;
+        const listRes = await fetchAPI(`/admin/applicants?search=${encodeURIComponent(q)}&limit=10`);
+        if (listRes.success && listRes.data?.applicants?.length > 0) {
+          const found =
+            listRes.data.applicants.find((a: any) => a.registrationNo === applicant.registrationNo) ||
+            listRes.data.applicants[0];
+          id = found?.userId || found?.id;
+        }
+      }
       const res = await fetchAPI(`/admin/applicants/${id}`);
       if (res.success && res.data) {
         setApplicantDetail(res.data);
@@ -565,6 +610,18 @@ export default function PendaftarPage() {
                       <td className="p-4 text-center">
                         <div className="flex items-center justify-center gap-2">
                           <button
+                            onClick={() => handleOpenFormulir(user)}
+                            className={`px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer inline-flex items-center gap-1.5 text-xs font-bold ${
+                              user.status === 'DITERIMA'
+                                ? 'text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200'
+                                : 'text-slate-700 bg-slate-100 hover:bg-slate-200'
+                            }`}
+                            title="Lihat Dokumen Formulir Pendaftaran"
+                          >
+                            <FileText className="w-3.5 h-3.5" />
+                            <span>Formulir</span>
+                          </button>
+                          <button
                             onClick={() => handleOpenDetail(user)}
                             className="p-1.5 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors cursor-pointer"
                             title="Lihat Detail"
@@ -953,16 +1010,29 @@ export default function PendaftarPage() {
               </div>
 
               {/* Modal Footer */}
-              <div className="p-5 border-t border-slate-100 bg-slate-50 flex justify-end gap-3">
+              <div className="p-5 border-t border-slate-100 bg-slate-50 flex flex-wrap justify-end gap-3">
+                <button
+                  onClick={() => {
+                    if (applicantDetail) {
+                      setFormulirDetail(applicantDetail);
+                      setShowFormulirModal(true);
+                    } else if (selectedApplicant) {
+                      handleOpenFormulir(selectedApplicant);
+                    }
+                  }}
+                  className="px-4 py-2.5 bg-emerald-600 text-white font-bold text-xs rounded-xl hover:bg-emerald-700 transition-colors flex items-center gap-2 cursor-pointer"
+                >
+                  <FileText className="w-4 h-4" /> Lihat Dokumen Formulir
+                </button>
                 <button
                   onClick={() => window.print()}
-                  className="px-5 py-2.5 bg-slate-800 text-white font-normal rounded-xl hover:bg-slate-900 transition-colors flex items-center gap-2"
+                  className="px-5 py-2.5 bg-slate-800 text-white font-normal text-xs rounded-xl hover:bg-slate-900 transition-colors flex items-center gap-2 cursor-pointer"
                 >
                   <Printer className="w-4 h-4" /> Cetak Formulir
                 </button>
                 <button
                   onClick={() => { setSelectedApplicant(null); setApplicantDetail(null); }}
-                  className="px-5 py-2.5 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 transition-colors"
+                  className="px-5 py-2.5 bg-blue-600 text-white font-medium text-xs rounded-xl hover:bg-blue-700 transition-colors cursor-pointer"
                 >
                   Tutup
                 </button>
@@ -972,8 +1042,19 @@ export default function PendaftarPage() {
         )}
       </div>
 
-      {/* Printable CV - Only visible during print */}
-      {applicantDetail && (
+      <FormulirDokumenModal
+        isOpen={showFormulirModal}
+        onClose={() => {
+          setShowFormulirModal(false);
+          setFormulirDetail(null);
+        }}
+        applicantDetail={formulirDetail}
+        loading={loadingFormulir}
+        onViewUploadedDoc={handleViewDocument}
+      />
+
+      {/* Printable CV - Only visible during print when FormulirDokumenModal is not open */}
+      {applicantDetail && !showFormulirModal && (
         <div className="hidden print:block p-8 font-sans text-black max-w-4xl mx-auto bg-white min-h-screen">
           <div className="text-center mb-8 border-b-4 border-black pb-6">
             <h1 className="text-2xl font-black uppercase tracking-wider mb-2">Formulir Pendaftaran Beasiswa Sultra Cerdas 2026</h1>
@@ -1034,10 +1115,10 @@ export default function PendaftarPage() {
               <h2 className="font-bold text-lg border-b-2 border-black mb-3 uppercase bg-gray-100 px-2 py-1">4. Riwayat & Prestasi</h2>
               <table className="w-full text-left border-collapse">
                 <tbody>
-                  <tr><td className="w-1/3 py-1.5 font-semibold">Prestasi Akademik</td><td>{renderAchievementDetails(applicantDetail.profile?.prestasiAkademik)}</td></tr>
-                  <tr><td className="w-1/3 py-1.5 font-semibold">Prestasi Non-Akademik</td><td>{renderAchievementDetails(applicantDetail.profile?.prestasiNonAkademik)}</td></tr>
-                  <tr><td className="w-1/3 py-1.5 font-semibold">Pengalaman Organisasi</td><td>{renderAchievementDetails(applicantDetail.profile?.pengalamanOrganisasi)}</td></tr>
-                  <tr><td className="w-1/3 py-1.5 font-semibold">Pelatihan/Sertifikasi</td><td>{renderAchievementDetails(applicantDetail.profile?.pelatihanSertifikasi)}</td></tr>
+                  <tr><td className="w-1/3 py-1.5 font-semibold align-top">Prestasi Akademik</td><td className="py-1.5 whitespace-pre-line">: {formatAchievementForPrint(applicantDetail.profile?.prestasiAkademik)}</td></tr>
+                  <tr><td className="w-1/3 py-1.5 font-semibold align-top">Prestasi Non-Akademik</td><td className="py-1.5 whitespace-pre-line">: {formatAchievementForPrint(applicantDetail.profile?.prestasiNonAkademik)}</td></tr>
+                  <tr><td className="w-1/3 py-1.5 font-semibold align-top">Pengalaman Organisasi</td><td className="py-1.5 whitespace-pre-line">: {formatAchievementForPrint(applicantDetail.profile?.pengalamanOrganisasi)}</td></tr>
+                  <tr><td className="w-1/3 py-1.5 font-semibold align-top">Pelatihan/Sertifikasi</td><td className="py-1.5 whitespace-pre-line">: {formatAchievementForPrint(applicantDetail.profile?.pelatihanSertifikasi)}</td></tr>
                 </tbody>
               </table>
             </section>

@@ -40,8 +40,8 @@ async function getDashboard(req, res) {
     const [[{ totalUsers }]] = await pool.execute("SELECT COUNT(*) as totalUsers FROM users WHERE role = 'mahasiswa'");
 
     const [recentApplicants] = await pool.execute(`
-      SELECT u.nama_lengkap, u.email, u.jenjang_target,
-             a.registration_no, a.status, a.submitted_at, a.notes
+      SELECT u.id as user_id, u.nama_lengkap, u.email, u.jenjang_target,
+             a.id as application_id, a.registration_no, a.status, a.submitted_at, a.notes
       FROM applications a
       JOIN users u ON u.id = a.user_id
       ORDER BY a.submitted_at DESC
@@ -53,6 +53,9 @@ async function getDashboard(req, res) {
       data: {
         stats: { totalPendaftar, menungguVerifikasi, sanggahanMasuk, berkasLolos, diterima, ditolak, totalUsers },
         recentApplicants: recentApplicants.map(a => ({
+          id: a.user_id,
+          userId: a.user_id,
+          applicationId: a.application_id,
           namaLengkap: a.nama_lengkap, email: a.email, jenjangTarget: a.jenjang_target,
           registrationNo: a.registration_no, status: a.status, notes: a.notes, submittedAt: a.submitted_at,
         })),
@@ -269,7 +272,7 @@ async function exportApplicants(req, res) {
  */
 async function getApplicantDetail(req, res) {
   try {
-    const userId = req.params.id;
+    const paramId = req.params.id;
     const pool = getPool();
 
     const [userRows] = await pool.execute(`
@@ -286,13 +289,15 @@ async function getApplicantDetail(req, res) {
       FROM users u
       LEFT JOIN profiles p ON p.user_id = u.id
       LEFT JOIN applications a ON a.user_id = u.id
-      WHERE u.id = ?
-    `, [userId]);
+      WHERE u.id = ? OR a.id = ? OR a.registration_no = ?
+      LIMIT 1
+    `, [paramId, paramId, paramId]);
 
     if (userRows.length === 0) {
       return res.status(404).json({ success: false, message: 'Pendaftar tidak ditemukan.' });
     }
     const user = userRows[0];
+    const userId = user.id;
 
     const [education] = await pool.execute(
       'SELECT tingkat, institusi, jurusan, tahun_mulai, tahun_lulus FROM education_history WHERE user_id = ? ORDER BY sort_order ASC',

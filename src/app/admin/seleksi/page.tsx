@@ -4,6 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { CheckCircle2, Award, XCircle, Clock, FileText, ExternalLink, Search, X, Loader2, AlertCircle, Printer, RefreshCw, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ZoomIn, ZoomOut, RotateCw, Eye, ChevronDown, ChevronUp } from 'lucide-react';
 import { fetchAPI } from '@/lib/api';
 import { getStoredScheduleConfig } from '@/lib/schedule';
+import { extractValidAchievementItems, formatAchievementForPrint, hasAchievementContent } from '@/lib/achievementHelpers';
+import FormulirDokumenModal from '@/components/FormulirDokumenModal';
 
 const getDocTitle = (key: string) => {
   if (!key) return '-';
@@ -64,51 +66,46 @@ const formatStatusLabel = (status?: string) => {
 
 const renderAchievementDetails = (rawStr?: string) => {
   if (!rawStr || !rawStr.trim()) return '-';
-  if (rawStr.trim().startsWith('[')) {
-    try {
-      const items = JSON.parse(rawStr);
-      if (Array.isArray(items) && items.length > 0) {
+  const items = extractValidAchievementItems(rawStr);
+  if (items.length === 0) return '-';
+  return (
+    <div className="space-y-2 py-1">
+      {items.map((item: any, idx: number) => {
+        const hasDoc = Boolean(item.buktiFile || item.buktiFileName || item.buktiLink);
         return (
-          <div className="space-y-2 py-1">
-            {items.map((item: any, idx: number) => (
-              <div key={idx} className="border-b border-slate-100 last:border-0 pb-1.5 last:pb-0">
-                <p className="font-semibold text-slate-900">
-                  {idx + 1}. {item.nama || item.name || '-'} {item.tahun ? `(${item.tahun})` : ''}
-                </p>
-                {(item.buktiFile || item.buktiLink) && (
-                  <div className="flex flex-wrap items-center gap-2 mt-1">
-                    {item.buktiFile && (
-                      <a
-                        href={item.buktiFile}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-[11px] font-bold text-blue-700 hover:text-blue-900 bg-blue-50 px-2.5 py-1 rounded border border-blue-200 shadow-xs"
-                      >
-                        🖼️ Lihat Foto Bukti ({item.buktiFileName || 'File Bukti'})
-                      </a>
-                    )}
-                    {item.buktiLink && (
-                      <a
-                        href={item.buktiLink.startsWith('http') ? item.buktiLink : `https://${item.buktiLink}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 hover:text-emerald-900 bg-emerald-50 px-2.5 py-1 rounded border border-emerald-200 shadow-xs"
-                      >
-                        🔗 Buka Link Bukti
-                      </a>
-                    )}
-                  </div>
+          <div key={idx} className="border-b border-slate-100 last:border-0 pb-1.5 last:pb-0">
+            <p className="font-semibold text-slate-900">
+              {idx + 1}. {item.nama || '-'} {item.tahun ? `(${item.tahun})` : ''} {hasDoc ? <span className="text-slate-600 font-normal">(terlampir)</span> : ''}
+            </p>
+            {(item.buktiFile || item.buktiLink) && (
+              <div className="flex flex-wrap items-center gap-2 mt-1 print:hidden">
+                {item.buktiFile && item.buktiFile !== '[TERLAMPIR]' && (
+                  <a
+                    href={item.buktiFile}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-[11px] font-bold text-blue-700 hover:text-blue-900 bg-blue-50 px-2.5 py-1 rounded border border-blue-200 shadow-xs"
+                  >
+                    🖼️ Lihat Foto Bukti ({item.buktiFileName || 'File Bukti'})
+                  </a>
+                )}
+                {item.buktiLink && (
+                  <a
+                    href={item.buktiLink.startsWith('http') ? item.buktiLink : `https://${item.buktiLink}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 hover:text-emerald-900 bg-emerald-50 px-2.5 py-1 rounded border border-emerald-200 shadow-xs"
+                  >
+                    🔗 Buka Link Bukti
+                  </a>
                 )}
               </div>
-            ))}
+            )}
           </div>
         );
-      }
-    } catch (e) {
-      // fallback
-    }
-  }
-  return <div className="whitespace-pre-line">{rawStr}</div>;
+      })}
+    </div>
+  );
 };
 
 export default function SeleksiPage() {
@@ -139,6 +136,44 @@ export default function SeleksiPage() {
   const [imgRotation, setImgRotation] = useState<number>(0);
   const [isFormDetailsOpen, setIsFormDetailsOpen] = useState<boolean>(false);
   const [isBuktiSanggahOpen, setIsBuktiSanggahOpen] = useState<boolean>(false);
+
+  // Formulir Document Viewer Modal States
+  const [showFormulirModal, setShowFormulirModal] = useState<boolean>(false);
+  const [formulirDetail, setFormulirDetail] = useState<any>(null);
+  const [loadingFormulir, setLoadingFormulir] = useState<boolean>(false);
+
+  const handleOpenFormulir = async (applicant: any) => {
+    setShowFormulirModal(true);
+    if (applicantDetail && (applicantDetail.user?.id === (applicant.userId || applicant.id))) {
+      setFormulirDetail(applicantDetail);
+      setLoadingFormulir(false);
+      return;
+    }
+    setLoadingFormulir(true);
+    setFormulirDetail(null);
+    try {
+      let targetUserId = applicant.userId || applicant.id;
+      if (!targetUserId && (applicant.registrationNo || applicant.namaLengkap)) {
+        const q = applicant.registrationNo || applicant.namaLengkap;
+        const listRes = await fetchAPI(`/admin/applicants?search=${encodeURIComponent(q)}&limit=10`);
+        if (listRes.success && listRes.data?.applicants?.length > 0) {
+          const found =
+            listRes.data.applicants.find((a: any) => a.registrationNo === applicant.registrationNo) ||
+            listRes.data.applicants[0];
+          targetUserId = found?.userId || found?.id;
+        }
+      }
+      const res = await fetchAPI(`/admin/applicants/${targetUserId}`);
+      if (res.success && res.data) {
+        setFormulirDetail(res.data);
+      }
+    } catch (err: any) {
+      showNotification(err.message || 'Gagal memuat dokumen formulir pendaftar.', 'error', 'Gagal Memuat Formulir');
+      setShowFormulirModal(false);
+    } finally {
+      setLoadingFormulir(false);
+    }
+  };
 
   const isAfterMasaSanggah = () => {
     try {
@@ -403,7 +438,17 @@ export default function SeleksiPage() {
     setPreviewUrls({});
     setIsBuktiSanggahOpen(false);
     try {
-      const targetUserId = applicant.userId || applicant.id;
+      let targetUserId = applicant.userId || applicant.id;
+      if (!targetUserId && (applicant.registrationNo || applicant.namaLengkap)) {
+        const q = applicant.registrationNo || applicant.namaLengkap;
+        const listRes = await fetchAPI(`/admin/applicants?search=${encodeURIComponent(q)}&limit=10`);
+        if (listRes.success && listRes.data?.applicants?.length > 0) {
+          const found =
+            listRes.data.applicants.find((a: any) => a.registrationNo === applicant.registrationNo) ||
+            listRes.data.applicants[0];
+          targetUserId = found?.userId || found?.id;
+        }
+      }
       const res = await fetchAPI(`/admin/applicants/${targetUserId}`);
       if (res.success && res.data) {
         setApplicantDetail(res.data);
@@ -565,13 +610,27 @@ export default function SeleksiPage() {
                         </span>
                       </td>
                       <td className="p-4 align-middle text-center">
-                        <button
-                          onClick={() => handleOpenDetail(applicant)}
-                          className="px-3 py-2 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-lg transition-colors flex items-center gap-1.5 text-xs font-bold border border-blue-200 mx-auto"
-                          title="Lihat Detail Berkas"
-                        >
-                          <ExternalLink className="w-4 h-4" /> Verifikasi Berkas
-                        </button>
+                        <div className="flex items-center justify-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handleOpenFormulir(applicant)}
+                            className={`px-3 py-2 rounded-lg transition-colors flex items-center gap-1.5 text-xs font-bold border cursor-pointer ${
+                              applicant.status === 'DITERIMA'
+                                ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border-emerald-200'
+                                : 'bg-slate-50 text-slate-700 hover:bg-slate-100 border-slate-200'
+                            }`}
+                            title="Lihat Dokumen Formulir Pendaftaran"
+                          >
+                            <FileText className="w-4 h-4" /> Lihat Formulir
+                          </button>
+                          <button
+                            onClick={() => handleOpenDetail(applicant)}
+                            className="px-3 py-2 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-lg transition-colors flex items-center gap-1.5 text-xs font-bold border border-blue-200 cursor-pointer"
+                            title="Lihat Detail Berkas"
+                          >
+                            <ExternalLink className="w-4 h-4" /> Verifikasi Berkas
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))
@@ -1171,8 +1230,22 @@ export default function SeleksiPage() {
                     )}
                     <div className="flex items-center justify-end gap-2.5 flex-wrap">
                     <button
+                      type="button"
+                      onClick={() => {
+                        if (applicantDetail) {
+                          setFormulirDetail(applicantDetail);
+                          setShowFormulirModal(true);
+                        } else if (selectedApplicant) {
+                          handleOpenFormulir(selectedApplicant);
+                        }
+                      }}
+                      className="px-4 py-2 bg-blue-900 text-white font-bold rounded-xl hover:bg-blue-950 transition-colors flex items-center gap-2 text-xs shadow-2xs cursor-pointer"
+                    >
+                      <FileText className="w-4 h-4" /> Lihat Dokumen Formulir
+                    </button>
+                    <button
                       onClick={() => window.print()}
-                      className="px-4 py-2 bg-slate-800 text-white font-normal rounded-xl hover:bg-slate-900 transition-colors flex items-center gap-2 mr-auto text-xs shadow-2xs"
+                      className="px-4 py-2 bg-slate-800 text-white font-normal rounded-xl hover:bg-slate-900 transition-colors flex items-center gap-2 mr-auto text-xs shadow-2xs cursor-pointer"
                     >
                       <Printer className="w-4 h-4" /> Cetak Formulir
                     </button>
@@ -1450,8 +1523,19 @@ export default function SeleksiPage() {
         )}
       </div>
 
-      {/* Printable CV - Only visible during print */}
-      {applicantDetail && (
+      <FormulirDokumenModal
+        isOpen={showFormulirModal}
+        onClose={() => {
+          setShowFormulirModal(false);
+          setFormulirDetail(null);
+        }}
+        applicantDetail={formulirDetail}
+        loading={loadingFormulir}
+        onViewUploadedDoc={handleViewDocument}
+      />
+
+      {/* Printable CV - Only visible during print when FormulirDokumenModal is not open */}
+      {applicantDetail && !showFormulirModal && (
         <div className="hidden print:block p-8 font-serif text-slate-900 max-w-4xl mx-auto bg-white min-h-screen">
           {/* Kop Surat Resmi */}
           <div className="text-center font-serif border-b-4 border-slate-900 pb-3 mb-1">
@@ -1524,29 +1608,45 @@ export default function SeleksiPage() {
             </div>
 
             {/* Section 4 - Prestasi */}
-            {(applicantDetail.profile?.prestasiAkademik || applicantDetail.profile?.prestasiNonAkademik || applicantDetail.profile?.pengalamanOrganisasi) && (
+            {(hasAchievementContent(applicantDetail.profile?.prestasiAkademik) ||
+              hasAchievementContent(applicantDetail.profile?.prestasiNonAkademik) ||
+              hasAchievementContent(applicantDetail.profile?.pengalamanOrganisasi) ||
+              hasAchievementContent(applicantDetail.profile?.pengalamanPengabdian) ||
+              hasAchievementContent(applicantDetail.profile?.pelatihanSertifikasi)) && (
               <div className="border border-slate-400 overflow-hidden">
                 <div className="bg-slate-100 px-3 py-1 font-bold uppercase text-slate-900 border-b border-slate-400">
-                  IV. PRESTASI & PENGALAMAN ORGANISASI
+                  IV. PRESTASI &amp; PENGALAMAN ORGANISASI
                 </div>
                 <table className="w-full text-left border-collapse">
                   <tbody>
-                    {applicantDetail.profile?.prestasiAkademik && (
+                    {hasAchievementContent(applicantDetail.profile?.prestasiAkademik) && (
                       <tr className="border-b border-slate-200">
-                        <td className="w-1/3 p-1.5 font-semibold bg-slate-50">Prestasi Akademik</td>
-                        <td className="p-1.5">{renderAchievementDetails(applicantDetail.profile.prestasiAkademik)}</td>
+                        <td className="w-1/3 p-1.5 font-semibold bg-slate-50 align-top">Prestasi Akademik</td>
+                        <td className="p-1.5 whitespace-pre-line">: {formatAchievementForPrint(applicantDetail.profile.prestasiAkademik)}</td>
                       </tr>
                     )}
-                    {applicantDetail.profile?.prestasiNonAkademik && (
+                    {hasAchievementContent(applicantDetail.profile?.prestasiNonAkademik) && (
                       <tr className="border-b border-slate-200">
-                        <td className="w-1/3 p-1.5 font-semibold bg-slate-50">Prestasi Non-Akademik</td>
-                        <td className="p-1.5">{renderAchievementDetails(applicantDetail.profile.prestasiNonAkademik)}</td>
+                        <td className="w-1/3 p-1.5 font-semibold bg-slate-50 align-top">Prestasi Non-Akademik</td>
+                        <td className="p-1.5 whitespace-pre-line">: {formatAchievementForPrint(applicantDetail.profile.prestasiNonAkademik)}</td>
                       </tr>
                     )}
-                    {applicantDetail.profile?.pengalamanOrganisasi && (
+                    {hasAchievementContent(applicantDetail.profile?.pengalamanOrganisasi) && (
+                      <tr className="border-b border-slate-200">
+                        <td className="w-1/3 p-1.5 font-semibold bg-slate-50 align-top">Pengalaman Organisasi</td>
+                        <td className="p-1.5 whitespace-pre-line">: {formatAchievementForPrint(applicantDetail.profile.pengalamanOrganisasi)}</td>
+                      </tr>
+                    )}
+                    {hasAchievementContent(applicantDetail.profile?.pengalamanPengabdian) && (
+                      <tr className="border-b border-slate-200">
+                        <td className="w-1/3 p-1.5 font-semibold bg-slate-50 align-top">Pengalaman Pengabdian</td>
+                        <td className="p-1.5 whitespace-pre-line">: {formatAchievementForPrint(applicantDetail.profile.pengalamanPengabdian)}</td>
+                      </tr>
+                    )}
+                    {hasAchievementContent(applicantDetail.profile?.pelatihanSertifikasi) && (
                       <tr>
-                        <td className="w-1/3 p-1.5 font-semibold bg-slate-50">Pengalaman Organisasi</td>
-                        <td className="p-1.5">{renderAchievementDetails(applicantDetail.profile.pengalamanOrganisasi)}</td>
+                        <td className="w-1/3 p-1.5 font-semibold bg-slate-50 align-top">Pelatihan / Sertifikasi</td>
+                        <td className="p-1.5 whitespace-pre-line">: {formatAchievementForPrint(applicantDetail.profile.pelatihanSertifikasi)}</td>
                       </tr>
                     )}
                   </tbody>

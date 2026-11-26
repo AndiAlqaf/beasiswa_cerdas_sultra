@@ -28,7 +28,7 @@ import {
 } from 'lucide-react';
 import SelfieLivenessModal from '@/components/SelfieLivenessModal';
 import { fetchAPI, getUser } from '@/lib/api';
-import { parseAchievementString, formatAchievementItems, DynamicAchievementItem } from '@/lib/achievementHelpers';
+import { parseAchievementString, formatAchievementItems, formatAchievementForPrint, hasAchievementContent, DynamicAchievementItem } from '@/lib/achievementHelpers';
 import DynamicAchievementBlock from '@/components/DynamicAchievementBlock';
 import { getStoredScheduleConfig, getDynamicTimeline, ScheduleConfig } from '@/lib/schedule';
 
@@ -616,6 +616,14 @@ export default function RegistrationPage() {
         try {
           localStorage.removeItem('bssc_application_draft');
         } catch (e) {}
+        setFormData((prev) => ({
+          ...prev,
+          prestasiAkademik: formatAchievementItems(prestasiAkademikList),
+          prestasiNonAkademik: formatAchievementItems(prestasiNonAkademikList),
+          pengalamanOrganisasi: formatAchievementItems(pengalamanOrganisasiList),
+          pengalamanPengabdian: formatAchievementItems(pengalamanPengabdianList),
+          pelatihanSertifikasi: formatAchievementItems(pelatihanSertifikasiList),
+        }));
         setRegistrationCode(res.data.registrationNo);
         setIsSubmitted(true);
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1793,16 +1801,47 @@ export default function RegistrationPage() {
             </div>
 
             {/* Section 4 - Prestasi */}
-            {(formData.prestasiAkademik || formData.prestasiNonAkademik || formData.pengalamanOrganisasi) && (
+            {(hasAchievementContent(formData.prestasiAkademik, prestasiAkademikList) ||
+              hasAchievementContent(formData.prestasiNonAkademik, prestasiNonAkademikList) ||
+              hasAchievementContent(formData.pengalamanOrganisasi, pengalamanOrganisasiList) ||
+              hasAchievementContent(formData.pengalamanPengabdian, pengalamanPengabdianList) ||
+              hasAchievementContent(formData.pelatihanSertifikasi, pelatihanSertifikasiList)) && (
               <div className="border border-slate-400 overflow-hidden">
                 <div className="bg-slate-100 px-3 py-1 font-bold uppercase text-slate-900 border-b border-slate-400">
-                  IV. PRESTASI & PENGALAMAN ORGANISASI
+                  IV. PRESTASI &amp; PENGALAMAN ORGANISASI
                 </div>
                 <table className="w-full text-left border-collapse">
                   <tbody>
-                    {formData.prestasiAkademik && <tr className="border-b border-slate-200"><td className="w-1/3 p-1.5 font-semibold bg-slate-50">Prestasi Akademik</td><td className="p-1.5 whitespace-pre-line">: {formData.prestasiAkademik}</td></tr>}
-                    {formData.prestasiNonAkademik && <tr className="border-b border-slate-200"><td className="w-1/3 p-1.5 font-semibold bg-slate-50">Prestasi Non-Akademik</td><td className="p-1.5 whitespace-pre-line">: {formData.prestasiNonAkademik}</td></tr>}
-                    {formData.pengalamanOrganisasi && <tr><td className="w-1/3 p-1.5 font-semibold bg-slate-50">Pengalaman Organisasi</td><td className="p-1.5 whitespace-pre-line">: {formData.pengalamanOrganisasi}</td></tr>}
+                    {hasAchievementContent(formData.prestasiAkademik, prestasiAkademikList) && (
+                      <tr className="border-b border-slate-200">
+                        <td className="w-1/3 p-1.5 font-semibold bg-slate-50 align-top">Prestasi Akademik</td>
+                        <td className="p-1.5 whitespace-pre-line">: {formatAchievementForPrint(formData.prestasiAkademik, prestasiAkademikList)}</td>
+                      </tr>
+                    )}
+                    {hasAchievementContent(formData.prestasiNonAkademik, prestasiNonAkademikList) && (
+                      <tr className="border-b border-slate-200">
+                        <td className="w-1/3 p-1.5 font-semibold bg-slate-50 align-top">Prestasi Non-Akademik</td>
+                        <td className="p-1.5 whitespace-pre-line">: {formatAchievementForPrint(formData.prestasiNonAkademik, prestasiNonAkademikList)}</td>
+                      </tr>
+                    )}
+                    {hasAchievementContent(formData.pengalamanOrganisasi, pengalamanOrganisasiList) && (
+                      <tr className="border-b border-slate-200">
+                        <td className="w-1/3 p-1.5 font-semibold bg-slate-50 align-top">Pengalaman Organisasi</td>
+                        <td className="p-1.5 whitespace-pre-line">: {formatAchievementForPrint(formData.pengalamanOrganisasi, pengalamanOrganisasiList)}</td>
+                      </tr>
+                    )}
+                    {hasAchievementContent(formData.pengalamanPengabdian, pengalamanPengabdianList) && (
+                      <tr className="border-b border-slate-200">
+                        <td className="w-1/3 p-1.5 font-semibold bg-slate-50 align-top">Pengalaman Pengabdian</td>
+                        <td className="p-1.5 whitespace-pre-line">: {formatAchievementForPrint(formData.pengalamanPengabdian, pengalamanPengabdianList)}</td>
+                      </tr>
+                    )}
+                    {hasAchievementContent(formData.pelatihanSertifikasi, pelatihanSertifikasiList) && (
+                      <tr>
+                        <td className="w-1/3 p-1.5 font-semibold bg-slate-50 align-top">Pelatihan / Sertifikasi</td>
+                        <td className="p-1.5 whitespace-pre-line">: {formatAchievementForPrint(formData.pelatihanSertifikasi, pelatihanSertifikasiList)}</td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>
